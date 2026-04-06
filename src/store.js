@@ -1,0 +1,252 @@
+import { supabase } from './supabase.js';
+
+const STORE_KEY = 'ngopi_store_v3';
+
+// Helper to keep local UI updated while network requests happen
+function notifyLocalUpdate() {
+  window.dispatchEvent(new CustomEvent('sync_store'));
+}
+
+// Global cached state (monolithic format for compatibility with App.jsx)
+let memoryStore = {
+  session: null,
+  history: [],
+  payerHistory: {},
+  menu: [],
+  users: []
+};
+
+export function loadStore() {
+  return { ...memoryStore }; // return new object reference for React state update
+}
+
+// ============================================================================
+// SUPABASE SYNC (REALTIME)
+// ============================================================================
+
+export async function initSupabaseSync() {
+  await fetchFullState();
+  
+  // Realtime subscription
+  supabase.channel('schema-db-changes')
+    .on(
+      'postgres_changes',
+      { event: '*', schema: 'public' },
+      () => {
+        // Any change in any table -> fetch full state to rebuild view
+        fetchFullState();
+      }
+    )
+    .subscribe();
+}
+
+async function fetchFullState() {
+  const [
+    { data: sessions, error: sessionsErr },
+    { data: orders, error: ordersErr },
+    { data: notifications, error: notifErr },
+    { data: menu, error: menuErr },
+    { data: payers, error: payersErr },
+    { data: historic, error: historicErr }
+  ] = await Promise.all([
+    supabase.from('sessions').select('*'),
+    supabase.from('orders').select('*'),
+    supabase.from('notifications').select('*'),
+    supabase.from('menu_items').select('*'),
+    supabase.from('payer_history').select('*'),
+    supabase.from('historic_sessions').select('*')
+  ]);
+
+  if (sessionsErr) console.error("Supabase Error (Sessions):", sessionsErr);
+  if (ordersErr) console.error("Supabase Error (Orders):", ordersErr);
+
+  // Rebuild Menu
+  memoryStore.menu = (menu || []).map(m => ({
+    id: m.id,
+    name: m.name,
+    price: m.price,
+    emoji: m.emoji
+  }));
+
+  // Rebuild Payer History
+  memoryStore.payerHistory = {};
+  (payers || []).forEach(p => {
+    memoryStore.payerHistory[p.username] = p.pay_count;
+  });
+
+  // Rebuild Users (extract from payers + orders)
+  const userSet = new Set((payers || []).map(p => p.username));
+  (orders || []).forEach(o => userSet.add(o.username));
+  memoryStore.users = Array.from(userSet);
+
+  // Rebuild Active Session (assuming single active or just latest)
+  const activeSessionRow = (sessions || []).find(s => s.status !== 'completed' && s.status !== 'force-closed');
+  
+  if (activeSessionRow) {
+    const sessionOrders = (orders || []).filter(o => o.session_id === activeSessionRow.id);
+    const sessionNotifs = (notifications || []).filter(n => n.session_id === activeSessionRow.id);
+    
+    memoryStore.session = {
+      id: activeSessionRow.id,
+      status: activeSessionRow.status,
+      startedBy: activeSessionRow.started_by,
+      startedAt: activeSessionRow.started_at,
+      closedAt: activeSessionRow.closed_at,
+      payer: activeSessionRow.payer,
+      companion: activeSessionRow.companion,
+      paymentInfo: activeSessionRow.payment_method ? {
+        method: activeSessionRow.payment_method,
+        bankName: activeSessionRow.bank_name,
+        accountNo: activeSessionRow.account_no
+      } : null,
+      coffeeBought: activeSessionRow.coffee_bought,
+      coffeeBoughtAt: activeSessionRow.coffee_bought_at,
+      forceClosedBy: activeSessionRow.force_closed_by,
+      debtors: activeSessionRow.debtors || [],
+      orders: sessionOrders.map(o => ({
+        id: o.id,
+        username: o.username,
+        item: { id: o.coffee_id, name: o.coffee_name, price: o.coffee_price, emoji: o.coffee_emoji || '☕' },
+        isPaid: o.is_paid,
+        paidAt: null, // simplification
+        markedByPayer: o.marked_by_payer
+      })),
+      notifications: sessionNotifs.map(n => ({
+        id: n.id,
+        to: n.target_user,
+        type: n.type,
+        message: n.message,
+        readBy: n.is_read_by || [],
+        createdAt: n.created_at
+      }))
+    };
+  } else {
+    memoryStore.session = null;
+  }
+
+  // Rebuild History
+  memoryStore.history = (historic || []).map(h => h.data);
+
+  // Notify UI
+  notifyLocalUpdate();
+}
+
+// ============================================================================
+// APP API ACTIONS -> TO SUPABASE
+// ============================================================================
+
+export const api = {
+  createSession: async (startedBy) => {
+    const id = Date.now().toString();
+    const { error } = await supabase.from('sessions').insert({
+      id,
+      status: 'open',
+      started_by: startedBy,
+    });
+    if (error) {
+      console.error("Failed to create session:", error);
+      alert("Error membuat sesi: " + error.message);
+    }
+    // Optimistic
+    fetchFullState();
+  },
+
+  addOrder: async (sessionId, username, menuItem) => {
+    // Upsert equivalent: Delete old order by this user in this session, then insert
+    await supabase.from('orders').delete().match({ session_id: sessionId, username });
+    await supabase.from('orders').insert({
+      session_id: sessionId,
+      username,
+      coffee_id: menuItem.id,
+      coffee_name: menuItem.name,
+      coffee_price: menuItem.price
+    });
+    fetchFullState();
+  },
+
+  updateSession: async (sessionId, updates) => {
+    const payload = {};
+    if (updates.status !== undefined) payload.status = updates.status;
+    if (updates.payer !== undefined) payload.payer = updates.payer;
+    if (updates.companion !== undefined) payload.companion = updates.companion;
+    if (updates.closedAt !== undefined) payload.closed_at = updates.closedAt;
+    if (updates.paymentMethod !== undefined) payload.payment_method = updates.paymentMethod;
+    if (updates.bankName !== undefined) payload.bank_name = updates.bankName;
+    if (updates.accountNo !== undefined) payload.account_no = updates.accountNo;
+    if (updates.coffeeBought !== undefined) payload.coffee_bought = updates.coffeeBought;
+    if (updates.forceClosedBy !== undefined) payload.force_closed_by = updates.forceClosedBy;
+    if (updates.debtors !== undefined) payload.debtors = updates.debtors;
+    
+    await supabase.from('sessions').update(payload).eq('id', sessionId);
+  },
+
+  incrementPayerCount: async (username) => {
+    // using an upsert
+    const { data: current } = await supabase.from('payer_history').select('pay_count').eq('username', username).single();
+    const count = current ? current.pay_count + 1 : 1;
+    await supabase.from('payer_history').upsert({ username, pay_count: count });
+  },
+
+  markOrderPaid: async (orderId, markedByPayer) => {
+    await supabase.from('orders').update({
+      is_paid: true,
+      marked_by_payer: markedByPayer ? true : false
+    }).eq('id', orderId);
+  },
+
+  notify: async (sessionId, targetUser, type, message) => {
+    await supabase.from('notifications').insert({
+      session_id: sessionId,
+      target_user: targetUser,
+      type,
+      message
+    });
+  },
+
+  markNotifRead: async (notifId, username) => {
+    const { data } = await supabase.from('notifications').select('is_read_by').eq('id', notifId).single();
+    if (data) {
+      const arr = data.is_read_by || [];
+      if (!arr.includes(username)) {
+        await supabase.from('notifications').update({
+          is_read_by: [...arr, username]
+        }).eq('id', notifId);
+      }
+    }
+  },
+
+  saveHistory: async (sessionId, fullSessionData) => {
+    await supabase.from('historic_sessions').insert({
+      id: sessionId,
+      data: fullSessionData
+    });
+  },
+
+  saveMenu: async (menuItems) => {
+    // Delete all and re-insert (simple approach for menu)
+    await supabase.from('menu_items').delete().neq('id', 'dummy'); 
+    const mapped = menuItems.map(m => ({
+      id: m.id,
+      name: m.name,
+      price: m.price,
+      emoji: m.emoji
+    }));
+    if (mapped.length > 0) {
+      await supabase.from('menu_items').insert(mapped);
+    }
+  }
+};
+
+export function selectRoles(participants, payerHistory) {
+  if (participants.length === 0) return { payer: null, companion: null };
+  const sorted = [...participants].sort((a, b) => {
+    const countA = payerHistory[a] || 0;
+    const countB = payerHistory[b] || 0;
+    if (countA !== countB) return countA - countB;
+    return a.localeCompare(b);
+  });
+  const payer = sorted[0];
+  const remaining = sorted.filter(p => p !== payer);
+  const companion = remaining.length > 0 ? remaining[0] : null;
+  return { payer, companion };
+}
