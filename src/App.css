@@ -409,8 +409,11 @@ input:focus, select:focus { outline: none; background: var(--bg-secondary); bord
 .file-input-wrapper label { display: block; font-size: 0.8rem; margin-bottom: 4px; }
 .btn-small { padding: 4px 10px; font-size: 0.75rem; border-radius: 4px; }
 
-/* ─── HISTORY VIEW (FULL SCREEN) ────────────────────────────────────────────── */
-.history-view { padding: 1.5rem; min-height: 100vh; background: var(--bg-primary); z-index: 100; position: relative; }
+/* ─── HISTORY VIEW (FULL SCREEN OVERLAY) ────────────────────────────────────── */
+.history-view { 
+  padding: 1.5rem; min-height: 100vh; background: var(--bg-primary); 
+  z-index: 99999; position: fixed; inset: 0; overflow-y: auto; 
+}
 .history-container { max-width: 800px; margin: 0 auto; padding: 2rem; border-width: 4px; box-shadow: 8px 8px 0 var(--text-primary); }
 
 .debt-dashboard-card { background: var(--text-primary); color: var(--bg-primary); padding: 1.5rem; border-radius: 8px; border: 2px solid var(--text-primary); text-align: center; }

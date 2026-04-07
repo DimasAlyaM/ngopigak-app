@@ -363,27 +363,45 @@ export const api = {
     await supabase.from('sessions').update({ payer: newUsername }).eq('payer', oldUsername);
     await supabase.from('sessions').update({ companion: newUsername }).eq('companion', oldUsername);
 
-    // 5. Update debtors array & orders JSONB array in sessions
-    // Using a simpler fetch + JS filter to avoid 406 errors with complex .or query on JSONB
-    const { data: allSessions } = await supabase.from('sessions').select('id, debtors, orders');
-    
+    // 5. Update debtors array in sessions (where they were recorded as a debtor in an active/recent session)
+    const { data: allSessions } = await supabase.from('sessions').select('id, debtors');
     if (allSessions) {
       for (const s of allSessions) {
-        let changed = false;
-        const updates = {};
-
         if (s.debtors?.includes(oldUsername)) {
-          updates.debtors = s.debtors.map(d => (d === oldUsername ? newUsername : d));
+          const newDebtors = s.debtors.map(d => (d === oldUsername ? newUsername : d));
+          await supabase.from('sessions').update({ debtors: newDebtors }).eq('id', s.id);
+        }
+      }
+    }
+
+    // 6. Update historic_sessions (This is where the 'History View' gets its data)
+    // The 'data' column is a JSONB blob containing everything (orders, payer, etc.)
+    const { data: allHistoric } = await supabase.from('historic_sessions').select('id, data');
+    if (allHistoric) {
+      for (const h of allHistoric) {
+        let changed = false;
+        let d = h.data;
+
+        // Sync top-level session fields inside JSONB
+        if (d.payer === oldUsername) { d.payer = newUsername; changed = true; }
+        if (d.companion === oldUsername) { d.companion = newUsername; changed = true; }
+        if (d.started_by === oldUsername) { d.started_by = newUsername; changed = true; }
+        if (d.force_closed_by === oldUsername) { d.force_closed_by = newUsername; changed = true; }
+
+        // Sync debtors array inside JSONB
+        if (d.debtors?.includes(oldUsername)) {
+          d.debtors = d.debtors.map(u => u === oldUsername ? newUsername : u);
           changed = true;
         }
 
-        if (s.orders?.some(o => o.username === oldUsername)) {
-          updates.orders = s.orders.map(o => (o.username === oldUsername ? { ...o, username: newUsername } : o));
+        // Sync orders array inside JSONB (Crucial for History View detail)
+        if (d.orders?.some(o => o.username === oldUsername)) {
+          d.orders = d.orders.map(o => o.username === oldUsername ? { ...o, username: newUsername } : o);
           changed = true;
         }
 
         if (changed) {
-          await supabase.from('sessions').update(updates).eq('id', s.id);
+          await supabase.from('historic_sessions').update({ data: d }).eq('id', h.id);
         }
       }
     }

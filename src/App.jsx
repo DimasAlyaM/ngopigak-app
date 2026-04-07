@@ -61,16 +61,15 @@ function ConfirmDialog({ title, message, onConfirm, onCancel, confirmText = 'Ya,
 }
 
 // ─── NOTIFICATION BELL ────────────────────────────────────────────────────────
-function NotifBell({ notifications, username, onMarkRead }) {
-  const [open, setOpen] = useState(false);
+function NotifBell({ notifications, username, onMarkRead, isOpen, onToggle }) {
   const myNotifs = notifications.filter(n => n.to === username || n.to === 'all');
   const unread = myNotifs.filter(n => !n.read).length;
   return (
     <div className="notif-wrapper">
-      <button className="notif-btn" onClick={() => { setOpen(o => !o); onMarkRead(); }}>
+      <button className="notif-btn" onClick={() => { onToggle(); onMarkRead(); }}>
          {unread > 0 && <span className="notif-badge">{unread}</span>}
       </button>
-      {open && (
+      {isOpen && (
         <div className="notif-dropdown glass-panel">
           <div className="notif-header">Notifikasi</div>
           {myNotifs.length === 0 && <p className="text-secondary text-sm" style={{ padding: '1rem' }}>Belum ada notifikasi.</p>}
@@ -94,26 +93,24 @@ function notifIcon(type) {
 }
 
 // ─── USER PROFILE COMPONENT ──────────────────────────────────────────────────
-function UserProfile({ username, onLogout, onShowHistory, onShowProfile }) {
-  const [open, setOpen] = useState(false);
-  
+function UserProfile({ username, onLogout, onShowHistory, onShowProfile, isOpen, onToggle }) {
   return (
     <div className="notif-wrapper">
-      <div className="user-chip" onClick={() => setOpen(!open)} title="Profil">
+      <div className="user-chip" onClick={onToggle} title="Profil">
         <UserAvatar username={username} size={28} />
         <span>{username}</span>
       </div>
-      {open && (
+      {isOpen && (
         <div className="notif-dropdown profile-dropdown">
-          <div className="notif-item" onClick={() => { setOpen(false); onShowHistory(); }} style={{ cursor: 'pointer' }}>
+          <div className="notif-item" onClick={() => { onToggle(); onShowHistory(); }} style={{ cursor: 'pointer' }}>
             <span className="notif-type"><ClipboardList size={18} /></span>
             <div className="notif-msg" style={{ marginTop: '2px' }}>Histori Order</div>
           </div>
-          <div className="notif-item" onClick={() => { setOpen(false); onShowProfile(); }} style={{ cursor: 'pointer' }}>
+          <div className="notif-item" onClick={() => { onToggle(); onShowProfile(); }} style={{ cursor: 'pointer' }}>
             <span className="notif-type"><User size={18} /></span>
             <div className="notif-msg" style={{ marginTop: '2px' }}>Edit Profil</div>
           </div>
-          <div className="notif-item" onClick={() => { setOpen(false); onLogout(); }} style={{ cursor: 'pointer', color: '#B91C1C' }}>
+          <div className="notif-item" onClick={() => { onToggle(); onLogout(); }} style={{ cursor: 'pointer', color: '#B91C1C' }}>
             <span className="notif-type"><LogOut size={18} /></span>
             <div className="notif-msg" style={{ marginTop: '2px' }}>Keluar (Logout)</div>
           </div>
@@ -468,6 +465,7 @@ export default function App() {
   const [view, setView] = useState('home'); // home | session | history | admin
   const [historyFilter, setHistoryFilter] = useState('all'); // all | my-debt
   const [expandedSession, setExpandedSession] = useState(null);
+  const [activeMenu, setActiveMenu] = useState(null); // 'notif' | 'profile' | null
 
   // Timer
   const [timeLeft, setTimeLeft] = useState(600);
@@ -783,6 +781,7 @@ export default function App() {
       setCurrentUser(trimmed);
       localStorage.setItem('ngopi_current_user', trimmed);
       setDialog(null); // Close modal
+      setActiveMenu(null); // Close menu
       alert("Profil berhasil diperbarui!");
     } catch (err) {
       console.error(err);
@@ -794,6 +793,7 @@ export default function App() {
     setHistoryFilter(filter);
     setView('history');
     setDialog(null); // Close any other dialogs
+    setActiveMenu(null); // Close dropdowns
   };
 
   // ─── RENDER HELPERS ────────────────────────────────────────────────────────
@@ -1472,17 +1472,6 @@ export default function App() {
              </div>
           </div>
         )}
-
-        {view === 'history' && (
-          <HistoryView 
-            history={store.history} 
-            payerHistory={store.payerHistory} 
-            currentUser={currentUser}
-            filter={historyFilter} 
-            setFilter={setHistoryFilter}
-            onClose={() => setView('home')} 
-          />
-        )}
       </main>
 
       {/* Dialogs */}
@@ -1517,6 +1506,17 @@ export default function App() {
           username={currentUser} 
           onSave={onUpdateProfile} 
           onClose={() => setShowProfileModal(false)} 
+        />
+      )}
+
+      {view === 'history' && (
+        <HistoryView 
+          history={store.history} 
+          payerHistory={store.payerHistory} 
+          currentUser={currentUser}
+          filter={historyFilter} 
+          setFilter={setHistoryFilter}
+          onClose={() => setView('home')} 
         />
       )}
 
