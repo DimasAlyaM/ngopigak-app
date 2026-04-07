@@ -296,39 +296,82 @@ export const api = {
 
   // Auth & Profile
   login: async (username, pin) => {
-    // 1. Try to find in memory first (fastest)
-    let existing = memoryStore.users.find(u => u.username.toLowerCase() === username.toLowerCase());
-    
-    // 2. If not in memory (could be the first load or race condition), check the DB directly
-    if (!existing) {
-      const { data } = await supabase.from('users').select('*').eq('username', username).single();
-      if (data) {
-        existing = { username: data.username, pin: data.pin };
-        // Sync local memory while we're at it
-        memoryStore.users.push(existing);
+    try {
+      // 1. Try to find in memory first (fastest)
+      let existing = memoryStore.users.find(u => u.username.toLowerCase() === username.toLowerCase());
+      
+      // 2. If not in memory (could be the first load or race condition), check the DB directly
+      if (!existing) {
+        const { data, error } = await supabase.from('users').select('*').eq('username', username).single();
+        if (error && error.code === 'PGRST116') {
+          // No user found - this is okay, we'll register below
+        } else if (error) {
+          console.error("Login Check Error:", error);
+          if (error.message.includes("Could not find the table")) {
+            return { success: false, message: "Hubungi Admin: Tabel 'users' belum dibuat di Supabase." };
+          }
+          return { success: false, message: "Error DB: " + error.message };
+        }
+        
+        if (data) {
+          existing = { username: data.username, pin: data.pin };
+          // Sync local memory while we're at it
+          memoryStore.users.push(existing);
+        }
       }
-    }
 
-    if (!existing) {
-      // New user or Legacy claim: Register with this PIN
-      await supabase.from('users').insert({ username, pin });
-      fetchFullState();
-      return { success: true, isNew: true };
-    } else {
-      // Verify PIN
-      if (existing.pin === pin) {
-        return { success: true, isNew: false };
+      if (!existing) {
+        // New user or Legacy claim: Register with this PIN
+        const { error: insErr } = await supabase.from('users').insert({ username, pin });
+        if (insErr) {
+           console.error("Registration Error:", insErr);
+           return { success: false, message: "Gagal registrasi: " + insErr.message };
+        }
+        fetchFullState();
+        return { success: true, isNew: true };
       } else {
-        return { success: false, message: "PIN salah!" };
+        // Verify PIN
+        if (existing.pin === pin) {
+          return { success: true, isNew: false };
+        } else {
+          return { success: false, message: "PIN salah!" };
+        }
       }
+    } catch (e) {
+      console.error(e);
+      return { success: false, message: "Terjadi kesalahan sistem." };
     }
   },
 
   updateProfile: async (oldUsername, newUsername) => {
-    // Update users table
+    // This is a "Deep Rename" operation.
+    // 1. Update the base user record
     await supabase.from('users').update({ username: newUsername }).eq('username', oldUsername);
-    // Also update payer_history to maintain history linkage
+    
+    // 2. Update payer history
     await supabase.from('payer_history').update({ username: newUsername }).eq('username', oldUsername);
+    
+    // 3. Update orders (very important for debt tracking)
+    await supabase.from('orders').update({ username: newUsername }).eq('username', oldUsername);
+
+    // 4. Update sessions (where they were started_by, payer, or companion)
+    await supabase.from('sessions').update({ started_by: newUsername }).eq('started_by', oldUsername);
+    await supabase.from('sessions').update({ payer: newUsername }).eq('payer', oldUsername);
+    await supabase.from('sessions').update({ companion: newUsername }).eq('companion', oldUsername);
+
+    // 5. Update debtors array in sessions
+    // This is more complex because it's an array. Let's fetch sessions where they are a debtor.
+    const { data: debSessions } = await supabase.from('sessions')
+      .select('id, debtors')
+      .filter('debtors', 'cs', `{"${oldUsername}"}`);
+    
+    if (debSessions) {
+      for (const s of debSessions) {
+        const newDebtors = s.debtors.map(d => (d === oldUsername ? newUsername : d));
+        await supabase.from('sessions').update({ debtors: newDebtors }).eq('id', s.id);
+      }
+    }
+
     fetchFullState();
   },
 

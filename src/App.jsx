@@ -368,21 +368,23 @@ function HistoryView({ history, currentUser, filter, setFilter, onClose }) {
           <button className="btn-icon" onClick={onClose}><X size={24} /></button>
         </div>
 
-        {/* Debt Dashboard */}
-        <div className="debt-dashboard-card mb-4">
-          <div className="debt-stat">
-            <span className="text-secondary text-sm">Total Hutang Saya</span>
-            <h2 className={totalOwed > 0 ? 'text-red' : 'text-green'}>{formatRp(totalOwed)}</h2>
+        {/* Debt Dashboard - Only show in My Debt tab or make it very compact */}
+        {filter === 'my-debt' && (
+          <div className="debt-dashboard-card mb-4 fade-in">
+            <div className="debt-stat">
+              <span className="text-secondary text-sm">Total Hutang Saya</span>
+              <h2 className={totalOwed > 0 ? 'text-red' : 'text-green'}>{formatRp(totalOwed)}</h2>
+            </div>
+            {totalOwed > 0 && <p className="text-xs mt-2 opacity-70">Bayar ke pembayar masing-masing sesi ya!</p>}
           </div>
-          {totalOwed > 0 && <p className="text-xs mt-2 opacity-70">Bayar ke pembayar masing-masing sesi ya!</p>}
-        </div>
+        )}
 
         <div className="tab-buttons mb-4">
           <button className={`tab-btn ${filter === 'all' ? 'active' : ''}`} onClick={() => setFilter('all')}>Semua Sesi</button>
           <button className={`tab-btn ${filter === 'my-debt' ? 'active' : ''}`} onClick={() => setFilter('my-debt')}>Hutang Saya</button>
         </div>
 
-        <div className="history-list scroll-container" style={{ maxHeight: 'calc(100vh - 350px)' }}>
+        <div className="history-list scroll-container" style={{ maxHeight: 'calc(100vh - 200px)', overflowY: 'auto', paddingBottom: '2rem' }}>
           {displayedHistory.length === 0 ? (
             <div className="empty-state">Belum ada histori {filter === 'my-debt' ? 'hutang' : 'sesi'}.</div>
           ) : (
@@ -774,10 +776,18 @@ export default function App() {
   const onUpdateProfile = async (oldName, newName) => {
     const trimmed = newName.trim();
     if (!trimmed || trimmed === oldName) return;
-    await api.updateProfile(oldName, trimmed);
-    setCurrentUser(trimmed);
-    localStorage.setItem('ngopi_current_user', trimmed);
-    alert("Profil berhasil diperbarui!");
+    
+    try {
+      await api.updateProfile(oldName, trimmed);
+      // Update local states immediately
+      setCurrentUser(trimmed);
+      localStorage.setItem('ngopi_current_user', trimmed);
+      setDialog(null); // Close modal
+      alert("Profil berhasil diperbarui!");
+    } catch (err) {
+      console.error(err);
+      alert("Gagal memperbarui profil: " + err.message);
+    }
   };
 
   const goToHistory = (filter = 'all') => {
