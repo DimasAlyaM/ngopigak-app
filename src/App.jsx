@@ -1,5 +1,9 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { loadStore, api, initSupabaseSync, selectRoles } from './store.js';
+import { 
+  Bell, Info, CreditCard, Coffee, Clock, CheckCircle, AlertTriangle, LogOut, ClipboardList,
+  Lock, Unlock, LogIn, History, X, Trash2, PlusCircle, Shield, Users
+} from 'lucide-react';
 import './App.css';
 
 // ─── UTILITY ─────────────────────────────────────────────────────────────────
@@ -54,7 +58,7 @@ function NotifBell({ notifications, username, onMarkRead }) {
   return (
     <div className="notif-wrapper">
       <button className="notif-btn" onClick={() => { setOpen(o => !o); onMarkRead(); }}>
-        🔔 {unread > 0 && <span className="notif-badge">{unread}</span>}
+         {unread > 0 && <span className="notif-badge">{unread}</span>}
       </button>
       {open && (
         <div className="notif-dropdown glass-panel">
@@ -75,8 +79,8 @@ function NotifBell({ notifications, username, onMarkRead }) {
   );
 }
 function notifIcon(type) {
-  const icons = { info: 'ℹ️', payment: '💳', bought: '☕', reminder: '⏰', done: '✅', debt: '💸' };
-  return icons[type] || '🔔';
+  const icons = { info: <Info size={16}/>, payment: <CreditCard size={16}/>, bought: <Coffee size={16}/>, reminder: <Clock size={16}/>, done: <CheckCircle size={16}/>, debt: <AlertTriangle size={16}/> };
+  return icons[type] || <Bell size={16}/>;
 }
 
 // ─── USER PROFILE COMPONENT ──────────────────────────────────────────────────
@@ -92,11 +96,11 @@ function UserProfile({ username, onLogout, onShowHistory }) {
       {open && (
         <div className="notif-dropdown profile-dropdown">
           <div className="notif-item" onClick={() => { setOpen(false); onShowHistory(); }} style={{ cursor: 'pointer' }}>
-            <span className="notif-type">📋</span>
+            <span className="notif-type"><ClipboardList size={18} /></span>
             <div className="notif-msg" style={{ marginTop: '2px' }}>Histori Order</div>
           </div>
           <div className="notif-item" onClick={() => { setOpen(false); onLogout(); }} style={{ cursor: 'pointer', color: '#B91C1C' }}>
-            <span className="notif-type">🚪</span>
+            <span className="notif-type"><LogOut size={18} /></span>
             <div className="notif-msg" style={{ marginTop: '2px' }}>Keluar (Logout)</div>
           </div>
         </div>
@@ -111,7 +115,7 @@ function Stepper({ steps, currentStep }) {
     <div className="stepper">
       {steps.map((s, i) => (
         <div key={i} className={`step-item ${i < currentStep ? 'done' : i === currentStep ? 'active' : ''}`}>
-          <div className="step-circle">{i < currentStep ? '✓' : i + 1}</div>
+          <div className="step-circle">{i < currentStep ? '' : i + 1}</div>
           <span className="step-label">{s}</span>
           {i < steps.length - 1 && <div className={`step-line ${i < currentStep ? 'done' : ''}`} />}
         </div>
@@ -153,7 +157,7 @@ function AdminPinGate({ onSuccess, onClose }) {
   return (
     <div className="dialog-overlay" onClick={onClose}>
       <div className={`dialog-box glass-panel pin-gate ${shake ? 'shake' : ''}`} onClick={e => e.stopPropagation()}>
-        <div className="pin-icon">{isFirstTime ? '🔐' : '🔒'}</div>
+        <div className="pin-icon">{isFirstTime ? <Lock size={48} /> : <Unlock size={48} />}</div>
         <h3 className="dialog-title">{isFirstTime ? 'Buat PIN Admin' : 'Masukkan PIN Admin'}</h3>
         <p className="dialog-message text-secondary">
           {isFirstTime
@@ -193,8 +197,8 @@ function AdminPinGate({ onSuccess, onClose }) {
           {error && <p className="pin-error">{error}</p>}
           <div className="dialog-actions">
             <button type="button" className="btn-secondary" onClick={onClose}>Batal</button>
-            <button id="admin-pin-submit" type="submit" className="btn-primary">
-              {isFirstTime ? '\u2705 Simpan PIN' : '\uD83D\uDD13 Masuk'}
+            <button id="admin-pin-submit" type="submit" className="btn-primary" style={{display: 'flex', alignItems: 'center', gap: '0.5rem'}}>
+              {isFirstTime ? <><CheckCircle size={18}/> Simpan PIN</> : <><Unlock size={18}/> Masuk</>}
             </button>
           </div>
         </form>
@@ -213,12 +217,12 @@ function MenuManager({ menu, onSave, onClose }) {
   const [items, setItems] = useState(menu.map(m => ({ ...m })));
   const [newName, setNewName] = useState('');
   const [newPrice, setNewPrice] = useState('');
-  const [newEmoji, setNewEmoji] = useState('☕');
+  const [newEmoji, setNewEmoji] = useState('');
 
   const addItem = () => {
     if (!newName || !newPrice) return;
     setItems([...items, { id: 'c' + Date.now(), name: newName, price: parseInt(newPrice) || 0, emoji: newEmoji }]);
-    setNewName(''); setNewPrice(''); setNewEmoji('☕');
+    setNewName(''); setNewPrice(''); setNewEmoji('');
   };
   const removeItem = (id) => setItems(items.filter(i => i.id !== id));
   const updateItem = (id, field, val) => setItems(items.map(i => i.id === id ? { ...i, [field]: field === 'price' ? (parseInt(val) || 0) : val } : i));
@@ -227,8 +231,8 @@ function MenuManager({ menu, onSave, onClose }) {
     <div className="dialog-overlay">
       <div className="dialog-box glass-panel admin-panel">
         <div className="admin-header">
-          <h3>⚙️ Manajemen Menu Kopi</h3>
-          <button className="btn-icon" onClick={onClose}>✕</button>
+          <h3 style={{display: 'flex', alignItems: 'center', gap: '0.5rem'}}><Shield size={20} /> Manajemen Menu Kopi</h3>
+          <button className="btn-icon" onClick={onClose}><X size={20} /></button>
         </div>
         <div className="menu-list">
           {items.map(item => (
@@ -236,12 +240,12 @@ function MenuManager({ menu, onSave, onClose }) {
               <input className="emoji-input" value={item.emoji} onChange={e => updateItem(item.id, 'emoji', e.target.value)} maxLength={2} />
               <input value={item.name} onChange={e => updateItem(item.id, 'name', e.target.value)} placeholder="Nama menu" />
               <input type="number" value={item.price} onChange={e => updateItem(item.id, 'price', e.target.value)} placeholder="Harga" style={{ width: '120px' }} />
-              <button className="btn-icon-danger" onClick={() => removeItem(item.id)}>🗑️</button>
+              <button className="btn-icon-danger" onClick={() => removeItem(item.id)}><Trash2 size={18}/></button>
             </div>
           ))}
         </div>
         <div className="menu-edit-row" style={{ marginTop: '1rem', borderTop: '1px solid var(--glass-border)', paddingTop: '1rem' }}>
-          <input className="emoji-input" value={newEmoji} onChange={e => setNewEmoji(e.target.value)} maxLength={2} placeholder="☕" />
+          <input className="emoji-input" value={newEmoji} onChange={e => setNewEmoji(e.target.value)} maxLength={2} placeholder="" />
           <input value={newName} onChange={e => setNewName(e.target.value)} placeholder="Nama menu baru" />
           <input type="number" value={newPrice} onChange={e => setNewPrice(e.target.value)} placeholder="Harga" style={{ width: '120px' }} />
           <button className="btn-primary btn-small" onClick={addItem}>+ Tambah</button>
@@ -261,8 +265,8 @@ function HistoryPanel({ history, payerHistory, onClose }) {
     <div className="dialog-overlay">
       <div className="dialog-box glass-panel admin-panel" style={{ maxWidth: '700px' }}>
         <div className="admin-header">
-          <h3>📋 Histori Sesi & Giliran</h3>
-          <button className="btn-icon" onClick={onClose}>✕</button>
+          <h3 style={{display: 'flex', alignItems: 'center', gap: '0.5rem'}}><History size={20} /> Histori Sesi & Giliran</h3>
+          <button className="btn-icon" onClick={onClose}><X size={20} /></button>
         </div>
         <h4 className="text-secondary mb-4" style={{ marginTop: '1rem' }}>Frekuensi Jadi Pembayar</h4>
         {Object.keys(payerHistory).length === 0 && <p className="text-secondary text-sm">Belum ada data giliran.</p>}
@@ -282,13 +286,13 @@ function HistoryPanel({ history, payerHistory, onClose }) {
             <div key={s.id} className="history-card glass-panel">
               <div className="history-header">
                 <span className="history-date">{formatDate(s.startedAt)}</span>
-                <span className={`history-status ${s.status}`}>{s.status === 'completed' ? '✅ Selesai' : s.status === 'force-closed' ? '⚠️ Tutup Paksa' : s.status}</span>
+                <span className={`history-status ${s.status}`}>{s.status === 'completed' ? ' Selesai' : s.status === 'force-closed' ? ' Tutup Paksa' : s.status}</span>
               </div>
               <div className="history-detail">
-                <span>👑 Pembayar: <strong>{s.payer || '-'}</strong></span>
-                <span>🛡️ Pendamping: <strong>{s.companion || '-'}</strong></span>
-                <span>📦 {s.orders.length} pesanan · Total: <strong>{formatRp(s.orders.reduce((sum, o) => sum + o.item.price, 0))}</strong></span>
-                {s.debtors?.length > 0 && <span className="text-red">💸 Belum bayar: {s.debtors.join(', ')}</span>}
+                <span style={{display: 'flex', alignItems: 'center', gap: '0.25rem'}}><CreditCard size={14} className="inline-icon"/> Pembayar: <strong>{s.payer || '-'}</strong></span>
+                <span style={{display: 'flex', alignItems: 'center', gap: '0.25rem'}}><Users size={14} className="inline-icon"/> Pendamping: <strong>{s.companion || '-'}</strong></span>
+                <span style={{display: 'flex', alignItems: 'center', gap: '0.25rem'}}><ClipboardList size={14} className="inline-icon"/> {s.orders.length} pesanan · Total: <strong>{formatRp(s.orders.reduce((sum, o) => sum + o.item.price, 0))}</strong></span>
+                {s.debtors?.length > 0 && <span className="text-red" style={{display: 'flex', alignItems: 'center', gap: '0.25rem'}}><AlertTriangle size={14} className="inline-icon"/> Belum bayar: {s.debtors.join(', ')}</span>}
               </div>
             </div>
           ))}
@@ -465,7 +469,7 @@ export default function App() {
     s.session.orders.forEach(o => {
       if (o.username !== payer) {
         api.notify(s.session.id, o.username, 'payment',
-          `💳 Info Transfer: ${paymentMethod}${paymentMethod === 'BANK' ? ` (${bankName})` : ''} – ${accountNo} a.n. ${payer}. Total kamu: ${formatRp(o.item.price)}`
+          ` Info Transfer: ${paymentMethod}${paymentMethod === 'BANK' ? ` (${bankName})` : ''} – ${accountNo} a.n. ${payer}. Total kamu: ${formatRp(o.item.price)}`
         );
       }
     });
@@ -479,7 +483,7 @@ export default function App() {
     await api.updateSession(s.session.id, { coffeeBought: true });
     s.session.orders.forEach(o => {
       if (o.username !== currentUser) {
-         api.notify(s.session.id, o.username, 'bought', `☕ Kopi sudah dibeli oleh ${s.session.payer} dan dalam perjalanan!`);
+         api.notify(s.session.id, o.username, 'bought', ` Kopi sudah dibeli oleh ${s.session.payer} dan dalam perjalanan!`);
       }
     });
     setDialog(null);
@@ -491,7 +495,7 @@ export default function App() {
     const order = s.session.orders.find(o => o.username === username);
     if (order && !order.isPaid) {
       await api.markOrderPaid(order.id, false);
-      api.notify(s.session.id, s.session.payer, 'payment', `✅ ${username} sudah konfirmasi pembayaran.`);
+      api.notify(s.session.id, s.session.payer, 'payment', ` ${username} sudah konfirmasi pembayaran.`);
       checkSessionComplete(s, order.id);
     }
   };
@@ -502,7 +506,7 @@ export default function App() {
     const order = s.session.orders.find(o => o.username === username);
     if (order && !order.isPaid) {
       await api.markOrderPaid(order.id, true);
-      api.notify(s.session.id, username, 'payment', `✅ ${s.session.payer} menandai pembayaranmu sebagai lunas (cash).`);
+      api.notify(s.session.id, username, 'payment', ` ${s.session.payer} menandai pembayaranmu sebagai lunas (cash).`);
       checkSessionComplete(s, order.id);
     }
   };
@@ -524,7 +528,7 @@ export default function App() {
       };
       await api.saveHistory(s.session.id, historyPayload);
       s.session.orders.forEach(o => {
-        api.notify(s.session.id, o.username, 'done', '🎉 Sesi selesai! Semua sudah bayar. Makasih! ☕');
+        api.notify(s.session.id, o.username, 'done', ' Sesi selesai! Semua sudah bayar. Makasih! ');
       });
     }
   }
@@ -539,7 +543,7 @@ export default function App() {
     await api.saveHistory(s.session.id, full);
 
     if (debtors.length > 0) {
-      debtors.forEach(d => api.notify(s.session.id, d, 'debt', `⚠️ Sesi ditutup paksa. Kamu tercatat belum bayar Rp ${s.session.orders.find(o => o.username === d)?.item.price.toLocaleString()}`));
+      debtors.forEach(d => api.notify(s.session.id, d, 'debt', ` Sesi ditutup paksa. Kamu tercatat belum bayar Rp ${s.session.orders.find(o => o.username === d)?.item.price.toLocaleString()}`));
     }
     s.session.orders.forEach(o => {
        api.notify(s.session.id, o.username, 'done', `Sesi ditutup paksa oleh ${currentUser}.`);
@@ -591,7 +595,7 @@ export default function App() {
         </nav>
         <div className="login-screen fade-in">
           <div className="login-card glass-panel">
-            <div className="login-icon">☕</div>
+            <div className="login-icon"><User size={48} /></div>
             <h2 className="login-title">Siapa Kamu?</h2>
             <p className="text-secondary" style={{ marginBottom: '2rem' }}>Masukkan nama untuk mulai ngopi bareng</p>
             <form onSubmit={login} className="modern-form">
@@ -607,7 +611,7 @@ export default function App() {
                   required
                 />
               </div>
-              <button id="login-submit" type="submit" className="btn-primary">Masuk ☕</button>
+              <button id="login-submit" type="submit" className="btn-primary" style={{display:'flex', alignItems:'center', justifyContent:'center', gap:'0.5rem'}}>Masuk <LogIn size={18} /></button>
             </form>
             {loadStore().users.length > 0 && (
               <div style={{ marginTop: '1.5rem' }}>
@@ -639,19 +643,19 @@ export default function App() {
         </p>
         <div className="hero-actions">
           {!session || sessionDone ? (
-            <button id="start-session-btn" className="btn-primary" onClick={startSession}>☕ Buka Sesi Ngopi</button>
+            <button id="start-session-btn" className="btn-primary" onClick={startSession} style={{display:'flex', alignItems:'center', gap:'0.5rem'}}><PlusCircle size={18} /> Buka Sesi Ngopi</button>
           ) : (
-            <button id="join-session-btn" className="btn-primary" onClick={() => setView('session')}>
-              {session.status === 'open' ? '👋 Join Sesi Aktif' : '🔍 Lihat Sesi Berjalan'}
+            <button id="join-session-btn" className="btn-primary" onClick={() => setView('session')} style={{display:'flex', alignItems:'center', gap:'0.5rem'}}>
+              {session.status === 'open' ? <><PlusCircle size={18}/> Join Sesi Aktif</> : <><Info size={18}/> Lihat Sesi Berjalan</>}
             </button>
           )}
-          <button className="btn-secondary" onClick={() => setShowHistory(true)}>📋 Histori</button>
+          <button className="btn-secondary" onClick={() => setShowHistory(true)} style={{display:'flex', alignItems:'center', gap:'0.5rem'}}><History size={18} /> Histori</button>
         </div>
         {session && !sessionDone && session.status === 'open' && (
           <div className="session-live-badge">
             <span className="live-dot" /><span>Sesi Aktif</span>
-            <span className="live-timer">⏳ {formatTime(timeLeft)} tersisa</span>
-            <span>👥 {session.orders.length} orang pesan</span>
+            <span className="live-timer" style={{display:'flex', alignItems:'center', gap:'0.25rem'}}><Clock size={14}/> {formatTime(timeLeft)} tersisa</span>
+            <span style={{display:'flex', alignItems:'center', gap:'0.25rem'}}><Users size={14}/> {session.orders.length} orang pesan</span>
           </div>
         )}
       </div>
@@ -670,7 +674,7 @@ export default function App() {
     if (!session) return (
       <div className="empty-state">
         <p className="text-secondary">Belum ada sesi aktif.</p>
-        <button className="btn-primary mt-4" onClick={startSession}>☕ Buka Sesi</button>
+        <button className="btn-primary mt-4" onClick={startSession} style={{display:'flex', alignItems:'center', gap:'0.5rem'}}><PlusCircle size={18} /> Buka Sesi</button>
       </div>
     );
 
@@ -681,20 +685,20 @@ export default function App() {
       return (
         <div className="empty-state fade-in" style={{ padding: '3rem 1rem' }}>
           <div className="glass-panel" style={{ maxWidth: '500px', margin: '0 auto', padding: '2rem', textAlign: 'center' }}>
-            <div style={{ fontSize: '3rem', marginBottom: '1rem' }}>{isForced ? '⚠️' : '🎉'}</div>
+            <div style={{ fontSize: '3rem', marginBottom: '1rem', display:'flex', justifyContent:'center' }}>{isForced ? <AlertTriangle size={48} color={'var(--red)'}/> : <CheckCircle size={48} color={'var(--accent)'}/>}</div>
             <h2 style={{ marginBottom: '0.5rem' }}>{isForced ? 'Sesi Ditutup Paksa' : 'Sesi Selesai!'}</h2>
             <p className="text-secondary" style={{ marginBottom: '1.5rem' }}>
               {isForced
                 ? `Sesi ditutup oleh ${session.forceClosedBy || 'sistem'}.${debtors.length > 0 ? ` ${debtors.join(', ')} tercatat belum bayar.` : ''}`
-                : 'Semua peserta sudah lunas. Terima kasih! ☕'}
+                : 'Semua peserta sudah lunas. Terima kasih! '}
             </p>
             {debtors.length > 0 && (
               <div className="no-order-hint glass-panel" style={{ marginBottom: '1.5rem', textAlign: 'left' }}>
-                💸 Belum bayar: <strong>{debtors.join(', ')}</strong>
+                 Belum bayar: <strong>{debtors.join(', ')}</strong>
               </div>
             )}
-            <button className="btn-primary" style={{ width: '100%' }} onClick={() => { setView('home'); }}>
-              ☕ Buka Sesi Baru
+            <button className="btn-primary" style={{ width: '100%', display:'flex', alignItems:'center', justifyContent:'center', gap:'0.5rem' }} onClick={() => { setView('home'); }}>
+               <PlusCircle size={18} /> Buka Sesi Baru
             </button>
             <button className="btn-secondary" style={{ width: '100%', marginTop: '0.75rem' }} onClick={() => setView('home')}>
               Kembali ke Home
@@ -712,7 +716,7 @@ export default function App() {
           <div className="panel glass-panel">
             <div className="panel-header">
               <div className="timer-row">
-                <h2>🕒 Sesi Terbuka</h2>
+                <h2 style={{display:'flex', alignItems:'center', gap:'0.5rem'}}><Coffee size={24} /> Sesi Terbuka</h2>
                 <div className={`timer-chip ${timeLeft < 60 ? 'urgent' : ''}`}>{formatTime(timeLeft)}</div>
               </div>
               <p className="text-secondary">Halo <strong>{currentUser}</strong>! Pilih kopi yang kamu mau.</p>
@@ -726,7 +730,7 @@ export default function App() {
                 </div>
                 <span className="text-secondary text-sm" style={{ marginTop: '0.25rem' }}>Kamu bisa update pesanan di bawah.</span>
               </div>
-              : <div className="no-order-hint glass-panel">⚠️ Kamu belum pesan! Order sekarang agar masuk undian jadi pembayar.</div>
+              : <div className="no-order-hint glass-panel" style={{display:'flex', alignItems:'center', gap:'0.5rem'}}><Info size={16}/> Kamu belum pesan! Order sekarang agar masuk undian jadi pembayar.</div>
             }
             <form onSubmit={addOrder} className="modern-form" style={{ marginTop: '1.5rem' }}>
               <div className="form-group">
@@ -738,7 +742,7 @@ export default function App() {
                   ))}
                 </select>
               </div>
-              <button id="order-submit" type="submit" className="btn-primary">{myOrder ? '🔄 Update Pesanan' : '+ Tambah Pesanan'}</button>
+              <button id="order-submit" type="submit" className="btn-primary">{myOrder ? ' Update Pesanan' : '+ Tambah Pesanan'}</button>
             </form>
           </div>
 
@@ -770,7 +774,7 @@ export default function App() {
                 style={{ width: '100%', borderColor: session.orders.length === 0 ? 'var(--red)' : '', color: session.orders.length === 0 ? 'var(--red)' : '' }}
                 onClick={closeSessionAndSelectRoles}
               >
-                {session.orders.length === 0 ? 'Batalkan Sesi (Kosong) ❌' : 'Tutup Sesi & Pilih Relawan 🎲'}
+                {session.orders.length === 0 ? 'Batalkan Sesi (Kosong) ' : 'Tutup Sesi & Pilih Relawan '}
               </button>
             </div>
           </div>
@@ -785,17 +789,17 @@ export default function App() {
         <div className="dashboard-centered fade-in">
           <div className="panel glass-panel full-width">
             <div className="panel-header text-center">
-              <h2>🎉 Relawan Terpilih!</h2>
+              <h2> Relawan Terpilih!</h2>
             </div>
             <div className="volunteer-highlights mb-4">
               <div className="highlight-card bg-accent-glow">
-                <span className="badge">👑 PEMBAYAR</span>
+                <span className="badge"> PEMBAYAR</span>
                 <h3>{session.payer}</h3>
                 <span className="text-secondary text-sm">{(store.payerHistory[session.payer] || 0)} kali sebelumnya</span>
               </div>
               {session.companion && (
                 <div className="highlight-card">
-                  <span className="badge">🛡️ PENDAMPING</span>
+                  <span className="badge"> PENDAMPING</span>
                   <h3>{session.companion}</h3>
                 </div>
               )}
@@ -804,7 +808,7 @@ export default function App() {
             {isPayer ? (
               <div style={{ padding: '0 1rem' }}>
                 <h3 className="mb-4" style={{ borderBottom: '1px solid var(--glass-border)', paddingBottom: '0.5rem' }}>
-                  💳 Lengkapi Info Pembayaran
+                   Lengkapi Info Pembayaran
                 </h3>
                 <p className="text-secondary mb-4 text-sm">
                   Kamu terpilih sebagai Pembayar! Isi rekening/nomor tujuan transfer agar semua bisa bayar ke kamu.
@@ -814,9 +818,9 @@ export default function App() {
                     <label>Metode Pembayaran</label>
                     <select id="payment-method" value={paymentMethod} onChange={e => setPaymentMethod(e.target.value)} required>
                       <option value="" disabled>-- Pilih Metode --</option>
-                      <option value="BANK">🏦 Bank Transfer</option>
-                      <option value="GOPAY">🟢 GoPay</option>
-                      <option value="DANA">🔵 DANA</option>
+                      <option value="BANK"> Bank Transfer</option>
+                      <option value="GOPAY"> GoPay</option>
+                      <option value="DANA"> DANA</option>
                     </select>
                   </div>
                   {paymentMethod === 'BANK' && (
@@ -830,7 +834,7 @@ export default function App() {
                     <input id="account-no" type="text" value={accountNo} onChange={e => setAccountNo(e.target.value)} placeholder="Masukkan nomor" required />
                   </div>
                   <button id="confirm-payment-btn" type="submit" className="btn-primary" style={{ gridColumn: '1 / -1' }}>
-                    Konfirmasi & Kirim Notifikasi 📤
+                    Konfirmasi & Kirim Notifikasi 
                   </button>
                 </form>
               </div>
@@ -866,7 +870,7 @@ export default function App() {
     return (
       <div className="role-layout fade-in">
         <div className="role-header payer-header">
-          <span className="role-badge">👑 Kamu Pembayar</span>
+          <span className="role-badge"> Kamu Pembayar</span>
           <h2>Dashboard Pembayar</h2>
           <p className="text-secondary">Rekap semua pesanan dan status pembayaran dari setiap peserta.</p>
         </div>
@@ -874,7 +878,7 @@ export default function App() {
         <div className="dashboard-grid">
           {/* Order Summary */}
           <div className="panel glass-panel">
-            <h3 className="section-title">📦 Rekap Pesanan</h3>
+            <h3 className="section-title"> Rekap Pesanan</h3>
             <div className="stats-box mb-4">
               <div className="stat-row"><span>Total Keseluruhan:</span><strong>{formatRp(totalAmount)}</strong></div>
               <div className="stat-row"><span>Terkumpul:</span><strong className="text-green">{formatRp(paidAmount)}</strong></div>
@@ -895,7 +899,7 @@ export default function App() {
                       <span className="badge-role">Kamu (gratis angkat!)</span>
                     ) : o.isPaid ? (
                       <div style={{ textAlign: 'right' }}>
-                        <span className="badge-paid">✅ LUNAS</span>
+                        <span className="badge-paid"> LUNAS</span>
                         {o.markedByPayer && <p className="text-secondary text-sm" style={{ marginTop: '3px' }}>Cash</p>}
                       </div>
                     ) : (
@@ -911,7 +915,7 @@ export default function App() {
           <div className="panel glass-panel" style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
             {/* Payment Info */}
             <div>
-              <h3 className="section-title">💳 Info Transfer Kamu</h3>
+              <h3 className="section-title"> Info Transfer Kamu</h3>
               <div className="payment-info-card glass-panel">
                 <div className="payment-method-tag">{session.paymentInfo.method}</div>
                 {session.paymentInfo.bankName && <p><span className="text-secondary">Bank:</span> <strong>{session.paymentInfo.bankName}</strong></p>}
@@ -923,7 +927,7 @@ export default function App() {
             {/* Coffee Bought */}
             {!session.coffeeBought ? (
               <div>
-                <h3 className="section-title">☕ Status Pembelian</h3>
+                <h3 className="section-title"> Status Pembelian</h3>
                 <p className="text-secondary text-sm mb-4">Tekan tombol ini setelah kopi sudah dibeli dan dalam perjalanan.</p>
                 <button
                   id="coffee-bought-btn"
@@ -933,15 +937,15 @@ export default function App() {
                     title: 'Konfirmasi Pembelian',
                     message: 'Apakah kamu sudah membeli semua kopi? Semua peserta akan mendapat notifikasi.',
                     onConfirm: confirmBought,
-                    confirmText: '✅ Ya, Kopi Sudah Dibeli!'
+                    confirmText: ' Ya, Kopi Sudah Dibeli!'
                   })}
                 >
-                  ☕ Kopi Sudah Dibeli
+                   Kopi Sudah Dibeli
                 </button>
               </div>
             ) : (
               <div className="success-banner">
-                <span>☕</span>
+                <span></span>
                 <div>
                   <strong>Kopi sudah dibeli!</strong>
                   <p className="text-secondary text-sm">{formatDate(session.coffeeBoughtAt)}</p>
@@ -957,14 +961,14 @@ export default function App() {
                   className="btn-danger"
                   style={{ width: '100%' }}
                   onClick={() => setDialog({
-                    title: '⚠️ Tutup Paksa Sesi',
+                    title: ' Tutup Paksa Sesi',
                     message: `Total ${unpaidCount} orang belum bayar. Nama mereka akan tercatat sebagai hutang di histori.`,
                     onConfirm: forceClose,
                     confirmText: 'Tutup Paksa',
                     danger: true
                   })}
                 >
-                  ⚠️ Tutup Paksa Sesi
+                   Tutup Paksa Sesi
                 </button>
               </div>
             )}
@@ -986,7 +990,7 @@ export default function App() {
     return (
       <div className="role-layout fade-in">
         <div className="role-header companion-header">
-          <span className="role-badge companion">🛡️ Kamu Pendamping</span>
+          <span className="role-badge companion"> Kamu Pendamping</span>
           <h2>Halaman Pendamping</h2>
           <p className="text-secondary">Kamu menemani {session.payer} belanja kopi hari ini.</p>
         </div>
@@ -994,7 +998,7 @@ export default function App() {
         <div className="dashboard-grid">
           {/* All Orders (read-only) */}
           <div className="panel glass-panel">
-            <h3 className="section-title">📦 Semua Pesanan</h3>
+            <h3 className="section-title"> Semua Pesanan</h3>
             <div className="stats-box mb-4">
               <div className="stat-row"><span>Total Semua:</span><strong>{formatRp(totalAmount)}</strong></div>
               <div className="stat-row"><span>Terkumpul:</span><strong className="text-green">{formatRp(paidAmount)}</strong></div>
@@ -1006,7 +1010,7 @@ export default function App() {
                     <span className="font-bold">{o.username} {o.username === session.payer && <span className="you-tag">Pembayar</span>} {o.username === currentUser && <span className="you-tag companion">Kamu</span>}</span>
                     <span className="text-secondary text-sm">{o.item.emoji} {o.item.name} — {formatRp(o.item.price)}</span>
                   </div>
-                  <span className={o.isPaid ? 'badge-paid' : 'badge-unpaid'}>{o.isPaid ? '✅ Lunas' : '⏳ Belum'}</span>
+                  <span className={o.isPaid ? 'badge-paid' : 'badge-unpaid'}>{o.isPaid ? ' Lunas' : ' Belum'}</span>
                 </div>
               ))}
             </div>
@@ -1016,7 +1020,7 @@ export default function App() {
           <div className="panel glass-panel" style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
             {session.paymentInfo && (
               <div>
-                <h3 className="section-title">💳 Info Transfer ke Pembayar</h3>
+                <h3 className="section-title"> Info Transfer ke Pembayar</h3>
                 <div className="payment-info-card glass-panel">
                   <div className="payment-method-tag">{session.paymentInfo.method}</div>
                   {session.paymentInfo.bankName && <p><span className="text-secondary">Bank:</span> <strong>{session.paymentInfo.bankName}</strong></p>}
@@ -1028,23 +1032,23 @@ export default function App() {
 
             {session.coffeeBought && (
               <div className="success-banner">
-                <span>☕</span><strong>Kopi sudah dibeli dan dalam perjalanan!</strong>
+                <span></span><strong>Kopi sudah dibeli dan dalam perjalanan!</strong>
               </div>
             )}
 
             {myOrderC && !myOrderC.isPaid && session.status === 'active' && (
               <div>
-                <h3 className="section-title">✅ Konfirmasi Pembayaranmu</h3>
+                <h3 className="section-title"> Konfirmasi Pembayaranmu</h3>
                 <p className="text-secondary text-sm mb-4">
                   Pesananmu: {myOrderC.item.emoji} {myOrderC.item.name} — <strong>{formatRp(myOrderC.item.price)}</strong>
                 </p>
                 <button id="companion-paid-btn" className="btn-primary" style={{ width: '100%' }} onClick={() => markMyPayment(currentUser)}>
-                  ✅ Sudah Bayar
+                   Sudah Bayar
                 </button>
               </div>
             )}
 
-            {myOrderC?.isPaid && <div className="success-banner"><span>✅</span><strong>Pembayaranmu sudah dikonfirmasi!</strong></div>}
+            {myOrderC?.isPaid && <div className="success-banner"><span></span><strong>Pembayaranmu sudah dikonfirmasi!</strong></div>}
 
             {sessionDone && <button className="btn-secondary" style={{ width: '100%', marginTop: 'auto' }} onClick={finishViewSession}>Kembali ke Home</button>}
           </div>
@@ -1061,7 +1065,7 @@ export default function App() {
     return (
       <div className="role-layout penitip-layout fade-in">
         <div className="role-header penitip-header">
-          <span className="role-badge penitip">📦 Penitip</span>
+          <span className="role-badge penitip"> Penitip</span>
           <h2>Status Pesananmu</h2>
         </div>
 
@@ -1069,7 +1073,7 @@ export default function App() {
           <Stepper steps={stepperSteps} currentStep={step} />
 
           <div className="penitip-card glass-panel">
-            <h3 className="section-title">☕ Pesananmu</h3>
+            <h3 className="section-title"> Pesananmu</h3>
             {myOrder ? (
               <div className="my-order-display">
                 <span className="order-emoji">{myOrder.item.emoji}</span>
@@ -1082,7 +1086,7 @@ export default function App() {
 
             {session.paymentInfo && (
               <div style={{ marginTop: '1.5rem' }}>
-                <h4 className="text-secondary" style={{ marginBottom: '0.75rem' }}>💳 Transfer ke:</h4>
+                <h4 className="text-secondary" style={{ marginBottom: '0.75rem' }}> Transfer ke:</h4>
                 <div className="payment-info-card glass-panel">
                   <div className="payment-method-tag">{session.paymentInfo.method}</div>
                   {session.paymentInfo.bankName && <p><span className="text-secondary">Bank:</span> <strong>{session.paymentInfo.bankName}</strong></p>}
@@ -1095,19 +1099,19 @@ export default function App() {
 
             {session.coffeeBought && (
               <div className="success-banner" style={{ marginTop: '1rem' }}>
-                <span>☕</span><strong>Kopi sudah dibeli! Dalam perjalanan ke kamu.</strong>
+                <span></span><strong>Kopi sudah dibeli! Dalam perjalanan ke kamu.</strong>
               </div>
             )}
 
             {myOrder && !alreadyPaid && step >= 1 && (
               <button id="penitip-paid-btn" className="btn-primary" style={{ width: '100%', marginTop: '1.5rem' }} onClick={() => markMyPayment(currentUser)}>
-                ✅ Sudah Bayar
+                 Sudah Bayar
               </button>
             )}
 
             {alreadyPaid && (
               <div className="success-banner" style={{ marginTop: '1rem' }}>
-                <span>✅</span><strong>Pembayaran dikonfirmasi! Terima kasih. ☕</strong>
+                <span></span><strong>Pembayaran dikonfirmasi! Terima kasih. </strong>
               </div>
             )}
 
@@ -1122,7 +1126,7 @@ export default function App() {
   const renderGuestPage = () => (
     <div className="role-layout fade-in">
       <div className="role-header">
-        <span className="role-badge">👀 Penonton</span>
+        <span className="role-badge"> Penonton</span>
         <h2>Kamu tidak ikut di sesi ini</h2>
         <p className="text-secondary">Kamu tidak menitip pesanan, jadi kamu tidak masuk pool relawan.</p>
       </div>
@@ -1147,13 +1151,13 @@ export default function App() {
           {session && (
             <button className={`btn-nav ${view === 'session' ? 'active' : ''}`} onClick={() => setView('session')}>
               {sessionDone
-                ? (session.status === 'completed' ? '✅ Sesi Selesai' : '⚠️ Sesi Ditutup')
+                ? (session.status === 'completed' ? ' Sesi Selesai' : ' Sesi Ditutup')
                 : session.status === 'open'
-                  ? `⏳ ${formatTime(timeLeft)}`
-                  : myRole === 'payer' ? '👑 Halaman Saya' : myRole === 'companion' ? '🛡️ Halaman Saya' : '📦 Pesanan Saya'}
+                  ? ` ${formatTime(timeLeft)}`
+                  : myRole === 'payer' ? ' Halaman Saya' : myRole === 'companion' ? ' Halaman Saya' : ' Pesanan Saya'}
             </button>
           )}
-          <button className="btn-nav" onClick={() => setShowAdminPin(true)}>⚙️ Menu</button>
+          <button className="btn-nav" onClick={() => setShowAdminPin(true)}> Menu</button>
           <NotifBell notifications={session?.notifications || []} username={currentUser} onMarkRead={markNotifsRead} />
           <UserProfile username={currentUser} onShowHistory={() => setShowHistory(true)} onLogout={() => setDialog({ title: 'Ingin Keluar?', message: 'Apakah kamu yakin ingin logout dan mengganti nama pengguna?', onConfirm: logout, onCancel: () => setDialog(null), danger: true, confirmText: 'Keluar' })} />
         </div>

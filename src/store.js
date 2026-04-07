@@ -129,7 +129,7 @@ async function fetchFullState() {
       orders: sessionOrders.map(o => ({
         id: o.id,
         username: o.username,
-        item: { id: o.coffee_id, name: o.coffee_name, price: o.coffee_price, emoji: o.coffee_emoji || '☕' },
+        item: { id: o.coffee_id, name: o.coffee_name, price: o.coffee_price, emoji: o.coffee_emoji || '' },
         isPaid: o.is_paid,
         paidAt: null, // simplification
         markedByPayer: o.marked_by_payer

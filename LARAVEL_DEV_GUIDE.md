@@ -1,4 +1,4 @@
-# 📖 Panduan NgopiGakApp untuk Laravel Developer ☕
+#  Panduan NgopiGakApp untuk Laravel Developer 
 
 Selamat datang! Jika Anda terbiasa dengan **PHP Laravel**, arsitektur berbasis *Controller*, *Eloquent ORM*, dan *Blade*, berpindah ke aplikasi *Single Page Application* (React) + *BaaS* (Supabase) mungkin terasa berbeda di awal.
 
@@ -6,7 +6,7 @@ Dokumen ini ditulis khusus agar Anda bisa menerapkan *"Mental Model"* Laravel An
 
 ---
 
-## 🏗️ 1. Arsitektur: Laravel vs React + Supabase
+##  1. Arsitektur: Laravel vs React + Supabase
 
 Kunci utama perbedaan filosofisnya adalah: **Pergeseran Beban Backend**.
 
@@ -28,7 +28,7 @@ Kunci utama perbedaan filosofisnya adalah: **Pergeseran Beban Backend**.
 
 ---
 
-## 💾 2. Pengganti Eloquent ORM: Supabase JS
+##  2. Pengganti Eloquent ORM: Supabase JS
 
 Di Laravel, jika Anda ingin mengambil semua sesi yang statusnya '*open*', Anda akan menulis code seperti ini:
 ```php
@@ -48,7 +48,7 @@ const { data, error } = await supabase
 
 ---
 
-## ⚡ 3. Livewire vs State React (`App.jsx`)
+##  3. Livewire vs State React (`App.jsx`)
 
 Bayangkan `App.jsx` seperti satu komponen *Livewire* berukuran besar yang membungkus keseluruhan halaman web.
 
@@ -69,7 +69,7 @@ Di `App.jsx` pada baris sekitar `1067`, Anda akan melihat ini:
 
 ---
 
-## 📡 4. Laravel Broadcast (Pusher) vs Supabase Realtime
+##  4. Laravel Broadcast (Pusher) vs Supabase Realtime
 
 Sistem ini bisa membuat HP User ke-2 otomatis berubah melihat "Sesi Aktif" saat User ke-1 memencet "Buat Sesi", bahkan tanpa User ke-2 menyentuh layarnya sedikitpun.
 
@@ -97,7 +97,7 @@ Ketika Supabase mendeteksi perubahan, fungsi `fetchFullState()` menarik ulang da
 
 ---
 
-## 🔮 Ringkasan Alur Kerja
+##  Ringkasan Alur Kerja
 
 Membayangkan alur sistem NgopiGak yang berjalan sinkron:
 
@@ -109,4 +109,4 @@ Membayangkan alur sistem NgopiGak yang berjalan sinkron:
 6. **Re-Fetch State:** Fungsi `fetchFullState()` yang mirip `Resource API` merangkum semua tabel (*sessions*, *orders*, dll) seutuhnya.
 7. **Reaktivitas UI:** Menyuntik memori `setStore(...)` di `App.jsx`. React dengan kepintarannya me-refresh antarmuka dengan membedakan *HTML DOM* lama vs baru. 
 
-Semoga panduan analogi ini merubah persepsi Anda tentang React + Supabase! Frameworknya mungkin asing pada awalnya, tapi tujuannya sama: Memanipulasi "state" (status terkini), lalu merendernya ke pengguna. 🚀
+Semoga panduan analogi ini merubah persepsi Anda tentang React + Supabase! Frameworknya mungkin asing pada awalnya, tapi tujuannya sama: Memanipulasi "state" (status terkini), lalu merendernya ke pengguna. 

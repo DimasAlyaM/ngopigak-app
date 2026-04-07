@@ -78,7 +78,7 @@ code = code.replace(
     s.session.orders.forEach(o => {
       if (o.username !== payer) {
         api.notify(s.session.id, o.username, 'payment',
-          \`💳 Info Transfer: \${paymentMethod}\${paymentMethod === 'BANK' ? \` (\${bankName})\` : ''} – \${accountNo} a.n. \${payer}. Total kamu: Rp \${o.item.price}\`
+          \` Info Transfer: \${paymentMethod}\${paymentMethod === 'BANK' ? \` (\${bankName})\` : ''} – \${accountNo} a.n. \${payer}. Total kamu: Rp \${o.item.price}\`
         );
       }
     });
