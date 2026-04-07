@@ -793,6 +793,7 @@ export default function App() {
   const goToHistory = (filter = 'all') => {
     setHistoryFilter(filter);
     setView('history');
+    setDialog(null); // Close any other dialogs
   };
 
   // ─── RENDER HELPERS ────────────────────────────────────────────────────────

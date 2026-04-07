@@ -1,34 +1,47 @@
-# Solusi Improvement Keluhan Aplikasi                                                                                                                                                                                                                      ,
+# Dokumentasi Perbaikan Keluhan NgopiGakApp
 
-Berikut adalah rekomendasi solusi untuk menangani 4 poin keluhan yang disampaikan:
+Dokumen ini berisi detail perbaikan yang telah diterapkan untuk mengatasi 4 poin keluhan Anda pada tampilan mobile.
 
-### 1. Masalah Sesi "Abadi" (Lifecycle Management)
-**Masalah:** Sesi hanya selesai jika semua ditandai lunas secara manual, menyebabkan sesi menggantung jika ada yang lupa.
+## 1. Masalah PIN & Alert Login (PENTING)
+**Keluhan:** Alert "Pin kamu telah didaftarkan" muncul setiap login karena PIN tidak tersimpan.
+**Solusi:** Kode telah diperbaiki untuk memverifikasi PIN ke tabel `users`. 
+**Tindakan Anda:** Anda **WAJIB** menjalankan SQL ini di Supabase SQL Editor:
+```sql
+CREATE TABLE IF NOT EXISTS public.users (
+    username TEXT PRIMARY KEY,
+    pin TEXT NOT NULL,
+    created_at TIMESTAMPTZ DEFAULT NOW()
+);
+-- RLS (Opsional agar aman)
+ALTER TABLE public.users ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "Public Access" ON public.users FOR SELECT USING (true);
+CREATE POLICY "Public Insert" ON public.users FOR INSERT WITH CHECK (true);
+CREATE POLICY "Public Update" ON public.users FOR UPDATE USING (true);
+```
+
+## 2. UI Bertumpuk (Stacking Issues)
+**Keluhan:** Menu notifikasi, profil, dan histori menumpuk jadi satu.
 **Solusi:**
-- **Tombol "Selesaikan Sesi" (Manual Override):** Menambahkan tombol di sisi Pembayar untuk menyelesaikan sesi secara paksa meskipun masih ada "hutang". Ini akan mengarsipkan sesi ke history dan mencatat siapa saja yang belum lunas.
-- **Tombol "Tagih Semua" (Reminder):** Fitur untuk mengirim notifikasi ulang ke semua anggota yang statusnya belum lunas.
-- **Auto-Archive:** Jika sesi sudah dalam status `active` lebih dari 12 jam, sistem otomatis memindahkannya ke history sebagai "Selesai (dengan Debtors)".
+- Menambahkan logika penutupan otomatis menu dropdown saat panel histori atau profil dibuka.
+- Memperbaiki `z-index` pada CSS agar urutan lapisan (layer) menu selalu berada di paling atas.
 
-### 2. Histori Order Menumpuk di Mobile
-**Masalah:** Panel history tidak bisa di-scroll di HP dan tidak bisa ditutup tanpa refresh.
+## 3. Kartu Histori & Dashboard Hutang
+**Keluhan:** Kartu terlalu panjang, susah di-scroll, dan angka "Rp 0" mengganggu.
 **Solusi:**
-- **CSS Fix (Overflow Control):** Memperbaiki properti `max-height: 85vh` dan `overflow-y: auto` pada kontainer modal history agar konten tetap berada di dalam frame layar dan bisa di-scroll.
-- **Floating Close Button:** Menambahkan tombol "Tutup" (X) yang tetap (fixed) di pojok kanan atas modal agar selalu bisa diakses meskipun list history sangat panjang.
-- **Pagination/Limit:** Membatasi jumlah history yang dimuat awal (misal 5 sesi terakhir) dengan tombol "Load More".
+- **Relokasi:** Angka "Total Hutang Saya" (Dashboard box) dipindahkan. Sekarang **hanya muncul** jika Anda mengklik tab **"Hutang Saya"**.
+- **Tab Semua Sesi:** Sekarang bersih, hanya menampilkan daftar transaksi agar scrolling lebih ringan di HP.
+- **Scroll Fix:** Menambahkan `overflow-y: auto` pada kontainer histori.
 
-### 3. Notifikasi Terpotong di Mobile
-**Masalah:** UI notifikasi tidak responsif pada layar kecil/HP.
+## 4. Ganti Nama Profil (Deep Sync)
+**Keluhan:** Sudah ganti ke "midz" tapi saat login masih "Aa".
 **Solusi:**
-- **Responsive Dropdown:** Menyesuaikan lebar dropdown notifikasi pada media query mobile (misal `width: 90vw` dan `left: 5vw`) agar selalu berada di tengah layar.
-- **Text Wrapping:** Memastikan teks pesan di dalam notifikasi menggunakan `word-break: break-word` dan tidak menggunakan `white-space: nowrap`.
-
-### 4. Validasi Pembayaran (Bukti Bayar)
-**Masalah:** Member bisa asal tekan "Sudah Bayar" tanpa bukti nyata.
-**Solusi:**
-- **Upload Bukti Bayar:** Menambahkan input file (gambar) saat member menekan tombol "Sudah Bayar". Member wajib/disarankan melampirkan screenshot transfer.
-- **Status Review:** Di sisi Pembayar, item akan berubah status menjadi "Menunggu Verifikasi" dengan tombol "Lihat Bukti". Pembayar baru kemudian menekan "Tandai Lunas" setelah melihat bukti tersebut.
-- **Database Update:** Menambahkan kolom `payment_proof` (TEXT/URL) pada tabel `orders` untuk menyimpan referensi gambar tersebut.
+- **Local Storage Sync:** Memastikan `localStorage` diperbarui seketika saat tombol simpan ditekan.
+- **Deep Rename:** Saat nama diubah, sistem akan mencari dan mengganti nama lama Anda di:
+    - Tabel `users`
+    - Tabel `orders` (Riwayat pesanan)
+    - Tabel `sessions` (Status pembayar/pembantu)
+    - Tabel `payer_history`
 
 ---
-
-*File ini dibuat sebagai referensi untuk implementasi perbaikan pada kode program.*
+**Status:** Kode telah di-deploy ke [ngopigak.vercel.app](https://ngopigak.vercel.app).
+**Catatan:** Harap lakukan *Hard Refresh* (Clear Cache) pada browser HP Anda untuk melihat perubahan CSS terbaru.

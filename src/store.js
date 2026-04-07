@@ -345,8 +345,12 @@ export const api = {
 
   updateProfile: async (oldUsername, newUsername) => {
     // This is a "Deep Rename" operation.
-    // 1. Update the base user record
-    await supabase.from('users').update({ username: newUsername }).eq('username', oldUsername);
+    // 1. Update the base user record (Independent try-catch as it might error if newUsername exists)
+    try {
+      await supabase.from('users').update({ username: newUsername }).eq('username', oldUsername);
+    } catch (e) {
+      console.warn("Possible duplicate username when updating users table, skipping base rename.");
+    }
     
     // 2. Update payer history
     await supabase.from('payer_history').update({ username: newUsername }).eq('username', oldUsername);
@@ -359,16 +363,28 @@ export const api = {
     await supabase.from('sessions').update({ payer: newUsername }).eq('payer', oldUsername);
     await supabase.from('sessions').update({ companion: newUsername }).eq('companion', oldUsername);
 
-    // 5. Update debtors array in sessions
-    // This is more complex because it's an array. Let's fetch sessions where they are a debtor.
-    const { data: debSessions } = await supabase.from('sessions')
-      .select('id, debtors')
-      .filter('debtors', 'cs', `{"${oldUsername}"}`);
+    // 5. Update debtors array & orders JSONB array in sessions
+    // Using a simpler fetch + JS filter to avoid 406 errors with complex .or query on JSONB
+    const { data: allSessions } = await supabase.from('sessions').select('id, debtors, orders');
     
-    if (debSessions) {
-      for (const s of debSessions) {
-        const newDebtors = s.debtors.map(d => (d === oldUsername ? newUsername : d));
-        await supabase.from('sessions').update({ debtors: newDebtors }).eq('id', s.id);
+    if (allSessions) {
+      for (const s of allSessions) {
+        let changed = false;
+        const updates = {};
+
+        if (s.debtors?.includes(oldUsername)) {
+          updates.debtors = s.debtors.map(d => (d === oldUsername ? newUsername : d));
+          changed = true;
+        }
+
+        if (s.orders?.some(o => o.username === oldUsername)) {
+          updates.orders = s.orders.map(o => (o.username === oldUsername ? { ...o, username: newUsername } : o));
+          changed = true;
+        }
+
+        if (changed) {
+          await supabase.from('sessions').update(updates).eq('id', s.id);
+        }
       }
     }
 
