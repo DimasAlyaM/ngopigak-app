@@ -4,6 +4,7 @@ import {
   Bell, Info, CreditCard, Coffee, Clock, CheckCircle, AlertTriangle, LogOut, ClipboardList,
   Lock, Unlock, LogIn, History, X, Trash2, PlusCircle, Shield, Users
 } from 'lucide-react';
+import confetti from 'canvas-confetti';
 import './App.css';
 
 // ─── UTILITY ─────────────────────────────────────────────────────────────────
@@ -395,6 +396,17 @@ export default function App() {
     return () => clearInterval(timerRef.current);
   }, [store.session?.status, store.session?.id]);
 
+  // Confetti celebration for 'completed' session
+  useEffect(() => {
+    if (view === 'session' && store.session?.status === 'completed') {
+      confetti({
+        particleCount: 150,
+        spread: 70,
+        origin: { y: 0.6 }
+      });
+    }
+  }, [store.session?.status, view]);
+
   // Current role of the logged-in user
   const session = store.session;
   const myRole = (() => {
@@ -685,8 +697,8 @@ export default function App() {
       return (
         <div className="empty-state fade-in" style={{ padding: '3rem 1rem' }}>
           <div className="glass-panel" style={{ maxWidth: '500px', margin: '0 auto', padding: '2rem', textAlign: 'center' }}>
-            <div style={{ fontSize: '3rem', marginBottom: '1rem', display:'flex', justifyContent:'center' }}>{isForced ? <AlertTriangle size={48} color={'var(--red)'}/> : <CheckCircle size={48} color={'var(--accent)'}/>}</div>
-            <h2 style={{ marginBottom: '0.5rem' }}>{isForced ? 'Sesi Ditutup Paksa' : 'Sesi Selesai!'}</h2>
+            <div style={{ fontSize: '3rem', marginBottom: '1rem', display:'flex', justifyContent:'center' }}>{isForced ? <AlertTriangle size={48} color={'var(--red)'}/> : <Coffee size={48} color={'var(--accent)'}/>}</div>
+            <h2 style={{ marginBottom: '0.5rem' }}>{isForced ? 'Sesi Ditutup Paksa' : 'Selamat Ngopi Ndan!'}</h2>
             <p className="text-secondary" style={{ marginBottom: '1.5rem' }}>
               {isForced
                 ? `Sesi ditutup oleh ${session.forceClosedBy || 'sistem'}.${debtors.length > 0 ? ` ${debtors.join(', ')} tercatat belum bayar.` : ''}`

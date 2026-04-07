@@ -82,7 +82,7 @@ async function fetchFullState() {
   // Rebuild Active Session (assuming single active or just latest)
   // Auto-expire open sessions older than 10 minutes (600,000 ms)
   const SESSION_TIMEOUT_MS = 10 * 60 * 1000;
-  const rawActive = (sessions || []).find(s => s.status !== 'completed' && s.status !== 'force-closed');
+  const rawActive = (sessions || []).sort((a, b) => new Date(b.started_at) - new Date(a.started_at))[0];
   
   // If session is 'open' and older than 10 minutes, force-close it
   if (rawActive && rawActive.status === 'open' && rawActive.started_at) {
