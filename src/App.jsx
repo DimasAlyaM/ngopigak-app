@@ -528,24 +528,27 @@ export default function App() {
     // Simulate current state + the one we just updated
     const allOthersPaid = others.every(o => o.isPaid || o.id === newlyPaidOrderId);
     if (allOthersPaid) {
-      await api.updateSession(s.session.id, { status: 'completed' });
-      // Build history payload directly from local state (avoid stale loadStore)
-      const historyPayload = {
-        ...s.session,
-        status: 'completed',
-        orders: s.session.orders.map(o => ({
-          ...o,
-          isPaid: o.id === newlyPaidOrderId ? true : o.isPaid
-        }))
-      };
-      await api.saveHistory(s.session.id, historyPayload);
-      s.session.orders.forEach(o => {
-        api.notify(s.session.id, o.username, 'done', ' Sesi selesai! Semua sudah bayar. Makasih! ');
-      });
-      setTimeout(() => {
-        alert('Selamat Ngopi Ndan!');
-        setView('home');
-      }, 300);
+      alert('Selamat Ngopi Ndan!');
+      setView('home');
+      
+      try {
+        await api.updateSession(s.session.id, { status: 'completed' });
+        // Build history payload directly from local state (avoid stale loadStore)
+        const historyPayload = {
+          ...s.session,
+          status: 'completed',
+          orders: s.session.orders.map(o => ({
+            ...o,
+            isPaid: o.id === newlyPaidOrderId ? true : o.isPaid
+          }))
+        };
+        await api.saveHistory(s.session.id, historyPayload);
+        s.session.orders.forEach(o => {
+          api.notify(s.session.id, o.username, 'done', ' Sesi selesai! Semua sudah bayar. Makasih! ');
+        });
+      } catch (e) {
+        console.error("Error sealing session history", e);
+      }
     }
   }
 
