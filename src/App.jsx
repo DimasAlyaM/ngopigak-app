@@ -326,8 +326,8 @@ function AdminPanel({ menu, users, history, onSaveMenu, onResetPin, onClose }) {
 function ProfileModal({ username, onSave, onClose }) {
   const [name, setName] = useState(username);
   return (
-    <div className="dialog-overlay">
-      <div className="dialog-box glass-panel" style={{ maxWidth: '400px' }}>
+    <div className="dialog-overlay" onClick={onClose}>
+      <div className="dialog-box glass-panel" style={{ maxWidth: '400px' }} onClick={e => e.stopPropagation()}>
         <h3 className="mb-4">Edit Profil</h3>
         <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '1.5rem' }}>
           <UserAvatar username={username} size={80} />
@@ -337,9 +337,9 @@ function ProfileModal({ username, onSave, onClose }) {
           <label>Nama Tampilan</label>
           <input type="text" value={name} onChange={e => setName(e.target.value)} placeholder="Masukkan nama baru" />
         </div>
-        <div className="hero-actions">
-          <button className="btn-primary" onClick={startSession}>🚀 BUKA SESI NGOPI</button>
-          <button className="btn-secondary" onClick={() => goToHistory('all')}>📜 LIHAT HISTORI</button>
+        <div className="dialog-actions">
+          <button className="btn-secondary" onClick={onClose}>Batal</button>
+          <button className="btn-primary" onClick={() => onSave(username, name)}>Simpan Perubahan</button>
         </div>
       </div>
     </div>
@@ -398,12 +398,12 @@ function HistoryView({ history, currentUser, filter, setFilter, onClose }) {
                       <span className="history-date">{formatDate(s.startedAt)}</span>
                       <span className="text-xs opacity-70">Pembayar: <strong>{s.payer}</strong></span>
                     </div>
-                    <div className="flex-col text-right">
+                    <div className="badge-status-group">
                       <span className={`badge-status-new ${s.status === 'completed' ? 'lunas' : 'hutang'}`}>
                         {s.status === 'completed' ? 'LUNAS' : 'HUTANG'}
                       </span>
                       {myOrder && (
-                        <span className={`text-xs mt-1 font-bold ${isDebtor ? 'text-red' : 'text-green'}`}>
+                        <span className={`text-xs font-bold ${isDebtor ? 'text-red' : 'text-green'}`}>
                           {isDebtor ? `Hutang ${formatRp(myOrder.item.price)}` : 'Selesai'}
                         </span>
                       )}
@@ -592,6 +592,8 @@ export default function App() {
     try {
       const res = await api.login(name, pin);
       if (res.success) {
+        // Only show registration message if it's actually the very first setup 
+        // to avoid annoying repetitive alerts.
         if (res.isNew) {
           alert(`Selamat datang ${name}! PIN kamu telah didaftarkan.`);
         }

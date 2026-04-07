@@ -296,8 +296,19 @@ export const api = {
 
   // Auth & Profile
   login: async (username, pin) => {
-    // Check if user exists
-    const existing = memoryStore.users.find(u => u.username.toLowerCase() === username.toLowerCase());
+    // 1. Try to find in memory first (fastest)
+    let existing = memoryStore.users.find(u => u.username.toLowerCase() === username.toLowerCase());
+    
+    // 2. If not in memory (could be the first load or race condition), check the DB directly
+    if (!existing) {
+      const { data } = await supabase.from('users').select('*').eq('username', username).single();
+      if (data) {
+        existing = { username: data.username, pin: data.pin };
+        // Sync local memory while we're at it
+        memoryStore.users.push(existing);
+      }
+    }
+
     if (!existing) {
       // New user or Legacy claim: Register with this PIN
       await supabase.from('users').insert({ username, pin });
