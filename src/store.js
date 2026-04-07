@@ -80,7 +80,30 @@ async function fetchFullState() {
   memoryStore.users = Array.from(userSet);
 
   // Rebuild Active Session (assuming single active or just latest)
-  const activeSessionRow = (sessions || []).find(s => s.status !== 'completed' && s.status !== 'force-closed');
+  // Auto-expire open sessions older than 10 minutes (600,000 ms)
+  const SESSION_TIMEOUT_MS = 10 * 60 * 1000;
+  const rawActive = (sessions || []).find(s => s.status !== 'completed' && s.status !== 'force-closed');
+  
+  // If session is 'open' and older than 10 minutes, force-close it
+  if (rawActive && rawActive.status === 'open' && rawActive.started_at) {
+    const elapsed = Date.now() - new Date(rawActive.started_at).getTime();
+    if (elapsed > SESSION_TIMEOUT_MS) {
+      // Fire-and-forget: close the stale session
+      supabase.from('sessions').update({
+        status: 'force-closed',
+        force_closed_by: 'System (Auto-Expire)',
+        closed_at: new Date().toISOString()
+      }).eq('id', rawActive.id).then(() => {
+        // Re-fetch after closing
+        fetchFullState();
+      });
+      memoryStore.session = null;
+      notifyLocalUpdate();
+      return; // early exit; next fetch will have correct state
+    }
+  }
+
+  const activeSessionRow = rawActive;
   
   if (activeSessionRow) {
     const sessionOrders = (orders || []).filter(o => o.session_id === activeSessionRow.id);

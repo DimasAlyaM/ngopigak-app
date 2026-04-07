@@ -303,7 +303,15 @@ export default function App() {
   const closeSessionAndSelectRoles = useCallback(async () => {
     const s = loadStore();
     if (!s.session || s.session.status !== 'open') return;
-    if (s.session.orders.length === 0) return;
+    
+    if (s.session.orders.length === 0) {
+      await api.updateSession(s.session.id, {
+        status: 'force-closed',
+        forceClosedBy: 'System (Timeout)',
+        closedAt: new Date().toISOString()
+      });
+      return;
+    }
 
     const participants = [...new Set(s.session.orders.map(o => o.username))];
     const { payer, companion } = selectRoles(participants, s.payerHistory);
@@ -478,8 +486,16 @@ export default function App() {
     const allOthersPaid = others.every(o => o.isPaid || o.id === newlyPaidOrderId);
     if (allOthersPaid) {
       await api.updateSession(s.session.id, { status: 'completed' });
-      const full = loadStore().session;
-      await api.saveHistory(s.session.id, full);
+      // Build history payload directly from local state (avoid stale loadStore)
+      const historyPayload = {
+        ...s.session,
+        status: 'completed',
+        orders: s.session.orders.map(o => ({
+          ...o,
+          isPaid: o.id === newlyPaidOrderId ? true : o.isPaid
+        }))
+      };
+      await api.saveHistory(s.session.id, historyPayload);
       s.session.orders.forEach(o => {
         api.notify(s.session.id, o.username, 'done', '🎉 Sesi selesai! Semua sudah bayar. Makasih! ☕');
       });
@@ -492,7 +508,7 @@ export default function App() {
     const debtors = s.session.orders.filter(o => !o.isPaid && o.username !== s.session.payer).map(o => o.username);
     
     await api.updateSession(s.session.id, { status: 'force-closed', forceClosedBy: currentUser, debtors });
-    const full = loadStore().session;
+    const full = { ...loadStore().session, status: 'force-closed', forceClosedBy: currentUser, debtors };
     await api.saveHistory(s.session.id, full);
 
     if (debtors.length > 0) {
@@ -623,12 +639,43 @@ export default function App() {
 
   // ─── VIEW: SESSION ──────────────────────────────────────────────────────────
   const renderSession = () => {
+    // No session at all
     if (!session) return (
       <div className="empty-state">
         <p className="text-secondary">Belum ada sesi aktif.</p>
         <button className="btn-primary mt-4" onClick={startSession}>☕ Buka Sesi</button>
       </div>
     );
+
+    // SESSION SELESAI — tampilkan layar ringkasan, bukan blank/stuck
+    if (session.status === 'completed' || session.status === 'force-closed') {
+      const isForced = session.status === 'force-closed';
+      const debtors = session.debtors || [];
+      return (
+        <div className="empty-state fade-in" style={{ padding: '3rem 1rem' }}>
+          <div className="glass-panel" style={{ maxWidth: '500px', margin: '0 auto', padding: '2rem', textAlign: 'center' }}>
+            <div style={{ fontSize: '3rem', marginBottom: '1rem' }}>{isForced ? '⚠️' : '🎉'}</div>
+            <h2 style={{ marginBottom: '0.5rem' }}>{isForced ? 'Sesi Ditutup Paksa' : 'Sesi Selesai!'}</h2>
+            <p className="text-secondary" style={{ marginBottom: '1.5rem' }}>
+              {isForced
+                ? `Sesi ditutup oleh ${session.forceClosedBy || 'sistem'}.${debtors.length > 0 ? ` ${debtors.join(', ')} tercatat belum bayar.` : ''}`
+                : 'Semua peserta sudah lunas. Terima kasih! ☕'}
+            </p>
+            {debtors.length > 0 && (
+              <div className="no-order-hint glass-panel" style={{ marginBottom: '1.5rem', textAlign: 'left' }}>
+                💸 Belum bayar: <strong>{debtors.join(', ')}</strong>
+              </div>
+            )}
+            <button className="btn-primary" style={{ width: '100%' }} onClick={() => { setView('home'); }}>
+              ☕ Buka Sesi Baru
+            </button>
+            <button className="btn-secondary" style={{ width: '100%', marginTop: '0.75rem' }} onClick={() => setView('home')}>
+              Kembali ke Home
+            </button>
+          </div>
+        </div>
+      );
+    }
 
     // PHASE: Open — order collection
     if (session.status === 'open') {
@@ -693,11 +740,10 @@ export default function App() {
               <button
                 id="close-session-btn"
                 className="btn-secondary"
-                style={{ width: '100%' }}
+                style={{ width: '100%', borderColor: session.orders.length === 0 ? 'var(--red)' : '', color: session.orders.length === 0 ? 'var(--red)' : '' }}
                 onClick={closeSessionAndSelectRoles}
-                disabled={session.orders.length === 0}
               >
-                Tutup Sesi & Pilih Relawan 🎲
+                {session.orders.length === 0 ? 'Batalkan Sesi (Kosong) ❌' : 'Tutup Sesi & Pilih Relawan 🎲'}
               </button>
             </div>
           </div>
@@ -1071,9 +1117,13 @@ export default function App() {
           NgopiGak<span style={{ opacity: 0.5 }}>App</span>
         </div>
         <div className="nav-links">
-          {session && !sessionDone && (
+          {session && (
             <button className={`btn-nav ${view === 'session' ? 'active' : ''}`} onClick={() => setView('session')}>
-              {session.status === 'open' ? `⏳ ${formatTime(timeLeft)}` : myRole === 'payer' ? '👑 Halaman Saya' : myRole === 'companion' ? '🛡️ Halaman Saya' : '📦 Pesanan Saya'}
+              {sessionDone
+                ? (session.status === 'completed' ? '✅ Sesi Selesai' : '⚠️ Sesi Ditutup')
+                : session.status === 'open'
+                  ? `⏳ ${formatTime(timeLeft)}`
+                  : myRole === 'payer' ? '👑 Halaman Saya' : myRole === 'companion' ? '🛡️ Halaman Saya' : '📦 Pesanan Saya'}
             </button>
           )}
           <button className="btn-nav" onClick={() => setShowAdminPin(true)}>⚙️ Menu</button>
