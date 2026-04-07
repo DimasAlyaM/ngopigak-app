@@ -13,7 +13,7 @@ let memoryStore = {
   history: [],
   payerHistory: {},
   menu: [],
-  users: []
+  users: [] // will store { username, pin } objects
 };
 
 export function loadStore() {
@@ -47,14 +47,16 @@ async function fetchFullState() {
     { data: notifications, error: notifErr },
     { data: menu, error: menuErr },
     { data: payers, error: payersErr },
-    { data: historic, error: historicErr }
+    { data: historic, error: historicErr },
+    { data: users, error: usersErr }
   ] = await Promise.all([
     supabase.from('sessions').select('*'),
     supabase.from('orders').select('*'),
     supabase.from('notifications').select('*'),
     supabase.from('menu_items').select('*'),
     supabase.from('payer_history').select('*'),
-    supabase.from('historic_sessions').select('*')
+    supabase.from('historic_sessions').select('*'),
+    supabase.from('users').select('*')
   ]);
 
   if (sessionsErr) console.error("Supabase Error (Sessions):", sessionsErr);
@@ -74,32 +76,57 @@ async function fetchFullState() {
     memoryStore.payerHistory[p.username] = p.pay_count;
   });
 
-  // Rebuild Users (extract from payers + orders)
+  // Rebuild Users from dedicated table
+  memoryStore.users = (users || []).map(u => ({
+    username: u.username,
+    pin: u.pin
+  }));
+  
+  // Also track names for quick-selection (extract from history if needed)
   const userSet = new Set((payers || []).map(p => p.username));
   (orders || []).forEach(o => userSet.add(o.username));
-  memoryStore.users = Array.from(userSet);
+  (users || []).forEach(u => userSet.add(u.username));
+  // memoryStore.userNames = Array.from(userSet); // simplified: App.jsx uses memoryStore.users usually
 
-  // Rebuild Active Session (assuming single active or just latest)
-  // Auto-expire open sessions older than 10 minutes (600,000 ms)
-  const SESSION_TIMEOUT_MS = 10 * 60 * 1000;
+
+  // If session is 'open' and older than 2 hours, force-close it
+  const SESSION_TIMEOUT_MS = 2 * 60 * 60 * 1000;
   const rawActive = (sessions || []).sort((a, b) => new Date(b.started_at) - new Date(a.started_at))[0];
   
-  // If session is 'open' and older than 10 minutes, force-close it
-  if (rawActive && rawActive.status === 'open' && rawActive.started_at) {
+  if (rawActive && rawActive.status !== 'completed' && rawActive.status !== 'force-closed' && rawActive.started_at) {
     const elapsed = Date.now() - new Date(rawActive.started_at).getTime();
     if (elapsed > SESSION_TIMEOUT_MS) {
-      // Fire-and-forget: close the stale session
+      // Calculate debtors before closing
+      const sessionOrders = (orders || []).filter(o => o.session_id === rawActive.id);
+      const debtors = sessionOrders.filter(o => !o.is_paid && o.username !== rawActive.payer).map(o => o.username);
+
       supabase.from('sessions').update({
         status: 'force-closed',
         force_closed_by: 'System (Auto-Expire)',
-        closed_at: new Date().toISOString()
-      }).eq('id', rawActive.id).then(() => {
-        // Re-fetch after closing
+        closed_at: new Date().toISOString(),
+        debtors: debtors
+      }).eq('id', rawActive.id).then(async () => {
+        // Build and save history too
+        const fullSession = {
+           id: rawActive.id,
+           status: 'force-closed',
+           startedBy: rawActive.started_by,
+           startedAt: rawActive.started_at,
+           closedAt: new Date().toISOString(),
+           payer: rawActive.payer,
+           debtors: debtors,
+           orders: sessionOrders.map(o => ({
+             username: o.username,
+             isPaid: o.is_paid,
+             item: { name: o.coffee_name, price: o.coffee_price }
+           }))
+        };
+        await supabase.from('historic_sessions').insert({ id: rawActive.id, data: fullSession });
         fetchFullState();
       });
       memoryStore.session = null;
       notifyLocalUpdate();
-      return; // early exit; next fetch will have correct state
+      return; 
     }
   }
 
@@ -131,8 +158,9 @@ async function fetchFullState() {
         username: o.username,
         item: { id: o.coffee_id, name: o.coffee_name, price: o.coffee_price, emoji: o.coffee_emoji || '' },
         isPaid: o.is_paid,
-        paidAt: null, // simplification
-        markedByPayer: o.marked_by_payer
+        paidAt: o.paid_at, 
+        markedByPayer: o.marked_by_payer,
+        paymentProof: o.payment_proof
       })),
       notifications: sessionNotifs.map(n => ({
         id: n.id,
@@ -213,7 +241,14 @@ export const api = {
   markOrderPaid: async (orderId, markedByPayer) => {
     await supabase.from('orders').update({
       is_paid: true,
-      marked_by_payer: markedByPayer ? true : false
+      marked_by_payer: markedByPayer ? true : false,
+      paid_at: new Date().toISOString()
+    }).eq('id', orderId);
+  },
+
+  uploadProof: async (orderId, proofUrl) => {
+    await supabase.from('orders').update({
+      payment_proof: proofUrl
     }).eq('id', orderId);
   },
 
@@ -257,6 +292,38 @@ export const api = {
     if (mapped.length > 0) {
       await supabase.from('menu_items').insert(mapped);
     }
+  },
+
+  // Auth & Profile
+  login: async (username, pin) => {
+    // Check if user exists
+    const existing = memoryStore.users.find(u => u.username.toLowerCase() === username.toLowerCase());
+    if (!existing) {
+      // New user or Legacy claim: Register with this PIN
+      await supabase.from('users').insert({ username, pin });
+      fetchFullState();
+      return { success: true, isNew: true };
+    } else {
+      // Verify PIN
+      if (existing.pin === pin) {
+        return { success: true, isNew: false };
+      } else {
+        return { success: false, message: "PIN salah!" };
+      }
+    }
+  },
+
+  updateProfile: async (oldUsername, newUsername) => {
+    // Update users table
+    await supabase.from('users').update({ username: newUsername }).eq('username', oldUsername);
+    // Also update payer_history to maintain history linkage
+    await supabase.from('payer_history').update({ username: newUsername }).eq('username', oldUsername);
+    fetchFullState();
+  },
+
+  resetUserPin: async (username, newPin = '1234') => {
+    await supabase.from('users').update({ pin: newPin }).eq('username', username);
+    fetchFullState();
   }
 };
 
