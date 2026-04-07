@@ -542,6 +542,10 @@ export default function App() {
       s.session.orders.forEach(o => {
         api.notify(s.session.id, o.username, 'done', ' Sesi selesai! Semua sudah bayar. Makasih! ');
       });
+      setTimeout(() => {
+        alert('Selamat Ngopi Ndan!');
+        setView('home');
+      }, 300);
     }
   }
 
