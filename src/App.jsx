@@ -414,8 +414,11 @@ function HistoryView({ history, currentUser, filter, setFilter, onClose }) {
                     <div className="history-card-details fade-in" onClick={e => e.stopPropagation()}>
                       <div className="detail-section">
                         <h4> Detail Sesi</h4>
-                        <p className="text-sm">Pendamping: <strong>{s.companion || '-'}</strong></p>
-                        <p className="text-sm">Total Sesi: <strong>{formatRp(s.orders.reduce((sum, o) => sum + o.item.price, 0))}</strong></p>
+                        <div style={{ background: 'var(--bg-primary)', padding: '0.75rem', border: '2px solid var(--text-primary)', borderRadius: '4px', marginTop: '0.25rem' }}>
+                          <p className="text-sm" style={{ marginBottom: '0.5rem' }}>Pembayar Utama: <strong className="text-green">{s.payer}</strong></p>
+                          <p className="text-sm" style={{ marginBottom: '0.5rem' }}>Pendamping: <strong>{s.companion || '-'}</strong></p>
+                          <p className="text-sm">Total Sesi: <strong>{formatRp(s.orders.reduce((sum, o) => sum + o.item.price, 0))}</strong></p>
+                        </div>
                       </div>
 
                       <div className="detail-section mt-4">
@@ -427,7 +430,10 @@ function HistoryView({ history, currentUser, filter, setFilter, onClose }) {
                               <span className="text-sm flex-1">{o.username}</span>
                               <span className="text-sm opacity-80">{o.item.name}</span>
                               <span className="text-sm font-bold">{formatRp(o.item.price)}</span>
-                              {s.debtors?.includes(o.username) && <span className="badge-debt-small">HUTANG</span>}
+                              {s.debtors?.includes(o.username) 
+                                ? <span className="badge-debt-small">HUTANG</span>
+                                : <span className="badge-paid-small">LUNAS</span>
+                              }
                             </div>
                           ))}
                         </div>
@@ -781,8 +787,9 @@ export default function App() {
       // Update local states immediately
       setCurrentUser(trimmed);
       localStorage.setItem('ngopi_current_user', trimmed);
-      setDialog(null); // Close modal
-      setActiveMenu(null); // Close menu
+      setDialog(null); // Close confirmation if any
+      setActiveMenu(null); // Close dropdown menu
+      setShowProfileModal(false); // Close the profile modal itself
       alert("Profil berhasil diperbarui!");
     } catch (err) {
       console.error(err);
