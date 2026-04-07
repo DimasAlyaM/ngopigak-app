@@ -67,6 +67,7 @@ function NotifBell({ notifications, username, onMarkRead, isOpen, onToggle }) {
   return (
     <div className="notif-wrapper">
       <button className="notif-btn" onClick={() => { onToggle(); onMarkRead(); }}>
+         <Bell size={20} />
          {unread > 0 && <span className="notif-badge">{unread}</span>}
       </button>
       {isOpen && (
@@ -1452,11 +1453,15 @@ export default function App() {
             notifications={session?.notifications || []} 
             username={currentUser} 
             onMarkRead={markNotifsRead}
+            isOpen={activeMenu === 'notif'}
+            onToggle={() => setActiveMenu(prev => prev === 'notif' ? null : 'notif')}
           />
           <UserProfile 
             username={currentUser} 
-            onShowHistory={() => goToHistory('my-debt')} 
-            onShowProfile={() => setShowProfileModal(true)}
+            onShowProfile={() => setShowProfileModal(true)} 
+            onShowHistory={() => goToHistory('all')}
+            isOpen={activeMenu === 'profile'}
+            onToggle={() => setActiveMenu(prev => prev === 'profile' ? null : 'profile')}
             onLogout={() => setDialog({ title: 'Ingin Keluar?', message: 'Apakah kamu yakin ingin logout?', onConfirm: logout, onCancel: () => setDialog(null), danger: true, confirmText: 'Keluar' })} 
           />
         </div>
