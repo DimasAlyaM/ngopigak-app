@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { loadStore, api, initSupabaseSync, selectRoles } from './store.js';
-import { 
+import {
   Bell, Info, CreditCard, Coffee, Clock, CheckCircle, AlertTriangle, LogOut, ClipboardList,
   Lock, Unlock, LogIn, History, X, Trash2, PlusCircle, Shield, Users, User, ChevronDown
 } from 'lucide-react';
@@ -67,8 +67,8 @@ function NotifBell({ notifications, username, onMarkRead, isOpen, onToggle }) {
   return (
     <div className="notif-wrapper">
       <button className="notif-btn" onClick={() => { onToggle(); onMarkRead(); }}>
-         <Bell size={20} />
-         {unread > 0 && <span className="notif-badge">{unread}</span>}
+        <Bell size={20} />
+        {unread > 0 && <span className="notif-badge">{unread}</span>}
       </button>
       {isOpen && (
         <div className="notif-dropdown glass-panel">
@@ -89,8 +89,8 @@ function NotifBell({ notifications, username, onMarkRead, isOpen, onToggle }) {
   );
 }
 function notifIcon(type) {
-  const icons = { info: <Info size={16}/>, payment: <CreditCard size={16}/>, bought: <Coffee size={16}/>, reminder: <Clock size={16}/>, done: <CheckCircle size={16}/>, debt: <AlertTriangle size={16}/> };
-  return icons[type] || <Bell size={16}/>;
+  const icons = { info: <Info size={16} />, payment: <CreditCard size={16} />, bought: <Coffee size={16} />, reminder: <Clock size={16} />, done: <CheckCircle size={16} />, debt: <AlertTriangle size={16} /> };
+  return icons[type] || <Bell size={16} />;
 }
 
 // ─── USER PROFILE COMPONENT ──────────────────────────────────────────────────
@@ -209,8 +209,8 @@ function AdminPinGate({ onSuccess, onClose }) {
           {error && <p className="pin-error">{error}</p>}
           <div className="dialog-actions">
             <button type="button" className="btn-secondary" onClick={onClose}>Batal</button>
-            <button id="admin-pin-submit" type="submit" className="btn-primary" style={{display: 'flex', alignItems: 'center', gap: '0.5rem'}}>
-              {isFirstTime ? <><CheckCircle size={18}/> Simpan PIN</> : <><Unlock size={18}/> Masuk</>}
+            <button id="admin-pin-submit" type="submit" className="btn-primary" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+              {isFirstTime ? <><CheckCircle size={18} /> Simpan PIN</> : <><Unlock size={18} /> Masuk</>}
             </button>
           </div>
         </form>
@@ -256,7 +256,7 @@ function AdminPanel({ menu, users, history, onSaveMenu, onResetPin, onClose }) {
     <div className="dialog-overlay">
       <div className="dialog-box glass-panel admin-panel" style={{ maxWidth: tab === 'users' ? '800px' : '640px' }}>
         <div className="admin-header">
-          <h3 style={{display: 'flex', alignItems: 'center', gap: '0.5rem'}}><Shield size={20} /> Panel Admin</h3>
+          <h3 style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}><Shield size={20} /> Panel Admin</h3>
           <button className="btn-icon" onClick={onClose}><X size={20} /></button>
         </div>
 
@@ -273,7 +273,7 @@ function AdminPanel({ menu, users, history, onSaveMenu, onResetPin, onClose }) {
                   <input className="emoji-input" value={item.emoji} onChange={e => updateItem(item.id, 'emoji', e.target.value)} maxLength={2} />
                   <input value={item.name} onChange={e => updateItem(item.id, 'name', e.target.value)} placeholder="Nama menu" />
                   <input type="number" value={item.price} onChange={e => updateItem(item.id, 'price', e.target.value)} placeholder="Harga" style={{ width: '120px' }} />
-                  <button className="btn-icon-danger" onClick={() => removeItem(item.id)}><Trash2 size={18}/></button>
+                  <button className="btn-icon-danger" onClick={() => removeItem(item.id)}><Trash2 size={18} /></button>
                 </div>
               ))}
             </div>
@@ -290,29 +290,29 @@ function AdminPanel({ menu, users, history, onSaveMenu, onResetPin, onClose }) {
           </>
         ) : (
           <div className="user-management-list">
-             <div className="table-header">
-               <span>User</span>
-               <span>Total Hutang</span>
-               <span>Aksi</span>
-             </div>
-             <div className="scroll-container" style={{ maxHeight: '400px' }}>
-                {users.map(u => (
-                  <div key={u.username} className="user-mgt-row">
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-                      <UserAvatar username={u.username} size={24} />
-                      <strong>{u.username}</strong>
-                    </div>
-                    <span className={userDebts[u.username] > 0 ? 'text-red' : ''}>
-                      {formatRp(userDebts[u.username] || 0)}
-                    </span>
-                    <button className="btn-secondary btn-small" onClick={() => { 
-                      if (confirm(`Reset PIN untuk ${u.username}? PIN baru akan menjadi '1234'.`)) {
-                        onResetPin(u.username);
-                      }
-                    }}>Reset PIN</button>
+            <div className="table-header">
+              <span>User</span>
+              <span>Total Hutang</span>
+              <span>Aksi</span>
+            </div>
+            <div className="scroll-container" style={{ maxHeight: '400px' }}>
+              {users.map(u => (
+                <div key={u.username} className="user-mgt-row">
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                    <UserAvatar username={u.username} size={24} />
+                    <strong>{u.username}</strong>
                   </div>
-                ))}
-             </div>
+                  <span className={userDebts[u.username] > 0 ? 'text-red' : ''}>
+                    {formatRp(userDebts[u.username] || 0)}
+                  </span>
+                  <button className="btn-secondary btn-small" onClick={() => {
+                    if (confirm(`Reset PIN untuk ${u.username}? PIN baru akan menjadi '1234'.`)) {
+                      onResetPin(u.username);
+                    }
+                  }}>Reset PIN</button>
+                </div>
+              ))}
+            </div>
           </div>
         )}
       </div>
@@ -350,7 +350,7 @@ function HistoryView({ history, currentUser, filter, setFilter, onClose }) {
 
   const mySessions = history.filter(s => s.orders.some(o => o.username === currentUser));
   const myDebts = mySessions.filter(s => s.debtors?.includes(currentUser));
-  
+
   const totalOwed = myDebts.reduce((acc, s) => {
     const myOrder = s.orders.find(o => o.username === currentUser);
     return acc + (myOrder?.item?.price || 0);
@@ -362,7 +362,7 @@ function HistoryView({ history, currentUser, filter, setFilter, onClose }) {
     <div className="history-view fade-in">
       <div className="history-container glass-panel">
         <div className="admin-header">
-          <h3 style={{display: 'flex', alignItems: 'center', gap: '0.5rem'}}><History size={24} /> Histori Sesi</h3>
+          <h3 style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}><History size={24} /> Histori Sesi</h3>
           <button className="btn-icon" onClick={onClose}><X size={24} /></button>
         </div>
 
@@ -388,23 +388,23 @@ function HistoryView({ history, currentUser, filter, setFilter, onClose }) {
           ) : (
             [...displayedHistory].reverse().map(s => {
               const isExpanded = expandedId === s.id;
-              const myOrder = s.orders.find(o => o.username === currentUser);
-              const isDebtor = s.debtors?.includes(currentUser);
+              const isDbt = s.debtors?.some(d => (d || '').toLowerCase() === (currentUser || '').toLowerCase());
+              const mOrder = s.orders.find(o => (o.username || '').toLowerCase() === (currentUser || '').toLowerCase());
 
               return (
-                <div key={s.id} className={`history-card-new glass-panel ${isDebtor ? 'has-debt' : ''}`} onClick={() => setExpandedId(isExpanded ? null : s.id)}>
+                <div key={s.id} className={`history-card-new ${isDbt ? 'has-debt' : ''}`} onClick={() => setExpandedId(isExpanded ? null : s.id)}>
                   <div className="history-card-header">
                     <div className="flex-col">
                       <span className="history-date">{formatDate(s.startedAt)}</span>
                       <span className="text-xs opacity-70">Pembayar: <strong>{s.payer}</strong></span>
                     </div>
                     <div className="badge-status-group">
-                      <span className={`badge-status-new ${s.status === 'completed' ? 'lunas' : 'hutang'}`}>
-                        {s.status === 'completed' ? 'LUNAS' : 'HUTANG'}
+                      <span className={`badge-status-new ${isDbt ? 'hutang' : 'lunas'}`}>
+                        {isDbt ? 'HUTANG SAYA' : 'LUNAS'}
                       </span>
-                      {myOrder && (
-                        <span className={`text-xs font-bold ${isDebtor ? 'text-red' : 'text-green'}`}>
-                          {isDebtor ? `Hutang ${formatRp(myOrder.item.price)}` : 'Selesai'}
+                      {mOrder && isDbt && (
+                        <span className="text-xs font-bold text-red">
+                          Belum Bayar {formatRp(mOrder.item.price)}
                         </span>
                       )}
                     </div>
@@ -413,40 +413,46 @@ function HistoryView({ history, currentUser, filter, setFilter, onClose }) {
                   {isExpanded && (
                     <div className="history-card-details fade-in" onClick={e => e.stopPropagation()}>
                       <div className="detail-section">
-                        <h4> Detail Sesi</h4>
-                        <div style={{ background: 'var(--bg-primary)', padding: '0.75rem', border: '2px solid var(--text-primary)', borderRadius: '4px', marginTop: '0.25rem' }}>
-                          <p className="text-sm" style={{ marginBottom: '0.5rem' }}>Pembayar Utama: <strong className="text-green">{s.payer}</strong></p>
-                          <p className="text-sm" style={{ marginBottom: '0.5rem' }}>Pendamping: <strong>{s.companion || '-'}</strong></p>
+                        <h4> DETAIL SESI</h4>
+                        <div className="detail-info-list mt-2">
+                          <p className="text-sm">Pembayar Utama: <strong className="text-green">{s.payer}</strong></p>
+                          <p className="text-sm">Pendamping: <strong>{s.companion || '-'}</strong></p>
                           <p className="text-sm">Total Sesi: <strong>{formatRp(s.orders.reduce((sum, o) => sum + o.item.price, 0))}</strong></p>
                         </div>
                       </div>
 
-                      <div className="detail-section mt-4">
-                        <h4> Penitip & Pesanan</h4>
-                        <div className="order-details-list">
+                      <div className="detail-section mt-6">
+                        <h4> PENITIP & PESANAN</h4>
+                        <div className="order-details-vertical mt-2">
                           {s.orders.map((o, idx) => (
-                            <div key={idx} className="order-detail-row">
-                              <UserAvatar username={o.username} size={20} />
-                              <span className="text-sm flex-1">{o.username}</span>
-                              <span className="text-sm opacity-80">{o.item.name}</span>
-                              <span className="text-sm font-bold">{formatRp(o.item.price)}</span>
-                              {s.debtors?.includes(o.username) 
-                                ? <span className="badge-debt-small">HUTANG</span>
-                                : <span className="badge-paid-small">LUNAS</span>
-                              }
+                            <div key={idx} className="order-detail-row-flat">
+                              <div className="row-main">
+                                <UserAvatar username={o.username} size={24} />
+                                <div className="user-info">
+                                  <span className="username">{o.username}</span>
+                                  <span className="item-name opacity-70">{o.item.name}</span>
+                                </div>
+                              </div>
+                              <div className="row-meta">
+                                <span className="price">{formatRp(o.item.price)}</span>
+                                {s.debtors?.some(d => (d || '').toLowerCase() === (o.username || '').toLowerCase())
+                                  ? <span className="badge-debt-small">HUTANG</span>
+                                  : <span className="badge-paid-small">LUNAS</span>
+                                }
+                              </div>
                             </div>
                           ))}
                         </div>
                       </div>
-                      
-                      {isDebtor && (
-                        <div className="debt-instruction-box mt-4">
-                          ⚠️ Kamu berhutang **{formatRp(myOrder.item.price)}** kepada **{s.payer}**.
+
+                      {isDbt && mOrder && (
+                        <div className="debt-instruction-box mt-6">
+                          ⚠️ Kamu berhutang **{formatRp(mOrder.item.price)}** kepada **{s.payer}**.
                         </div>
                       )}
                     </div>
                   )}
-                  
+
                   {!isExpanded && (
                     <div className="expand-hint">
                       <span>Lihat Detail</span>
@@ -498,7 +504,7 @@ export default function App() {
   const closeSessionAndSelectRoles = useCallback(async () => {
     const s = loadStore();
     if (!s.session || s.session.status !== 'open') return;
-    
+
     if (s.session.orders.length === 0) {
       await api.updateSession(s.session.id, {
         status: 'force-closed',
@@ -510,7 +516,7 @@ export default function App() {
 
     const participants = [...new Set(s.session.orders.map(o => o.username))];
     const { payer, companion } = selectRoles(participants, s.payerHistory);
-    
+
     await api.updateSession(s.session.id, {
       status: 'payment-setup',
       payer, companion, closedAt: new Date().toISOString()
@@ -595,7 +601,7 @@ export default function App() {
       alert("Masukkan nama dan 4 digit PIN.");
       return;
     }
-    
+
     try {
       const res = await api.login(name, pin);
       if (res.success) {
@@ -680,7 +686,7 @@ export default function App() {
     await api.updateSession(s.session.id, { coffeeBought: true });
     s.session.orders.forEach(o => {
       if (o.username !== currentUser) {
-         api.notify(s.session.id, o.username, 'bought', ` Kopi sudah dibeli oleh ${s.session.payer} dan dalam perjalanan!`);
+        api.notify(s.session.id, o.username, 'bought', ` Kopi sudah dibeli oleh ${s.session.payer} dan dalam perjalanan!`);
       }
     });
     setDialog(null);
@@ -715,7 +721,7 @@ export default function App() {
     if (allOthersPaid) {
       alert('Selamat Ngopi Ndan!');
       setView('home');
-      
+
       try {
         await api.updateSession(s.session.id, { status: 'completed' });
         // Build history payload directly from local state (avoid stale loadStore)
@@ -741,7 +747,7 @@ export default function App() {
     const s = loadStore();
     if (!s.session) return;
     const debtors = s.session.orders.filter(o => !o.isPaid && o.username !== s.session.payer).map(o => o.username);
-    
+
     await api.updateSession(s.session.id, { status: 'force-closed', forceClosedBy: currentUser, debtors });
     const full = { ...loadStore().session, status: 'force-closed', forceClosedBy: currentUser, debtors };
     await api.saveHistory(s.session.id, full);
@@ -750,7 +756,7 @@ export default function App() {
       debtors.forEach(d => api.notify(s.session.id, d, 'debt', ` Sesi ditutup paksa. Kamu tercatat belum bayar Rp ${s.session.orders.find(o => o.username === d)?.item.price.toLocaleString()}`));
     }
     s.session.orders.forEach(o => {
-       api.notify(s.session.id, o.username, 'done', `Sesi ditutup paksa oleh ${currentUser}.`);
+      api.notify(s.session.id, o.username, 'done', `Sesi ditutup paksa oleh ${currentUser}.`);
     });
     setDialog(null);
   };
@@ -781,7 +787,7 @@ export default function App() {
   const onUpdateProfile = async (oldName, newName) => {
     const trimmed = newName.trim();
     if (!trimmed || trimmed === oldName) return;
-    
+
     try {
       await api.updateProfile(oldName, trimmed);
       // Update local states immediately
@@ -859,7 +865,7 @@ export default function App() {
                   required
                 />
               </div>
-              <button id="login-submit" type="submit" className="btn-primary" style={{display:'flex', alignItems:'center', justifyContent:'center', gap:'0.5rem', marginTop: '1.5rem'}}>
+              <button id="login-submit" type="submit" className="btn-primary" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem', marginTop: '1.5rem' }}>
                 Masuk <LogIn size={18} />
               </button>
             </form>
@@ -894,19 +900,19 @@ export default function App() {
         </p>
         <div className="hero-actions">
           {!session || sessionDone ? (
-            <button id="start-session-btn" className="btn-primary" onClick={startSession} style={{display:'flex', alignItems:'center', gap:'0.5rem'}}><PlusCircle size={18} /> Buka Sesi Ngopi</button>
+            <button id="start-session-btn" className="btn-primary" onClick={startSession} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}><PlusCircle size={18} /> Buka Sesi Ngopi</button>
           ) : (
-            <button id="join-session-btn" className="btn-primary" onClick={() => setView('session')} style={{display:'flex', alignItems:'center', gap:'0.5rem'}}>
-              {session.status === 'open' ? <><PlusCircle size={18}/> Join Sesi Aktif</> : <><Info size={18}/> Lihat Sesi Berjalan</>}
+            <button id="join-session-btn" className="btn-primary" onClick={() => setView('session')} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+              {session.status === 'open' ? <><PlusCircle size={18} /> Join Sesi Aktif</> : <><Info size={18} /> Lihat Sesi Berjalan</>}
             </button>
           )}
-          <button className="btn-secondary" onClick={() => goToHistory('all')} style={{display:'flex', alignItems:'center', gap:'0.5rem'}}><History size={18} /> Histori</button>
+          <button className="btn-secondary" onClick={() => goToHistory('all')} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}><History size={18} /> Histori</button>
         </div>
         {session && !sessionDone && session.status === 'open' && (
           <div className="session-live-badge">
             <span className="live-dot" /><span>Sesi Aktif</span>
-            <span className="live-timer" style={{display:'flex', alignItems:'center', gap:'0.25rem'}}><Clock size={14}/> {formatTime(timeLeft)} tersisa</span>
-            <span style={{display:'flex', alignItems:'center', gap:'0.25rem'}}><Users size={14}/> {session.orders.length} orang pesan</span>
+            <span className="live-timer" style={{ display: 'flex', alignItems: 'center', gap: '0.25rem' }}><Clock size={14} /> {formatTime(timeLeft)} tersisa</span>
+            <span style={{ display: 'flex', alignItems: 'center', gap: '0.25rem' }}><Users size={14} /> {session.orders.length} orang pesan</span>
           </div>
         )}
       </div>
@@ -925,7 +931,7 @@ export default function App() {
     if (!session) return (
       <div className="empty-state">
         <p className="text-secondary">Belum ada sesi aktif.</p>
-        <button className="btn-primary mt-4" onClick={startSession} style={{display:'flex', alignItems:'center', gap:'0.5rem'}}><PlusCircle size={18} /> Buka Sesi</button>
+        <button className="btn-primary mt-4" onClick={startSession} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}><PlusCircle size={18} /> Buka Sesi</button>
       </div>
     );
 
@@ -942,11 +948,11 @@ export default function App() {
             </div>
             <h2 className="summary-title">{isForced ? 'Sesi Selesai (Hutang Tercatat)' : 'Sesi Selesai (Lunas Total)'}</h2>
             <p className="text-secondary mb-6">
-              {isForced 
+              {isForced
                 ? `Sesi ditutup paksa oleh ${session.forceClosedBy || 'Sistem'}.`
                 : 'Mantap! Semua kopi sudah dibayar lunas.'}
             </p>
-            
+
             <div className="summary-stats stats-box mb-6">
               <div className="stat-row"><span>Total Putaran:</span><strong>{formatRp(totalSession)}</strong></div>
               <div className="stat-row"><span>Peserta:</span><strong>{session.orders.length} orang</strong></div>
@@ -983,7 +989,7 @@ export default function App() {
           <div className="panel glass-panel">
             <div className="panel-header">
               <div className="timer-row">
-                <h2 style={{display:'flex', alignItems:'center', gap:'0.5rem'}}><Coffee size={24} /> Sesi Terbuka</h2>
+                <h2 style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}><Coffee size={24} /> Sesi Terbuka</h2>
                 <div className={`timer-chip ${timeLeft < 60 ? 'urgent' : ''}`}>{formatTime(timeLeft)}</div>
               </div>
               <p className="text-secondary">Halo <strong>{currentUser}</strong>! Pilih kopi yang kamu mau.</p>
@@ -997,7 +1003,7 @@ export default function App() {
                 </div>
                 <span className="text-secondary text-sm" style={{ marginTop: '0.25rem' }}>Kamu bisa update pesanan di bawah.</span>
               </div>
-              : <div className="no-order-hint glass-panel" style={{display:'flex', alignItems:'center', gap:'0.5rem'}}><Info size={16}/> Kamu belum pesan! Order sekarang agar masuk undian jadi pembayar.</div>
+              : <div className="no-order-hint glass-panel" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}><Info size={16} /> Kamu belum pesan! Order sekarang agar masuk undian jadi pembayar.</div>
             }
             <form onSubmit={addOrder} className="modern-form" style={{ marginTop: '1.5rem' }}>
               <div className="form-group">
@@ -1075,7 +1081,7 @@ export default function App() {
             {isPayer ? (
               <div style={{ padding: '0 1rem' }}>
                 <h3 className="mb-4" style={{ borderBottom: '1px solid var(--glass-border)', paddingBottom: '0.5rem' }}>
-                   Lengkapi Info Pembayaran
+                  Lengkapi Info Pembayaran
                 </h3>
                 <p className="text-secondary mb-4 text-sm">
                   Kamu terpilih sebagai Pembayar! Isi rekening/nomor tujuan transfer agar semua bisa bayar ke kamu.
@@ -1101,7 +1107,7 @@ export default function App() {
                     <input id="account-no" type="text" value={accountNo} onChange={e => setAccountNo(e.target.value)} placeholder="Masukkan nomor" required />
                   </div>
                   <button id="confirm-payment-btn" type="submit" className="btn-primary" style={{ gridColumn: '1 / -1' }}>
-                    Konfirmasi & Kirim Notifikasi 
+                    Konfirmasi & Kirim Notifikasi
                   </button>
                 </form>
               </div>
@@ -1152,7 +1158,7 @@ export default function App() {
               <div className="stat-row"><span>Sisa Belum Bayar:</span><strong className="text-red">{formatRp(totalAmount - paidAmount)}</strong></div>
               <div className="stat-row"><span>Progress:</span><strong>{paidCount}/{nonPayer.length} orang lunas</strong></div>
             </div>
-            
+
             <button className="btn-secondary btn-small" style={{ width: '100%', marginBottom: '1.5rem' }} onClick={remindAll}>
               📢 Tagih Semua yang Belum Lunas
             </button>
@@ -1180,11 +1186,11 @@ export default function App() {
                       </div>
                     ) : (
                       <div style={{ display: 'flex', flexDirection: 'column', gap: '5px', alignItems: 'flex-end' }}>
-                         {o.paymentProof && <span className="badge-verification">Menunggu Verifikasi</span>}
-                         <button id={`mark-paid-${o.username}`} className="btn-primary btn-small" onClick={() => markPaidByPayer(o.username)}>
-                           {o.paymentProof ? 'Konfirmasi Lunas' : 'Tandai Lunas'}
-                         </button>
-                         {o.paymentProof && <a href={o.paymentProof} target="_blank" rel="noreferrer" className="proof-link">Lihat Bukti</a>}
+                        {o.paymentProof && <span className="badge-verification">Menunggu Verifikasi</span>}
+                        <button id={`mark-paid-${o.username}`} className="btn-primary btn-small" onClick={() => markPaidByPayer(o.username)}>
+                          {o.paymentProof ? 'Konfirmasi Lunas' : 'Tandai Lunas'}
+                        </button>
+                        {o.paymentProof && <a href={o.paymentProof} target="_blank" rel="noreferrer" className="proof-link">Lihat Bukti</a>}
                       </div>
                     )}
                   </div>
@@ -1222,7 +1228,7 @@ export default function App() {
                     confirmText: ' Ya, Kopi Sudah Dibeli!'
                   })}
                 >
-                   Kopi Sudah Dibeli
+                  Kopi Sudah Dibeli
                 </button>
               </div>
             ) : (
@@ -1250,7 +1256,7 @@ export default function App() {
                     danger: true
                   })}
                 >
-                   Tutup Paksa Sesi
+                  Tutup Paksa Sesi
                 </button>
               </div>
             )}
@@ -1325,7 +1331,7 @@ export default function App() {
                   Pesananmu: {myOrderC.item.emoji} {myOrderC.item.name} — <strong>{formatRp(myOrderC.item.price)}</strong>
                 </p>
                 <button id="companion-paid-btn" className="btn-primary" style={{ width: '100%' }} onClick={() => markMyPayment(currentUser)}>
-                   Sudah Bayar
+                  Sudah Bayar
                 </button>
               </div>
             )}
@@ -1388,9 +1394,9 @@ export default function App() {
             {myOrder && !alreadyPaid && step >= 1 && (
               <div className="file-input-wrapper">
                 <label>Link Bukti Transfer (Opsional)</label>
-                <input 
-                  type="text" 
-                  placeholder="Paste link screenshot (Imgur/Drive/dll)" 
+                <input
+                  type="text"
+                  placeholder="Paste link screenshot (Imgur/Drive/dll)"
                   value={proofInput}
                   onChange={e => setProofInput(e.target.value)}
                   style={{ width: '100%', padding: '8px', marginBottom: '10px', border: '2px solid var(--text-primary)', borderRadius: '4px' }}
@@ -1455,21 +1461,21 @@ export default function App() {
               ⚙️ Menu
             </button>
           )}
-          
-          <NotifBell 
-            notifications={session?.notifications || []} 
-            username={currentUser} 
+
+          <NotifBell
+            notifications={session?.notifications || []}
+            username={currentUser}
             onMarkRead={markNotifsRead}
             isOpen={activeMenu === 'notif'}
             onToggle={() => setActiveMenu(prev => prev === 'notif' ? null : 'notif')}
           />
-          <UserProfile 
-            username={currentUser} 
-            onShowProfile={() => setShowProfileModal(true)} 
+          <UserProfile
+            username={currentUser}
+            onShowProfile={() => setShowProfileModal(true)}
             onShowHistory={() => goToHistory('all')}
             isOpen={activeMenu === 'profile'}
             onToggle={() => setActiveMenu(prev => prev === 'profile' ? null : 'profile')}
-            onLogout={() => setDialog({ title: 'Ingin Keluar?', message: 'Apakah kamu yakin ingin logout?', onConfirm: logout, onCancel: () => setDialog(null), danger: true, confirmText: 'Keluar' })} 
+            onLogout={() => setDialog({ title: 'Ingin Keluar?', message: 'Apakah kamu yakin ingin logout?', onConfirm: logout, onCancel: () => setDialog(null), danger: true, confirmText: 'Keluar' })}
           />
         </div>
       </nav>
@@ -1479,9 +1485,9 @@ export default function App() {
         {view === 'session' && renderSession()}
         {view === 'admin' && (
           <div className="role-layout fade-in">
-             <div className="panel glass-panel" style={{ maxWidth: '800px', margin: '2rem auto' }}>
-                <AdminPanel menu={store.menu} users={store.users} history={store.history} onSaveMenu={saveMenu} onResetPin={onResetPin} onClose={() => setView('home')} />
-             </div>
+            <div className="panel glass-panel" style={{ maxWidth: '800px', margin: '2rem auto' }}>
+              <AdminPanel menu={store.menu} users={store.users} history={store.history} onSaveMenu={saveMenu} onResetPin={onResetPin} onClose={() => setView('home')} />
+            </div>
           </div>
         )}
       </main>
@@ -1504,31 +1510,31 @@ export default function App() {
         />
       )}
       {showAdminPanel && (
-        <AdminPanel 
-          menu={store.menu} 
-          users={store.users} 
-          history={store.history} 
-          onSaveMenu={saveMenu} 
-          onResetPin={onResetPin} 
-          onClose={() => setShowAdminPanel(false)} 
+        <AdminPanel
+          menu={store.menu}
+          users={store.users}
+          history={store.history}
+          onSaveMenu={saveMenu}
+          onResetPin={onResetPin}
+          onClose={() => setShowAdminPanel(false)}
         />
       )}
       {showProfileModal && (
-        <ProfileModal 
-          username={currentUser} 
-          onSave={onUpdateProfile} 
-          onClose={() => setShowProfileModal(false)} 
+        <ProfileModal
+          username={currentUser}
+          onSave={onUpdateProfile}
+          onClose={() => setShowProfileModal(false)}
         />
       )}
 
       {view === 'history' && (
-        <HistoryView 
-          history={store.history} 
-          payerHistory={store.payerHistory} 
+        <HistoryView
+          history={store.history}
+          payerHistory={store.payerHistory}
           currentUser={currentUser}
-          filter={historyFilter} 
+          filter={historyFilter}
           setFilter={setHistoryFilter}
-          onClose={() => setView('home')} 
+          onClose={() => setView('home')}
         />
       )}
 

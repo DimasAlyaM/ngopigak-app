@@ -429,9 +429,9 @@ input:focus, select:focus { outline: none; background: var(--bg-secondary); bord
 .debt-dashboard-card { background: var(--text-primary); color: var(--bg-primary); padding: 1.5rem; border-radius: 8px; border: 2px solid var(--text-primary); text-align: center; }
 .debt-stat h2 { font-size: 2.5rem; font-family: var(--font-heading); margin-top: 0.25rem; }
 
-.history-card-new { margin-bottom: 1rem; cursor: pointer; transition: transform 0.2s, box-shadow 0.2s; border-width: 3px; position: relative; overflow: hidden; }
-.history-card-new:hover { transform: translate(-2px, -2px); box-shadow: 6px 6px 0 var(--text-primary); }
-.history-card-new.has-debt { border-color: #DC2626; }
+.history-card-new { margin-bottom: 2rem; cursor: pointer; transition: transform 0.2s; border-bottom: 3px solid var(--text-primary); position: relative; padding-bottom: 1.5rem; }
+.history-card-new:hover { transform: translateY(-2px); }
+.history-card-new.has-debt { border-bottom-color: #DC2626; }
 
 .history-card-header { display: flex; justify-content: space-between; align-items: flex-start; gap: 0.5rem; }
 
@@ -446,14 +446,30 @@ input:focus, select:focus { outline: none; background: var(--bg-secondary); bord
 .detail-section h4 { font-family: var(--font-heading); font-size: 0.9rem; text-transform: uppercase; margin-bottom: 0.75rem; border-bottom: 2px solid var(--text-primary); display: inline-block; }
 
 .order-details-list { display: flex; flex-direction: column; gap: 0.75rem; }
-.order-detail-row { display: flex; align-items: center; gap: 0.75rem; padding: 10px; background: var(--bg-secondary); border: 2px solid var(--text-primary); border-radius: 4px; }
+
+.detail-info-list { display: flex; flex-direction: column; gap: 0.35rem; }
+.detail-info-list p { margin: 0; padding-bottom: 0.25rem; border-bottom: 1px dotted var(--text-primary); }
+
+.order-details-vertical { display: flex; flex-direction: column; gap: 0.5rem; }
+.order-detail-row-flat { 
+  display: flex; justify-content: space-between; align-items: flex-start;
+  padding: 8px 0; border-bottom: 1px solid rgba(0,0,0,0.1); flex-wrap: wrap; gap: 0.5rem;
+}
+.row-main { display: flex; align-items: center; gap: 0.75rem; flex: 1; min-width: 150px; }
+.user-info { display: flex; flex-direction: column; }
+.user-info .username { font-weight: 800; font-size: 0.9rem; }
+.user-info .item-name { font-size: 0.75rem; }
+
+.row-meta { display: flex; align-items: center; gap: 0.5rem; }
+.row-meta .price { font-weight: 800; font-size: 0.85rem; }
 
 .badge-debt-small { font-size: 0.6rem; font-weight: 800; background: #FEE2E2; color: #DC2626; padding: 1px 6px; border: 1.5px solid #DC2626; border-radius: 4px; text-transform: uppercase; }
 .badge-paid-small { font-size: 0.6rem; font-weight: 800; background: #D1FAE5; color: #059669; padding: 1px 6px; border: 1.5px solid #059669; border-radius: 4px; text-transform: uppercase; }
 
-.debt-instruction-box { background: #FFFBEB; border: 2px solid #D97706; color: #92400E; padding: 1rem; border-radius: 6px; font-weight: 700; text-align: center; }
+.debt-instruction-box { background: #fee2e2; border: 3px solid #dc2626; color: #991b1b; padding: 1.25rem; border-radius: 8px; font-weight: 800; text-align: center; box-shadow: 4px 4px 0 #dc2626; font-size: 0.9rem; }
+.debt-instruction-box strong { font-size: 1.1rem; text-decoration: underline; }
 
-.expand-hint { display: flex; align-items: center; justify-content: center; gap: 0.5rem; padding-top: 0.75rem; margin-top: 0.75rem; border-top: 1px solid var(--glass-border); font-size: 0.75rem; font-weight: 700; opacity: 0.6; }
+.expand-hint { display: flex; align-items: center; justify-content: center; gap: 0.5rem; padding-top: 1rem; margin-top: 1rem; font-size: 0.8rem; font-weight: 800; text-transform: uppercase; border: 2px solid var(--text-primary); background: var(--bg-secondary); border-radius: 4px; }
 
 @media (max-width: 768px) {
   .history-view { padding: 0.75rem; }
