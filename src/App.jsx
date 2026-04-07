@@ -79,6 +79,32 @@ function notifIcon(type) {
   return icons[type] || '🔔';
 }
 
+// ─── USER PROFILE COMPONENT ──────────────────────────────────────────────────
+function UserProfile({ username, onLogout, onShowHistory }) {
+  const [open, setOpen] = useState(false);
+  
+  return (
+    <div className="notif-wrapper">
+      <div className="user-chip" onClick={() => setOpen(!open)} title="Profil">
+        <span className="user-avatar">{username.charAt(0).toUpperCase()}</span>
+        <span>{username}</span>
+      </div>
+      {open && (
+        <div className="notif-dropdown profile-dropdown">
+          <div className="notif-item" onClick={() => { setOpen(false); onShowHistory(); }} style={{ cursor: 'pointer' }}>
+            <span className="notif-type">📋</span>
+            <div className="notif-msg" style={{ marginTop: '2px' }}>Histori Order</div>
+          </div>
+          <div className="notif-item" onClick={() => { setOpen(false); onLogout(); }} style={{ cursor: 'pointer', color: '#B91C1C' }}>
+            <span className="notif-type">🚪</span>
+            <div className="notif-msg" style={{ marginTop: '2px' }}>Keluar (Logout)</div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
 // ─── STEPPER COMPONENT (for Penitip) ─────────────────────────────────────────
 function Stepper({ steps, currentStep }) {
   return (
@@ -394,6 +420,7 @@ export default function App() {
     setCurrentUser('');
     localStorage.removeItem('ngopi_current_user');
     setView('home');
+    setDialog(null);
   };
 
   const startSession = async () => {
@@ -560,7 +587,7 @@ export default function App() {
     return (
       <div className="app-container">
         <nav className="navbar">
-          <div className="nav-logo text-gradient">NgopiGak<span style={{ opacity: 0.6 }}>App</span></div>
+          <div className="nav-logo text-gradient">NgopiGak?</div>
         </nav>
         <div className="login-screen fade-in">
           <div className="login-card glass-panel">
@@ -1114,7 +1141,7 @@ export default function App() {
     <div className="app-container">
       <nav className="navbar">
         <div className="nav-logo text-gradient" style={{ cursor: 'pointer' }} onClick={() => setView('home')}>
-          NgopiGak<span style={{ opacity: 0.5 }}>App</span>
+          NgopiGak?
         </div>
         <div className="nav-links">
           {session && (
@@ -1127,14 +1154,8 @@ export default function App() {
             </button>
           )}
           <button className="btn-nav" onClick={() => setShowAdminPin(true)}>⚙️ Menu</button>
-          <button className="btn-nav" onClick={() => setShowHistory(true)}>📋 Histori</button>
-          {session?.notifications && (
-            <NotifBell notifications={session.notifications} username={currentUser} onMarkRead={markNotifsRead} />
-          )}
-          <div className="user-chip" onClick={logout} title="Klik untuk logout">
-            <span className="user-avatar">{currentUser.charAt(0).toUpperCase()}</span>
-            <span>{currentUser}</span>
-          </div>
+          <NotifBell notifications={session?.notifications || []} username={currentUser} onMarkRead={markNotifsRead} />
+          <UserProfile username={currentUser} onShowHistory={() => setShowHistory(true)} onLogout={() => setDialog({ title: 'Ingin Keluar?', message: 'Apakah kamu yakin ingin logout dan mengganti nama pengguna?', onConfirm: logout, onCancel: () => setDialog(null), danger: true, confirmText: 'Keluar' })} />
         </div>
       </nav>
 
