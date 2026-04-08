@@ -391,7 +391,7 @@ function HistoryView({ history, currentUser, filter, setFilter, onClose }) {
           <button className={`tab-btn ${filter === 'my-debt' ? 'active' : ''}`} onClick={() => setFilter('my-debt')}>Hutang Saya</button>
         </div>
 
-        <div className="history-list scroll-container" style={{ maxHeight: 'calc(100vh - 200px)', overflowY: 'auto', paddingBottom: '2rem' }}>
+        <div className="history-list" style={{ paddingBottom: '2rem' }}>
           {displayedHistory.length === 0 ? (
             <div className="empty-state">Belum ada histori {filter === 'my-debt' ? 'hutang' : 'sesi'}.</div>
           ) : (
