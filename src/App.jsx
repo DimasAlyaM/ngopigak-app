@@ -592,12 +592,12 @@ export default function App() {
     if (!session || !currentUser) return null;
     if (session.payer === currentUser) return 'payer';
     if (session.companion === currentUser) return 'companion';
-    if (session.orders.some(o => o.username === currentUser)) return 'penitip';
+    if (session?.orders?.some(o => o.username === currentUser)) return 'penitip';
     return null;
   })();
 
-  const myOrder = session?.orders.find(o => o.username === currentUser);
-  const myNotifs = session?.notifications.filter(n => n.to === currentUser || n.to === 'all') || [];
+  const myOrder = session?.orders?.find(o => o.username === currentUser);
+  const myNotifs = session?.notifications?.filter(n => n.to === currentUser || n.to === 'all') || [];
   // const unreadCount = myNotifs.filter(n => !n.read).length;
 
   // ─── ACTIONS ───────────────────────────────────────────────────────────────
@@ -831,9 +831,9 @@ export default function App() {
     return 0;
   };
 
-  const totalAmount = session?.orders.reduce((sum, o) => sum + o.item.price, 0) || 0;
-  const paidAmount = session?.orders.filter(o => o.isPaid).reduce((sum, o) => sum + o.item.price, 0) || 0;
-  const unpaidCount = session?.orders.filter(o => !o.isPaid && o.username !== session.payer).length || 0;
+  const totalAmount = session?.orders?.reduce((sum, o) => sum + o.item.price, 0) || 0;
+  const paidAmount = session?.orders?.filter(o => o.isPaid).reduce((sum, o) => sum + o.item.price, 0) || 0;
+  const unpaidCount = session?.orders?.filter(o => !o.isPaid && o.username !== session.payer).length || 0;
   const sessionDone = session?.status === 'completed' || session?.status === 'force-closed';
 
   // ─── VIEW: LOGIN ────────────────────────────────────────────────────────────
