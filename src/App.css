@@ -356,7 +356,16 @@ input:focus, select:focus { outline: none; background: var(--bg-secondary); bord
 @media (max-width: 768px) {
   .hero-title { font-size: 2.5rem; }
   .hero-subtitle { font-size: 1rem; }
-  .notif-dropdown { right: -60px; width: 300px; z-index: 2001; }
+  .notif-dropdown {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 90vw;
+    max-width: 340px;
+    z-index: 1000;
+    box-shadow: 0 0 0 100vw rgba(0,0,0,0.5);
+  }
   .stepper { flex-direction: column; gap: 1.5rem; align-items: stretch; border: none; background: transparent; padding: 0;}
   .step-item { flex-direction: row; gap: 1rem; text-align: left; background: var(--bg-secondary); padding: 10px 15px; border: 2px solid var(--text-primary); border-radius: 8px; }
   .step-label { text-align: left; font-size: 0.85rem; margin-top: 0; }
@@ -385,7 +394,7 @@ input:focus, select:focus { outline: none; background: var(--bg-secondary); bord
   .payment-item { flex-direction: column; align-items: flex-start; gap: 0.8rem; }
   .badge-paid, .badge-unpaid { align-self: flex-start; }
   .history-header { flex-direction: column; align-items: flex-start; gap: 0.5rem; }
-  .notif-dropdown { right: -40px; left: auto; width: 85vw; border-width: 3px; }
+  /* notif-dropdown handled globally as modal */
   .summary-title { font-size: 1.5rem; }
   .history-container { padding: 0.75rem; width: 95%; margin: 0 auto; }
 }
@@ -477,4 +486,5 @@ input:focus, select:focus { outline: none; background: var(--bg-secondary); bord
   .debt-stat h2 { font-size: 1.8rem; }
   .order-detail-row { flex-wrap: wrap; gap: 0.25rem; padding: 6px; }
   .order-detail-row .text-sm { font-size: 0.75rem; }
+
 }

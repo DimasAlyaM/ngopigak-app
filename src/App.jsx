@@ -66,24 +66,30 @@ function NotifBell({ notifications, username, onMarkRead, isOpen, onToggle }) {
   const unread = myNotifs.filter(n => !n.read).length;
   return (
     <div className="notif-wrapper">
-      <button className="notif-btn" onClick={() => { onToggle(); onMarkRead(); }}>
-        <Bell size={20} />
+      <button className="notif-btn" onClick={() => { onToggle(); if (!isOpen) onMarkRead(); }}>
+        <Bell size={18} />
         {unread > 0 && <span className="notif-badge">{unread}</span>}
       </button>
       {isOpen && (
-        <div className="notif-dropdown glass-panel">
-          <div className="notif-header">Notifikasi</div>
-          {myNotifs.length === 0 && <p className="text-secondary text-sm" style={{ padding: '1rem' }}>Belum ada notifikasi.</p>}
-          {[...myNotifs].reverse().slice(0, 10).map(n => (
-            <div key={n.id} className={`notif-item ${n.read ? 'read' : 'unread'}`}>
-              <span className="notif-type">{notifIcon(n.type)}</span>
-              <div>
-                <p className="notif-msg">{n.message}</p>
-                <p className="text-secondary" style={{ fontSize: '0.75rem' }}>{formatDate(n.createdAt)}</p>
-              </div>
+        <>
+          <div className="dialog-overlay bg-transparent" onClick={onToggle} style={{ display: window.innerWidth <= 768 ? 'block' : 'none', background: 'transparent' }} />
+          <div className="notif-dropdown glass-panel">
+            <div className="notif-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              Notifikasi
+              <button className="btn-icon" onClick={onToggle} style={{ padding: 0 }}><X size={18} /></button>
             </div>
-          ))}
-        </div>
+            {myNotifs.length === 0 && <p className="text-secondary text-sm" style={{ padding: '1rem' }}>Belum ada notifikasi.</p>}
+            {[...myNotifs].reverse().slice(0, 10).map(n => (
+              <div key={n.id} className={`notif-item ${n.read ? 'read' : 'unread'}`}>
+                <span className="notif-type">{notifIcon(n.type)}</span>
+                <div>
+                  <p className="notif-msg">{n.message}</p>
+                  <p className="text-secondary" style={{ fontSize: '0.75rem' }}>{formatDate(n.createdAt)}</p>
+                </div>
+              </div>
+            ))}
+          </div>
+        </>
       )}
     </div>
   );
@@ -102,20 +108,23 @@ function UserProfile({ username, onLogout, onShowHistory, onShowProfile, isOpen,
         <span>{username}</span>
       </div>
       {isOpen && (
-        <div className="notif-dropdown profile-dropdown">
-          <div className="notif-item" onClick={() => { onToggle(); onShowHistory(); }} style={{ cursor: 'pointer' }}>
-            <span className="notif-type"><ClipboardList size={18} /></span>
-            <div className="notif-msg" style={{ marginTop: '2px' }}>Histori Order</div>
+        <>
+          <div className="dialog-overlay bg-transparent" onClick={onToggle} style={{ display: window.innerWidth <= 768 ? 'block' : 'none', background: 'transparent' }} />
+          <div className="notif-dropdown profile-dropdown">
+            <div className="notif-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              Menu Profil
+              <button className="btn-icon" onClick={onToggle} style={{ padding: 0 }}><X size={18} /></button>
+            </div>
+            <div className="notif-item" onClick={() => { onToggle(); onShowHistory(); }} style={{ cursor: 'pointer' }}>
+              <span className="notif-type"><ClipboardList size={18} /></span>
+              <div className="notif-msg" style={{ marginTop: '2px' }}>Histori Order</div>
+            </div>
+            <div className="notif-item" onClick={() => { onToggle(); onLogout(); }} style={{ cursor: 'pointer', color: '#B91C1C' }}>
+              <span className="notif-type"><LogOut size={18} /></span>
+              <div className="notif-msg" style={{ marginTop: '2px' }}>Keluar (Logout)</div>
+            </div>
           </div>
-          <div className="notif-item" onClick={() => { onToggle(); onShowProfile(); }} style={{ cursor: 'pointer' }}>
-            <span className="notif-type"><User size={18} /></span>
-            <div className="notif-msg" style={{ marginTop: '2px' }}>Edit Profil</div>
-          </div>
-          <div className="notif-item" onClick={() => { onToggle(); onLogout(); }} style={{ cursor: 'pointer', color: '#B91C1C' }}>
-            <span className="notif-type"><LogOut size={18} /></span>
-            <div className="notif-msg" style={{ marginTop: '2px' }}>Keluar (Logout)</div>
-          </div>
-        </div>
+        </>
       )}
     </div>
   );
@@ -1202,15 +1211,17 @@ export default function App() {
           {/* Actions Panel */}
           <div className="panel glass-panel" style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
             {/* Payment Info */}
-            <div>
-              <h3 className="section-title"> Info Transfer Kamu</h3>
-              <div className="payment-info-card glass-panel">
-                <div className="payment-method-tag">{session.paymentInfo.method}</div>
-                {session.paymentInfo.bankName && <p><span className="text-secondary">Bank:</span> <strong>{session.paymentInfo.bankName}</strong></p>}
-                <p><span className="text-secondary">Nomor:</span> <strong style={{ fontSize: '1.2rem' }}>{session.paymentInfo.accountNo}</strong></p>
-                <p><span className="text-secondary">A.n.:</span> <strong>{session.payer}</strong></p>
+            {session.paymentInfo && (
+              <div>
+                <h3 className="section-title"> Info Transfer Kamu</h3>
+                <div className="payment-info-card glass-panel">
+                  <div className="payment-method-tag">{session.paymentInfo.method}</div>
+                  {session.paymentInfo.bankName && <p><span className="text-secondary">Bank:</span> <strong>{session.paymentInfo.bankName}</strong></p>}
+                  <p><span className="text-secondary">Nomor:</span> <strong style={{ fontSize: '1.2rem' }}>{session.paymentInfo.accountNo}</strong></p>
+                  <p><span className="text-secondary">A.n.:</span> <strong>{session.payer}</strong></p>
+                </div>
               </div>
-            </div>
+            )}
 
             {/* Coffee Bought */}
             {!session.coffeeBought ? (
