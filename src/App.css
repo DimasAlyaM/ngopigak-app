@@ -475,10 +475,106 @@ input:focus, select:focus { outline: none; background: var(--bg-secondary); bord
 .badge-debt-small { font-size: 0.6rem; font-weight: 800; background: #FEE2E2; color: #DC2626; padding: 1px 6px; border: 1.5px solid #DC2626; border-radius: 4px; text-transform: uppercase; }
 .badge-paid-small { font-size: 0.6rem; font-weight: 800; background: #D1FAE5; color: #059669; padding: 1px 6px; border: 1.5px solid #059669; border-radius: 4px; text-transform: uppercase; }
 
+.btn-mini { padding: 2px 8px; font-size: 0.6rem; font-weight: 800; border-radius: 4px; text-transform: uppercase; cursor: pointer; border: 1.5px solid var(--text-primary); transition: all 0.2s; }
+.btn-mini:active { transform: scale(0.95); }
+.btn-mini.btn-green { background: #10B981; color: white; border-color: #065F46; }
+
+.proof-link-mini { margin-top: 4px; border-top: 1px solid var(--text-primary); padding-top: 2px; }
+.ms-2 { margin-left: 0.5rem; }
+
 .debt-instruction-box { background: #fee2e2; border: 3px solid #dc2626; color: #991b1b; padding: 1.25rem; border-radius: 8px; font-weight: 800; text-align: center; box-shadow: 4px 4px 0 #dc2626; font-size: 0.9rem; }
 .debt-instruction-box strong { font-size: 1.1rem; text-decoration: underline; }
 
 .expand-hint { display: flex; align-items: center; justify-content: center; gap: 0.5rem; padding-top: 1rem; margin-top: 1rem; font-size: 0.8rem; font-weight: 800; text-transform: uppercase; border: 2px solid var(--text-primary); background: var(--bg-secondary); border-radius: 4px; }
+
+/* --- PHOTO UPLOAD STYLES --- */
+.upload-box-new {
+  display: block;
+  border: 4px dashed var(--text-primary);
+  background: white;
+  padding: 1.5rem;
+  border-radius: 12px;
+  cursor: pointer;
+  transition: all 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  position: relative;
+  overflow: hidden;
+}
+
+.upload-box-new:hover {
+  background: var(--bg-hover);
+  transform: translateY(-2px);
+  border-color: var(--accent-color);
+  box-shadow: 4px 4px 0 var(--text-primary);
+}
+
+.upload-box-new:active {
+  transform: scale(0.98);
+}
+
+.upload-box-new .upload-content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.5rem;
+  color: var(--text-primary);
+  font-weight: 800;
+  text-transform: uppercase;
+  font-size: 0.85rem;
+}
+
+.hidden-file-input {
+  display: none;
+}
+
+.img-preview-mini {
+  display: block;
+  width: 100%;
+  max-width: 100px;
+  border: 2px solid var(--text-primary);
+  border-radius: 6px;
+  overflow: hidden;
+  box-shadow: 2px 2px 0 var(--text-primary);
+  background: white;
+}
+
+.img-preview-mini img {
+  width: 100%;
+  display: block;
+}
+
+.img-preview-active {
+  background: white;
+  padding: 4px;
+  border: 2px solid var(--text-primary);
+  border-radius: 8px;
+  display: inline-block;
+  box-shadow: 4px 4px 0 var(--text-primary);
+}
+
+.img-preview-active img {
+  display: block;
+  border-radius: 4px;
+}
+
+.active-upload {
+  border-color: #3B82F6;
+  box-shadow: 4px 4px 0 #3B82F6;
+}
+
+.proof-confirmed {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.animate-spin {
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
 
 @media (max-width: 768px) {
   .history-view { padding: 0.75rem; }
@@ -486,5 +582,4 @@ input:focus, select:focus { outline: none; background: var(--bg-secondary); bord
   .debt-stat h2 { font-size: 1.8rem; }
   .order-detail-row { flex-wrap: wrap; gap: 0.25rem; padding: 6px; }
   .order-detail-row .text-sm { font-size: 0.75rem; }
-
 }

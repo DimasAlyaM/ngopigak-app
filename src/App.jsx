@@ -2,7 +2,8 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import { loadStore, api, initSupabaseSync, selectRoles } from './store.js';
 import {
   Bell, Info, CreditCard, Coffee, Clock, CheckCircle, AlertTriangle, LogOut, ClipboardList,
-  Lock, Unlock, LogIn, History, X, Trash2, PlusCircle, Shield, Users, User, ChevronDown
+  Lock, Unlock, LogIn, History, X, Trash2, PlusCircle, Shield, Users, User, ChevronDown, 
+  Camera, Upload, ImageIcon, Loader2
 } from 'lucide-react';
 import confetti from 'canvas-confetti';
 import './App.css';
@@ -356,6 +357,7 @@ function ProfileModal({ username, onSave, onClose }) {
 // ─── HISTORY VIEW ─────────────────────────────────────────────────────────────
 function HistoryView({ history, currentUser, filter, setFilter, onClose }) {
   const [expandedId, setExpandedId] = useState(null);
+  const [uploadingId, setUploadingId] = useState(null);
 
   const mySessions = history.filter(s => s.orders.some(o => o.username === currentUser));
   const myDebts = mySessions.filter(s => s.debtors?.includes(currentUser));
@@ -448,7 +450,30 @@ function HistoryView({ history, currentUser, filter, setFilter, onClose }) {
                                   ? <span className="badge-debt-small">HUTANG</span>
                                   : <span className="badge-paid-small">LUNAS</span>
                                 }
+                                
+                                {/* Payer Action: Confirm Payment for others or self if it was my session */}
+                                {(currentUser || '').toLowerCase() === (s.payer || '').toLowerCase() && 
+                                 s.debtors?.some(d => (d || '').toLowerCase() === (o.username || '').toLowerCase()) && (
+                                  <button 
+                                    className="btn-mini btn-green ms-2"
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      if(confirm(`Konfirmasi pembayaran dari ${o.username}?`)) {
+                                        api.updateHistoricalOrder(s.id, o.username, { isPaid: true, markedByPayer: true });
+                                      }
+                                    }}
+                                  >
+                                    Konfirmasi
+                                  </button>
+                                )}
                               </div>
+                              {o.paymentProof && (
+                                <div className="proof-link-mini">
+                                  <a href={o.paymentProof} target="_blank" rel="noreferrer" className="text-xs text-blue underline">
+                                    Lihat Bukti
+                                  </a>
+                                </div>
+                              )}
                             </div>
                           ))}
                         </div>
@@ -456,7 +481,51 @@ function HistoryView({ history, currentUser, filter, setFilter, onClose }) {
 
                       {isDbt && mOrder && (
                         <div className="debt-instruction-box mt-6">
-                          ⚠️ Kamu berhutang **{formatRp(mOrder.item.price)}** kepada **{s.payer}**.
+                          <p>⚠️ Kamu berhutang **{formatRp(mOrder.item.price)}** kepada **{s.payer}**.</p>
+                          
+                          {!mOrder.paymentProof && (
+                            <div className="historical-proof-submit mt-3">
+                              <label className="upload-box-new">
+                                <input 
+                                  type="file" 
+                                  accept="image/*" 
+                                  className="hidden-file-input"
+                                  disabled={!!uploadingId}
+                                  onChange={async (e) => {
+                                    const file = e.target.files[0];
+                                    if (!file) return;
+                                    setUploadingId(s.id);
+                                    try {
+                                      const url = await api.uploadProof(file);
+                                      await api.updateHistoricalOrder(s.id, currentUser, { paymentProof: url });
+                                      alert('Bukti pembayaran ter-upload! Tunggu konfirmasi pembayar.');
+                                    } catch (err) {
+                                      alert('Gagal upload. Pastikan SQL Storage sudah dijalankan.');
+                                    } finally {
+                                      setUploadingId(null);
+                                    }
+                                  }}
+                                />
+                                <div className="upload-content">
+                                  {uploadingId === s.id ? (
+                                    <Loader2 className="animate-spin" size={20} />
+                                  ) : (
+                                    <><Camera size={20} /> <span>Upload Foto Bukti</span></>
+                                  )}
+                                </div>
+                              </label>
+                            </div>
+                          )}
+                          {mOrder.paymentProof && (
+                            <div className="proof-confirmed mt-2">
+                              <div className="flex items-center gap-1 text-green text-xs font-bold">
+                                <CheckCircle size={14} /> Bukti terkirim
+                              </div>
+                              <a href={mOrder.paymentProof} target="_blank" rel="noreferrer" className="img-preview-mini mt-2">
+                                <img src={mOrder.paymentProof} alt="Bukti" />
+                              </a>
+                            </div>
+                          )}
                         </div>
                       )}
                     </div>
@@ -504,6 +573,8 @@ export default function App() {
   const [paymentMethod, setPaymentMethod] = useState('');
   const [bankName, setBankName] = useState('');
   const [accountNo, setAccountNo] = useState('');
+  const [proofInput, setProofInput] = useState(''); // and also for active session
+  const [isUploadingActive, setIsUploadingActive] = useState(false);
 
   // Sync store with localStorage (simulates real-time)
   const refreshStore = useCallback(() => {
@@ -524,7 +595,13 @@ export default function App() {
     }
 
     const participants = [...new Set(s.session.orders.map(o => o.username))];
-    const { payer, companion } = selectRoles(participants, s.payerHistory);
+    
+    // Find last roles from history to exclude them
+    const sortedHistory = [...s.history].sort((a, b) => new Date(b.startedAt) - new Date(a.startedAt));
+    const lastSession = sortedHistory[0];
+    const lastRoles = lastSession ? { payer: lastSession.payer, companion: lastSession.companion } : null;
+
+    const { payer, companion } = selectRoles(participants, s.payerHistory, lastRoles);
 
     await api.updateSession(s.session.id, {
       status: 'payment-setup',
@@ -590,13 +667,14 @@ export default function App() {
   const session = store.session;
   const myRole = (() => {
     if (!session || !currentUser) return null;
-    if (session.payer === currentUser) return 'payer';
-    if (session.companion === currentUser) return 'companion';
-    if (session?.orders?.some(o => o.username === currentUser)) return 'penitip';
+    const cur = currentUser.toLowerCase();
+    if ((session.payer || '').toLowerCase() === cur) return 'payer';
+    if ((session.companion || '').toLowerCase() === cur) return 'companion';
+    if (session?.orders?.some(o => (o.username || '').toLowerCase() === cur)) return 'penitip';
     return null;
   })();
 
-  const myOrder = session?.orders?.find(o => o.username === currentUser);
+  const myOrder = session?.orders?.find(o => (o.username || '').toLowerCase() === (currentUser || '').toLowerCase());
   const myNotifs = session?.notifications?.filter(n => n.to === currentUser || n.to === 'all') || [];
   // const unreadCount = myNotifs.filter(n => !n.read).length;
 
@@ -1341,8 +1419,41 @@ export default function App() {
                 <p className="text-secondary text-sm mb-4">
                   Pesananmu: {myOrderC.item.emoji} {myOrderC.item.name} — <strong>{formatRp(myOrderC.item.price)}</strong>
                 </p>
-                <button id="companion-paid-btn" className="btn-primary" style={{ width: '100%' }} onClick={() => markMyPayment(currentUser)}>
-                  Sudah Bayar
+                <label className="upload-box-new mb-3">
+                  <input 
+                    type="file" 
+                    accept="image/*" 
+                    className="hidden-file-input"
+                    disabled={isUploadingActive}
+                    onChange={async (e) => {
+                      const file = e.target.files[0];
+                      if (!file) return;
+                      setIsUploadingActive(true);
+                      try {
+                        const url = await api.uploadProof(file);
+                        setProofInput(url);
+                      } catch (err) { alert('Gagal upload.'); }
+                      finally { setIsUploadingActive(false); }
+                    }}
+                  />
+                  <div className="upload-content">
+                    {isUploadingActive ? (
+                      <Loader2 className="animate-spin" size={20} />
+                    ) : proofInput ? (
+                      <><CheckCircle className="text-green" size={20} /> <span className="text-xs">Siap Kirim</span></>
+                    ) : (
+                      <><Camera size={20} /> <span>Upload Bukti</span></>
+                    )}
+                  </div>
+                </label>
+                <button 
+                  id="companion-paid-btn" 
+                  className="btn-primary" 
+                  style={{ width: '100%' }} 
+                  disabled={isUploadingActive}
+                  onClick={() => markMyPayment(currentUser)}
+                >
+                  Tandai Sudah Bayar
                 </button>
               </div>
             )}
@@ -1403,17 +1514,58 @@ export default function App() {
             )}
 
             {myOrder && !alreadyPaid && step >= 1 && (
-              <div className="file-input-wrapper">
-                <label>Link Bukti Transfer (Opsional)</label>
-                <input
-                  type="text"
-                  placeholder="Paste link screenshot (Imgur/Drive/dll)"
-                  value={proofInput}
-                  onChange={e => setProofInput(e.target.value)}
-                  style={{ width: '100%', padding: '8px', marginBottom: '10px', border: '2px solid var(--text-primary)', borderRadius: '4px' }}
-                />
-                <button id="penitip-paid-btn" className="btn-primary" style={{ width: '100%' }} onClick={() => submitProof(currentUser)}>
-                  ✅ Sudah Bayar
+              <div className="file-input-wrapper mt-4">
+                <label className="text-secondary text-sm mb-2 block">Kirim Bukti Pembayaran</label>
+                <label className="upload-box-new active-upload">
+                  <input 
+                    type="file" 
+                    accept="image/*" 
+                    className="hidden-file-input"
+                    disabled={isUploadingActive}
+                    onChange={async (e) => {
+                      const file = e.target.files[0];
+                      if (!file) return;
+                      setIsUploadingActive(true);
+                      try {
+                        const url = await api.uploadProof(file);
+                        setProofInput(url);
+                        // Auto-submit after upload for better UX in active session?
+                        // Or let them click the button. Let's let them click.
+                      } catch (err) {
+                        alert('Gagal upload foto.');
+                      } finally {
+                        setIsUploadingActive(false);
+                      }
+                    }}
+                  />
+                  <div className="upload-content">
+                    {isUploadingActive ? (
+                      <Loader2 className="animate-spin" size={20} />
+                    ) : proofInput ? (
+                      <><CheckCircle className="text-green" size={20} /> <span className="text-xs">Foto Siap Kirim</span></>
+                    ) : (
+                      <><Camera size={20} /> <span>Pilih Cetak / Ambil Foto</span></>
+                    )}
+                  </div>
+                </label>
+
+                {proofInput && (
+                  <div className="img-preview-active mt-3 mb-3">
+                    <img src={proofInput} alt="Preview" className="rounded-md border" style={{ maxHeight: '150px' }} />
+                  </div>
+                )}
+
+                <button 
+                  id="penitip-paid-btn" 
+                  className="btn-primary mt-2" 
+                  style={{ width: '100%' }} 
+                  disabled={isUploadingActive}
+                  onClick={() => {
+                    if (!proofInput && !confirm('Kamu belum upload bukti. Tetap tandai bayar (Cash)?')) return;
+                    submitProof(currentUser);
+                  }}
+                >
+                  {isUploadingActive ? 'Sedang Upload...' : '✅ Kirim Konfirmasi Pembayaran'}
                 </button>
               </div>
             )}

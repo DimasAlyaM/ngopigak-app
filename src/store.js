@@ -412,19 +412,97 @@ export const api = {
   resetUserPin: async (username, newPin = '1234') => {
     await supabase.from('users').update({ pin: newPin }).eq('username', username);
     fetchFullState();
+  },
+
+  updateHistoricalOrder: async (sessionId, username, updates) => {
+    // 1. Fetch current blob
+    const { data: h, error: fetchErr } = await supabase.from('historic_sessions').select('data').eq('id', sessionId).single();
+    if (fetchErr || !h) {
+      console.error("Failed to fetch historic session:", fetchErr);
+      return;
+    }
+
+    const d = { ...h.data };
+    let changed = false;
+
+    // 2. Find and update the specific order
+    const orderIndex = d.orders.findIndex(o => (o.username || '').toLowerCase() === username.toLowerCase());
+    if (orderIndex !== -1) {
+      d.orders[orderIndex] = { ...d.orders[orderIndex], ...updates };
+      
+      // If marking as paid, or if the payer is confirming it
+      if (updates.isPaid) {
+        // Remove from debtors array
+        d.debtors = (d.debtors || []).filter(u => (u || '').toLowerCase() !== username.toLowerCase());
+      }
+      changed = true;
+    }
+
+    if (changed) {
+      await supabase.from('historic_sessions').update({ data: d }).eq('id', sessionId);
+      fetchFullState();
+    }
+  },
+
+  uploadProof: async (file) => {
+    const fileExt = file.name.split('.').pop();
+    const fileName = `${Date.now()}-${Math.random().toString(36).substring(2)}.${fileExt}`;
+    const filePath = `${fileName}`;
+
+    const { data, error } = await supabase.storage
+      .from('receipts')
+      .upload(filePath, file);
+
+    if (error) {
+      console.error('Error uploading proof:', error);
+      throw error;
+    }
+
+    const { data: { publicUrl } } = supabase.storage
+      .from('receipts')
+      .getPublicUrl(filePath);
+
+    return publicUrl;
   }
 };
 
-export function selectRoles(participants, payerHistory) {
+export function selectRoles(participants, payerHistory, lastRoles = null) {
   if (participants.length === 0) return { payer: null, companion: null };
-  const sorted = [...participants].sort((a, b) => {
+  
+  // Rule: Last session's payer and companion shouldn't be picked if others are available
+  const excludeSet = new Set();
+  if (lastRoles) {
+    if (lastRoles.payer) excludeSet.add(lastRoles.payer.toLowerCase());
+    if (lastRoles.companion) excludeSet.add(lastRoles.companion.toLowerCase());
+  }
+
+  const primaryPool = participants.filter(p => !excludeSet.has(p.toLowerCase()));
+  const secondaryPool = participants.filter(p => excludeSet.has(p.toLowerCase()));
+
+  // If primaryPool is empty (e.g., only 2 people total and they were both roles last time), 
+  // we must fall back to the secondaryPool
+  const finalCandidates = primaryPool.length > 0 ? primaryPool : participants;
+
+  const sorted = [...finalCandidates].sort((a, b) => {
     const countA = payerHistory[a] || 0;
     const countB = payerHistory[b] || 0;
     if (countA !== countB) return countA - countB;
     return a.localeCompare(b);
   });
+  
   const payer = sorted[0];
-  const remaining = sorted.filter(p => p !== payer);
-  const companion = remaining.length > 0 ? remaining[0] : null;
+  
+  // For companion, we also prefer someone who wasn't roles last time
+  const companionCandidates = participants.filter(p => p !== payer);
+  const primaryCompanionPool = companionCandidates.filter(p => !excludeSet.has(p.toLowerCase()));
+  
+  const sortedCompanions = [...(primaryCompanionPool.length > 0 ? primaryCompanionPool : companionCandidates)].sort((a, b) => {
+    // No specific companion count yet, so we just use alpha or random?
+    // Let's use alpha for deterministic behavior
+    return a.localeCompare(b);
+  });
+
+  const companion = sortedCompanions.length > 0 ? sortedCompanions[0] : null;
+  
   return { payer, companion };
 }
