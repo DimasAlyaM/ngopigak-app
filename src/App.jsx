@@ -1130,7 +1130,7 @@ export default function App() {
               </button>
             </form>
             <div className="login-footer" style={{ marginTop: '2.5rem', opacity: 0.5, fontSize: '0.8rem', fontWeight: 600, letterSpacing: '1px' }}>
-              Dimsam 2026
+              Dimsam @2026
             </div>
           </div>
         </div>
