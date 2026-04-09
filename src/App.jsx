@@ -1167,29 +1167,31 @@ export default function App() {
   // ─── VIEW: LOGIN ────────────────────────────────────────────────────────────
   if (!currentUser) {
     return (
-      <div className="app-container">
-        <nav className="navbar">
-          <div className="nav-logo text-gradient">NgopiGak?</div>
-        </nav>
+      <div className="app-container login-mode">
         <div className="login-screen fade-in">
           <div className="login-card glass-panel">
-            <div className="login-icon"><User size={48} /></div>
-            <h2 className="login-title">Siapa Kamu?</h2>
-            <p className="text-secondary" style={{ marginBottom: '2rem' }}>Masukkan nama dan 4 digit PIN untuk mulai ngopi bareng</p>
+            <div className="login-brand">
+              <div className="login-logo"><Coffee size={40} /></div>
+              <h1 className="text-gradient">NgopiGak</h1>
+            </div>
+            
+            <h2 className="login-title">Selamat Datang</h2>
+            <p className="text-secondary">Silakan masuk untuk mulai ngopi bareng rekan tim kamu.</p>
+            
             <form onSubmit={login} className="modern-form">
               <div className="form-group">
-                <label>Nama Kamu</label>
+                <label>Nama Pengguna</label>
                 <input
                   id="login-name"
                   type="text"
                   value={loginInput}
                   onChange={e => setLoginInput(e.target.value)}
-                  placeholder="Contoh: Budi, Sari, ..."
+                  placeholder="Masukkan nama kamu"
                   autoFocus
                   required
                 />
               </div>
-              <div className="form-group" style={{ marginTop: '1rem' }}>
+              <div className="form-group">
                 <label>4 Digit PIN</label>
                 <input
                   id="login-pin"
@@ -1202,12 +1204,13 @@ export default function App() {
                   required
                 />
               </div>
-              <button id="login-submit" type="submit" className="btn-primary" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem', marginTop: '1.5rem' }}>
-                Masuk <LogIn size={18} />
+              <button id="login-submit" type="submit" className="btn-primary">
+                Masuk Sekarang
               </button>
             </form>
-            <div className="login-footer" style={{ marginTop: '2.5rem', opacity: 0.5, fontSize: '0.8rem', fontWeight: 600, letterSpacing: '1px' }}>
-              Dimsam - 2026
+            
+            <div className="login-footer">
+              Dimsam &bull; 2026
             </div>
           </div>
         </div>
@@ -1215,38 +1218,91 @@ export default function App() {
     );
   }
 
+  // ─── BOTTOM NAVIGATION COMPONENT ───────────────────────────────────────────
+  const BottomNav = () => (
+    <nav className="bottom-nav">
+      <div className={`nav-item ${view === 'home' ? 'active' : ''}`} onClick={() => setView('home')}>
+        <div className="nav-icon"><LogIn size={20} /></div>
+        <span>Home</span>
+      </div>
+      <div className={`nav-item ${view === 'session' ? 'active' : ''}`} onClick={() => setView('session')}>
+        <div className="nav-icon"><Clock size={20} /></div>
+        <span>{session?.status === 'open' ? 'Sesi' : 'Pesanan'}</span>
+      </div>
+      <div className={`nav-item ${view === 'history' ? 'active' : ''}`} onClick={() => goToHistory('all')}>
+        <div className="nav-icon"><History size={20} /></div>
+        <span>History</span>
+      </div>
+      <div className={`nav-item ${view === 'profile' ? 'active' : ''}`} onClick={() => setShowProfileModal(true)}>
+        <div className="nav-icon"><User size={20} /></div>
+        <span>Profile</span>
+      </div>
+    </nav>
+  );
+
   // ─── VIEW: HOME ─────────────────────────────────────────────────────────────
   const renderHome = () => (
-    <div className="hero-section fade-in">
-      <div className="hero-content">
-        <h1 className="hero-title">
-          Sistem Patungan <span className="text-gradient">Premium</span> Ngopi
-        </h1>
-        <p className="hero-subtitle">
-          Titip kopi, pilih pembayar adil berbasis giliran, dan pantau status pembayaran semua anggota tim — semuanya dalam satu tempat.
-        </p>
-        <div className="hero-actions">
-          {!session || sessionDone ? (
-            <button id="start-session-btn" className="btn-primary" onClick={startSession} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}><PlusCircle size={18} /> Buka Sesi Ngopi</button>
-          ) : (
-            <button id="join-session-btn" className="btn-primary" onClick={() => setView('session')} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-              {session.status === 'open' ? <><PlusCircle size={18} /> Join Sesi Aktif</> : <><Info size={18} /> Lihat Sesi Berjalan</>}
-            </button>
-          )}
-          <button className="btn-secondary" onClick={() => goToHistory('all')} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}><History size={18} /> Histori</button>
+    <div className="home-view fade-in" style={{ padding: '1rem' }}>
+      <div className="welcome-section" style={{ marginBottom: '2rem' }}>
+        <p className="text-secondary" style={{ fontSize: '0.9rem', fontWeight: 500 }}>Selamat Pagi,</p>
+        <h2 style={{ fontSize: '1.8rem' }}>{currentUser}! 👋</h2>
+      </div>
+
+      <div className="status-grid" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', marginBottom: '2rem' }}>
+        <div className="glass-panel stat-card" style={{ padding: '1.25rem', borderRadius: '20px' }}>
+          <span className="text-secondary" style={{ fontSize: '0.75rem', fontWeight: 600 }}>Total Sesi</span>
+          <p style={{ fontSize: '1.5rem', fontWeight: 800 }}>{store.history.length}</p>
         </div>
-        {session && !sessionDone && session.status === 'open' && (
-          <div className="session-live-badge">
-            <span className="live-dot" /><span>Sesi Aktif</span>
-            <span className="live-timer" style={{ display: 'flex', alignItems: 'center', gap: '0.25rem' }}><Clock size={14} /> {formatTime(timeLeft)} tersisa</span>
-            <span style={{ display: 'flex', alignItems: 'center', gap: '0.25rem' }}><Users size={14} /> {session.orders.length} orang pesan</span>
+        <div className="glass-panel stat-card" style={{ padding: '1.25rem', borderRadius: '20px' }}>
+          <span className="text-secondary" style={{ fontSize: '0.75rem', fontWeight: 600 }}>Giliran Kamu</span>
+          <p style={{ fontSize: '1.5rem', fontWeight: 800 }}>{store.payerHistory[currentUser] || 0}</p>
+        </div>
+      </div>
+
+      <div className="active-session-promo" style={{ marginBottom: '2rem' }}>
+        {session && !sessionDone ? (
+          <div className="glass-panel session-card active" style={{ background: 'var(--accent-glow)', borderColor: 'var(--accent-primary)', position: 'relative', overflow: 'hidden' }}>
+            <div className="live-badge" style={{ position: 'absolute', top: '12px', right: '12px', background: 'var(--accent-primary)', padding: '4px 8px', borderRadius: '8px', fontSize: '0.6rem', fontWeight: 800 }}>LIVE</div>
+            <h3 style={{ marginBottom: '4px' }}>Sesi Ngopi Aktif</h3>
+            <p className="text-secondary" style={{ fontSize: '0.85rem', marginBottom: '1rem' }}>{session.orders.length} rekan tim sudah bergabung.</p>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <div className="timer-pill" style={{ background: 'var(--bg-primary)', padding: '6px 12px', borderRadius: '12px', fontSize: '0.8rem', fontWeight: 700 }}>
+                <Clock size={14} style={{ marginRight: '4px', verticalAlign: 'middle' }} /> {formatTime(timeLeft)}
+              </div>
+              <button className="btn-primary" style={{ padding: '8px 16px', fontSize: '0.85rem', width: 'auto' }} onClick={() => setView('session')}>
+                Lanjutkan Pesanan
+              </button>
+            </div>
+          </div>
+        ) : (
+          <div className="glass-panel empty-session-card" style={{ padding: '2rem', textAlign: 'center', borderStyle: 'dashed', opacity: 0.8 }}>
+            <div style={{ background: 'var(--surface)', width: '60px', height: '60px', borderRadius: '30px', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 1rem' }}>
+              <Coffee size={30} className="text-secondary" />
+            </div>
+            <h3 className="text-secondary">Belum ada sesi</h3>
+            <p className="text-secondary" style={{ fontSize: '0.85rem', marginTop: '4px' }}>Tap '+' untuk mulai sesi baru.</p>
           </div>
         )}
       </div>
-      <div className="hero-image-container">
-        <div className="glow-effect" />
-        <div className="hero-image-wrapper glass-panel">
-          <img src="/coffee_hero.png" alt="Premium Coffee" className="hero-image" />
+
+      <div className="recent-history" style={{ marginBottom: '2rem' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
+          <h3>Riwayat Terakhir</h3>
+          <span className="text-accent" style={{ fontSize: '0.85rem', fontWeight: 600, cursor: 'pointer' }} onClick={() => goToHistory('all')}>Lihat Semua</span>
+        </div>
+        <div className="card-stack">
+          {store.history.slice(0, 3).map(h => (
+            <div key={h.id} className="item-card glass-panel" style={{ padding: '12px 16px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                <div style={{ background: 'var(--bg-primary)', padding: '8px', borderRadius: '12px' }}><Coffee size={20} className="text-accent" /></div>
+                <div>
+                  <p style={{ fontSize: '0.9rem', fontWeight: 700 }}>{formatDate(h.startedAt).split(',')[0]}</p>
+                  <p className="text-secondary" style={{ fontSize: '0.75rem' }}>{h.orders.length} Peserta &bull; {h.payer}</p>
+                </div>
+              </div>
+              <span style={{ fontWeight: 700, fontSize: '0.9rem' }}>{formatRp(h.orders.reduce((s, o) => s + o.item.price, 0))}</span>
+            </div>
+          ))}
         </div>
       </div>
     </div>
@@ -1254,224 +1310,155 @@ export default function App() {
 
   // ─── VIEW: SESSION ──────────────────────────────────────────────────────────
   const renderSession = () => {
-    // No session at all
     if (!session) return (
-      <div className="empty-state">
-        <p className="text-secondary">Belum ada sesi aktif.</p>
-        <button className="btn-primary mt-4" onClick={startSession} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}><PlusCircle size={18} /> Buka Sesi</button>
+      <div className="empty-state fade-in" style={{ padding: '4rem 2rem', textAlign: 'center' }}>
+        <div style={{ background: 'var(--surface)', width: '80px', height: '80px', borderRadius: '40px', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 2rem' }}>
+          <Coffee size={40} className="text-secondary" />
+        </div>
+        <h2 className="text-secondary">Belum ada sesi</h2>
+        <p className="text-secondary" style={{ marginTop: '0.5rem', marginBottom: '2rem' }}>Mulai sesi ngopi sekarang untuk berbagi bareng teman.</p>
+        <button className="btn-primary" onClick={startSession}>Buka Sesi Baru</button>
       </div>
     );
 
-    // SESSION SELESAI — tampilkan layar ringkasan, bukan blank/stuck
     if (session.status === 'completed' || session.status === 'force-closed') {
       const isForced = session.status === 'force-closed';
-      const debtors = session.debtors || [];
       const totalSession = session.orders.reduce((sum, o) => sum + o.item.price, 0);
       return (
-        <div className="empty-state fade-in" style={{ padding: '2rem 1rem' }}>
-          <div className="glass-panel summary-card" style={{ maxWidth: '600px', margin: '0 auto', padding: '2.5rem', textAlign: 'center' }}>
-            <div className={`summary-icon ${isForced ? 'error' : 'success'}`}>
+        <div className="session-summary fade-in" style={{ padding: '1.5rem' }}>
+          <div className="glass-panel" style={{ textAlign: 'center', padding: '2.5rem 1.5rem' }}>
+            <div style={{ color: isForced ? 'var(--accent-primary)' : '#4ade80', marginBottom: '1.5rem' }}>
               {isForced ? <AlertTriangle size={64} /> : <CheckCircle size={64} />}
             </div>
-            <h2 className="summary-title">{isForced ? 'Sesi Selesai (Hutang Tercatat)' : 'Sesi Selesai (Lunas Total)'}</h2>
-            <p className="text-secondary mb-6">
-              {isForced
-                ? `Sesi ditutup paksa oleh ${session.forceClosedBy || 'Sistem'}.`
-                : 'Mantap! Semua kopi sudah dibayar lunas.'}
+            <h2 style={{ marginBottom: '0.5rem' }}>{isForced ? 'Sesi Ditutup' : 'Sesi Selesai!'}</h2>
+            <p className="text-secondary" style={{ marginBottom: '2rem' }}>
+              {isForced ? 'Ditutup sebelum semua bayar.' : 'Semua pesanan sudah lunas.'}
             </p>
 
-            <div className="summary-stats stats-box mb-6">
-              <div className="stat-row"><span>Total Putaran:</span><strong>{formatRp(totalSession)}</strong></div>
-              <div className="stat-row"><span>Peserta:</span><strong>{session.orders.length} orang</strong></div>
-              <div className="stat-row"><span>Status:</span><strong className={isForced ? 'text-red' : 'text-green'}>{isForced ? 'Berhutang' : 'Lunas'}</strong></div>
-            </div>
-
-            {debtors.length > 0 && (
-              <div className="debtor-list-summary mb-6">
-                <h4>Belum Bayar:</h4>
-                <div className="debtor-chips">
-                  {debtors.map(d => <span key={d} className="debtor-chip">{d}</span>)}
-                </div>
+            <div className="stats-list" style={{ background: 'var(--bg-primary)', borderRadius: '20px', padding: '1.5rem', marginBottom: '2rem' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '12px' }}>
+                <span className="text-secondary">Total Putaran</span>
+                <strong style={{ fontSize: '1.1rem' }}>{formatRp(totalSession)}</strong>
               </div>
-            )}
-
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-              <button className="btn-primary" style={{ width: '100%' }} onClick={() => setView('home')}>
-                <PlusCircle size={18} /> Buka Sesi Baru
-              </button>
-              <button className="btn-secondary" style={{ width: '100%' }} onClick={() => goToHistory('all')}>
-                Lihat Histori Lengkap
-              </button>
+              <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                <span className="text-secondary">Peserta</span>
+                <strong style={{ fontSize: '1.1rem' }}>{session.orders.length} orang</strong>
+              </div>
             </div>
+
+            <button className="btn-primary" onClick={() => setView('home')}>Kembali ke Home</button>
           </div>
         </div>
       );
     }
 
-    // PHASE: Open — order collection
     if (session.status === 'open') {
       return (
-        <div className="dashboard-grid fade-in">
-          {/* LEFT: Form Order */}
-          <div className="panel glass-panel">
-            <div className="panel-header">
-              <div className="timer-row">
-                <h2 style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}><Coffee size={24} /> Sesi Terbuka</h2>
-                <div className={`timer-chip ${timeLeft < 60 ? 'urgent' : ''}`}>{formatTime(timeLeft)}</div>
-              </div>
-              <p className="text-secondary">Halo <strong>{currentUser}</strong>! Pilih kopi yang kamu mau.</p>
+        <div className="session-open-view fade-in" style={{ padding: '1rem' }}>
+          <div className="glass-panel" style={{ marginBottom: '1.5rem', position: 'relative' }}>
+            <div className={`timer-chip ${timeLeft < 60 ? 'urgent' : ''}`} style={{ position: 'absolute', top: '16px', right: '16px', background: 'var(--bg-primary)', padding: '6px 12px', borderRadius: '12px', fontWeight: 800 }}>
+              {formatTime(timeLeft)}
             </div>
-            {myOrder
-              ? <div className="my-order-card">
-                <span className="text-secondary text-sm">Pesananmu saat ini:</span>
-                <div className="my-order-detail">
-                  <span>{myOrder.item.emoji} {myOrder.item.name}</span>
-                  <strong className="text-accent">{formatRp(myOrder.item.price)}</strong>
-                </div>
-                <span className="text-secondary text-sm" style={{ marginTop: '0.25rem' }}>Kamu bisa update pesanan di bawah.</span>
-              </div>
-              : <div className="no-order-hint glass-panel" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}><Info size={16} /> Kamu belum pesan! Order sekarang agar masuk undian jadi pembayar.</div>
-            }
-            <form onSubmit={addOrder} className="modern-form" style={{ marginTop: '1.5rem' }}>
-              <div className="form-group relative">
-                <label>Pilih Menu Kopi</label>
-                <div className="searchable-dropdown" ref={coffeeDropdownRef}>
+            <h3 style={{ marginBottom: '0.5rem' }}>Sesi Terbuka</h3>
+            <p className="text-secondary" style={{ fontSize: '0.9rem' }}>Pilih kopi kamu sebelum timer habis.</p>
+
+            <form onSubmit={addOrder} style={{ marginTop: '1.5rem' }}>
+              <div className="form-group modern-form">
+                <div className="searchable-dropdown" ref={coffeeDropdownRef} style={{ position: 'relative' }}>
                   <input
                     type="text"
-                    id="coffee-search-input"
-                    placeholder="Ketik nama kopi (misal: Latte)..."
+                    placeholder="Cari kopi..."
                     value={coffeeSearch}
                     onFocus={() => setShowMenuResults(true)}
                     onChange={(e) => setCoffeeSearch(e.target.value)}
-                    autoComplete="off"
-                    required={!selectedCoffeeId}
+                    style={{ borderRadius: '20px', paddingRight: '40px' }}
                   />
+                  <div style={{ position: 'absolute', right: '16px', top: '50%', transform: 'translateY(-50%)', opacity: 0.5 }}>
+                    <ChevronDown size={20} />
+                  </div>
                   {showMenuResults && (
-                    <div className="search-results-list glass-panel">
-                      {store.menu
-                        .filter(m => m.name.toLowerCase().includes(coffeeSearch.toLowerCase()))
-                        .map(m => (
-                          <div
-                            key={m.id}
-                            className={`search-item ${selectedCoffeeId === m.id ? 'active' : ''}`}
-                            onClick={() => {
-                              setSelectedCoffeeId(m.id);
-                              setCoffeeSearch(`${m.emoji} ${m.name}`);
-                              setShowMenuResults(false);
-                            }}
-                          >
-                            <span className="item-main">{m.emoji} {m.name}</span>
-                            <span className="item-price">{formatRp(m.price)}</span>
-                          </div>
-                        ))}
-                      {store.menu.filter(m => m.name.toLowerCase().includes(coffeeSearch.toLowerCase())).length === 0 && (
-                        <div className="search-empty">Menu tidak ditemukan...</div>
-                      )}
+                    <div className="glass-panel dropdown-results" style={{ position: 'absolute', top: 'calc(100% + 8px)', left: 0, right: 0, zIndex: 100, maxHeight: '250px', overflowY: 'auto', padding: '8px' }}>
+                      {store.menu.filter(m => m.name.toLowerCase().includes(coffeeSearch.toLowerCase())).map(m => (
+                        <div key={m.id} className="dropdown-item" onClick={() => { setSelectedCoffeeId(m.id); setCoffeeSearch(`${m.emoji} ${m.name}`); setShowMenuResults(false); }} style={{ padding: '12px', borderRadius: '12px', cursor: 'pointer', display: 'flex', justifyContent: 'space-between' }}>
+                          <span>{m.emoji} {m.name}</span>
+                          <span className="text-accent">{formatRp(m.price)}</span>
+                        </div>
+                      ))}
                     </div>
                   )}
                 </div>
               </div>
-              <button id="order-submit" type="submit" className="btn-primary">{myOrder ? ' Update Pesanan' : '+ Tambah Pesanan'}</button>
+              <button className="btn-primary" type="submit" style={{ borderRadius: '20px' }}>
+                {myOrder ? 'Update Pesanan' : 'Tambah Pesanan'}
+              </button>
             </form>
           </div>
 
-          {/* RIGHT: Order List + Close Button */}
-          <div className="panel glass-panel split-panel">
-            <div className="order-list">
-              <h3>Daftar Pesanan ({session.orders.length})</h3>
-              <div className="list-container">
-                {session.orders.map(o => (
-                  <div key={o.id} className={`list-item ${o.username === currentUser ? 'highlight' : ''}`}>
-                    <div className="flex-col">
-                      <span className="font-bold">{o.username} {o.username === currentUser && <span className="you-tag">Kamu</span>}</span>
-                      <span className="text-secondary text-sm">{o.item.emoji} {o.item.name}</span>
+          <div className="order-list-section">
+            <h4 style={{ marginBottom: '1rem', paddingLeft: '4px' }}>Daftar Pesanan ({session.orders.length})</h4>
+            <div className="card-stack">
+              {session.orders.map(o => (
+                <div key={o.id} className={`item-card glass-panel ${o.username === currentUser ? 'active-border' : ''}`} style={{ padding: '12px 16px', borderRadius: '20px' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                    <UserAvatar username={o.username} size={36} />
+                    <div>
+                      <p style={{ fontSize: '0.9rem', fontWeight: 700 }}>{o.username}</p>
+                      <p className="text-secondary" style={{ fontSize: '0.8rem' }}>{o.item.emoji} {o.item.name}</p>
                     </div>
-                    <span className="font-bold text-accent">{formatRp(o.item.price)}</span>
                   </div>
-                ))}
-                {session.orders.length === 0 && <p className="text-secondary text-center mt-4">Belum ada pesanan.</p>}
-              </div>
+                  <strong className="text-accent">{formatRp(o.item.price)}</strong>
+                </div>
+              ))}
             </div>
-            <div className="volunteer-section">
-              <h3>Tutup Sesi</h3>
-              <p className="text-sm text-secondary" style={{ marginBottom: '1rem' }}>
-                Sistem akan pilih Pembayar & Pendamping secara adil berbasis giliran. Sesi otomatis tutup setelah timer habis.
-              </p>
-              <button
-                id="close-session-btn"
-                className="btn-secondary"
-                style={{ width: '100%', borderColor: session.orders.length === 0 ? 'var(--red)' : '', color: session.orders.length === 0 ? 'var(--red)' : '' }}
-                onClick={closeSessionAndSelectRoles}
-              >
-                {session.orders.length === 0 ? 'Batalkan Sesi (Kosong) ' : 'Tutup Sesi & Pilih Relawan '}
-              </button>
-            </div>
+          </div>
+
+          <div className="admin-actions" style={{ marginTop: '2rem' }}>
+            <button className="btn-secondary" onClick={closeSessionAndSelectRoles} style={{ width: '100%', borderRadius: '20px', borderColor: 'rgba(255,255,255,0.1)' }}>
+              Tutup Sesi Sekarang
+            </button>
           </div>
         </div>
       );
     }
 
-    // PHASE: Payment Setup (Payer fills in payment info)
     if (session.status === 'payment-setup') {
       const isPayer = session.payer === currentUser;
       return (
-        <div className="dashboard-centered fade-in">
-          <div className="panel glass-panel full-width">
-            <div className="panel-header text-center">
-              <h2> Relawan Terpilih!</h2>
-            </div>
-            <div className="volunteer-highlights mb-4">
-              <div className="highlight-card bg-accent-glow">
-                <span className="badge"> PEMBAYAR</span>
-                <h3>{session.payer}</h3>
-                <span className="text-secondary text-sm">{(store.payerHistory[session.payer] || 0)} kali sebelumnya</span>
+        <div className="payment-setup fade-in" style={{ padding: '1.5rem' }}>
+          <div className="glass-panel" style={{ textAlign: 'center', padding: '2rem 1.5rem' }}>
+            <h2 style={{ marginBottom: '2rem' }}>Relawan Terpilih!</h2>
+            
+            <div className="payer-showcase" style={{ position: 'relative', marginBottom: '2.5rem' }}>
+              <div style={{ position: 'absolute', top: '-10px', left: '50%', transform: 'translateX(-50%)', background: 'var(--accent-primary)', padding: '4px 12px', borderRadius: '12px', fontSize: '0.7rem', fontWeight: 800 }}>PEMBAYAR</div>
+              <div style={{ background: 'var(--bg-primary)', padding: '2rem', borderRadius: '30px', border: '2px solid var(--accent-primary)' }}>
+                <UserAvatar username={session.payer} size={80} />
+                <h3 style={{ fontSize: '1.5rem', marginTop: '1rem' }}>{session.payer}</h3>
+                <p className="text-secondary" style={{ fontSize: '0.85rem' }}>Sudah bayar {store.payerHistory[session.payer] || 0} kali</p>
               </div>
-              {session.companion && (
-                <div className="highlight-card">
-                  <span className="badge"> PENDAMPING</span>
-                  <h3>{session.companion}</h3>
-                </div>
-              )}
             </div>
 
             {isPayer ? (
-              <div style={{ padding: '0 1rem' }}>
-                <h3 className="mb-4" style={{ borderBottom: '1px solid var(--glass-border)', paddingBottom: '0.5rem' }}>
-                  Lengkapi Info Pembayaran
-                </h3>
-                <p className="text-secondary mb-4 text-sm">
-                  Kamu terpilih sebagai Pembayar! Isi rekening/nomor tujuan transfer agar semua bisa bayar ke kamu.
-                </p>
-                <form onSubmit={submitPaymentInfo} className="modern-form form-grid">
-                  <div className="form-group mb-4">
-                    <label>Metode Pembayaran</label>
-                    <select id="payment-method" value={paymentMethod} onChange={e => setPaymentMethod(e.target.value)} required>
-                      <option value="" disabled>-- Pilih Metode --</option>
-                      <option value="BANK"> Bank Transfer</option>
-                      <option value="GOPAY"> GoPay</option>
-                      <option value="DANA"> DANA</option>
-                    </select>
-                  </div>
-                  {paymentMethod === 'BANK' && (
-                    <div className="form-group mb-4">
-                      <label>Nama Bank</label>
-                      <input id="bank-name" type="text" value={bankName} onChange={e => setBankName(e.target.value)} placeholder="BCA, Mandiri, BNI, dll" required />
-                    </div>
-                  )}
-                  <div className="form-group mb-4">
-                    <label>{paymentMethod === 'BANK' ? 'Nomor Rekening' : 'Nomor HP / Akun'}</label>
-                    <input id="account-no" type="text" value={accountNo} onChange={e => setAccountNo(e.target.value)} placeholder="Masukkan nomor" required />
-                  </div>
-                  <button id="confirm-payment-btn" type="submit" className="btn-primary" style={{ gridColumn: '1 / -1' }}>
-                    Konfirmasi & Kirim Notifikasi
-                  </button>
-                </form>
-              </div>
+              <form onSubmit={submitPaymentInfo} className="modern-form" style={{ textAlign: 'left' }}>
+                <h4 style={{ marginBottom: '1rem' }}>Lengkapi Info Transfer</h4>
+                <div className="form-group">
+                  <label>Metode</label>
+                  <select value={paymentMethod} onChange={e => setPaymentMethod(e.target.value)} required>
+                    <option value="" disabled>Pilih Metode</option>
+                    <option value="BANK">Bank Transfer</option>
+                    <option value="GOPAY">GoPay / ShopeePay</option>
+                    <option value="DANA">DANA / OVO</option>
+                  </select>
+                </div>
+                {paymentMethod === 'BANK' && (
+                  <div className="form-group"><label>Nama Bank</label><input type="text" value={bankName} onChange={e => setBankName(e.target.value)} placeholder="Misal: BCA" required /></div>
+                )}
+                <div className="form-group"><label>Nomor Akun</label><input type="text" value={accountNo} onChange={e => setAccountNo(e.target.value)} placeholder="No Rekening / No HP" required /></div>
+                <button className="btn-primary" type="submit" style={{ marginTop: '1rem' }}>Konfirmasi & Aktifkan Sesi</button>
+              </form>
             ) : (
-              <div className="waiting-payer">
-                <div className="spinner" />
+              <div style={{ opacity: 0.8 }}>
+                <div className="spinner" style={{ margin: '0 auto 1.5rem' }}></div>
                 <p className="text-secondary">Menunggu <strong>{session.payer}</strong> mengisi info pembayaran...</p>
-                <p className="text-sm text-secondary" style={{ marginTop: '0.5rem' }}>Kamu akan diberi tahu begitu info tersedia.</p>
               </div>
             )}
           </div>
@@ -1479,16 +1466,12 @@ export default function App() {
       );
     }
 
-    // PHASE: Active & Done — role-based pages
     if (session.status === 'active' || sessionDone) {
       if (myRole === 'payer') return renderPayerPage();
       if (myRole === 'companion') return renderCompanionPage();
       if (myRole === 'penitip') return renderPenitipPage();
-      // User who joined but didn't order
       return renderGuestPage();
     }
-
-    return null;
   };
 
   // ─── PAYER PAGE ─────────────────────────────────────────────────────────────
@@ -1497,403 +1480,192 @@ export default function App() {
     const paidCount = nonPayer.filter(o => o.isPaid).length;
 
     return (
-      <div className="role-layout fade-in">
-        <div className="role-header payer-header">
-          <span className="role-badge"> Kamu Pembayar</span>
-          <h2>Dashboard Pembayar</h2>
-          <p className="text-secondary">Rekap semua pesanan dan status pembayaran dari setiap peserta.</p>
-        </div>
-
-        <div className="dashboard-grid">
-          {/* Order Summary */}
-          <div className="panel glass-panel">
-            <h3 className="section-title"> Rekap Pesanan</h3>
-            <div className="stats-box mb-4">
-              <div className="stat-row"><span>Total Keseluruhan:</span><strong>{formatRp(totalAmount)}</strong></div>
-              <div className="stat-row"><span>Terkumpul:</span><strong className="text-green">{formatRp(paidAmount)}</strong></div>
-              <div className="stat-row"><span>Sisa Belum Bayar:</span><strong className="text-red">{formatRp(totalAmount - paidAmount)}</strong></div>
-              <div className="stat-row"><span>Progress:</span><strong>{paidCount}/{nonPayer.length} orang lunas</strong></div>
-            </div>
-
-            <button className="btn-secondary btn-small" style={{ width: '100%', marginBottom: '1.5rem' }} onClick={remindAll}>
-              📢 Tagih Semua yang Belum Lunas
+      <div className="payer-view fade-in" style={{ padding: '1rem' }}>
+        <div className="glass-panel" style={{ marginBottom: '1.5rem', background: 'var(--accent-glow)', border: '1px solid var(--accent-primary)' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
+            <span className="badge badge-amber">Kamu Pembayar</span>
+            <span className="text-secondary" style={{ fontSize: '0.8rem' }}>{paidCount}/{nonPayer.length} Lunas</span>
+          </div>
+          <h2 style={{ fontSize: '1.5rem', marginBottom: '0.5rem' }}>Total Tagihan</h2>
+          <p style={{ fontSize: '2rem', fontWeight: 800 }}>{formatRp(totalAmount)}</p>
+          <div style={{ marginTop: '1rem', display: 'flex', gap: '8px' }}>
+            <button className="btn-primary" style={{ flex: 1, padding: '10px', fontSize: '0.85rem' }} onClick={confirmBought} disabled={session.coffeeBought}>
+              {session.coffeeBought ? 'Kopi Sudah Dibeli ✅' : 'Kopi Sudah Dibeli'}
             </button>
-
-            <div className="list-container" style={{ maxHeight: 'none', gap: '0.75rem' }}>
-              {session.orders.map(o => (
-                <div key={o.id} className={`payment-item ${o.isPaid ? 'paid' : ''}`}>
-                  <div className="payment-info">
-                    <span className="font-bold">{o.username} {o.username === session.payer && <span className="you-tag">Pembayar</span>} {o.username === session.companion && <span className="you-tag companion">Pendamping</span>}</span>
-                    <span className="text-secondary text-sm">{o.item.emoji} {o.item.name}</span>
-                    <strong className="text-accent">{formatRp(o.item.price)}</strong>
-                  </div>
-                  <div>
-                    {o.username === session.payer ? (
-                      <span className="badge-role">Kamu (gratis angkat!)</span>
-                    ) : o.isPaid ? (
-                      <div style={{ textAlign: 'right' }}>
-                        <span className="badge-paid"> LUNAS</span>
-                        {o.paymentProof && (
-                          <div style={{ marginTop: '4px' }}>
-                            <a href={o.paymentProof} target="_blank" rel="noreferrer" className="proof-link">Lihat Bukti</a>
-                          </div>
-                        )}
-                        {o.markedByPayer && <p className="text-secondary text-sm" style={{ marginTop: '3px' }}>Cash</p>}
-                      </div>
-                    ) : (
-                      <div style={{ display: 'flex', flexDirection: 'column', gap: '5px', alignItems: 'flex-end' }}>
-                        {o.paymentProof && <span className="badge-verification">Menunggu Verifikasi</span>}
-                        <button id={`mark-paid-${o.username}`} className="btn-primary btn-small" onClick={() => markPaidByPayer(o.username)}>
-                          {o.paymentProof ? 'Konfirmasi Lunas' : 'Tandai Lunas'}
-                        </button>
-                        {o.paymentProof && <a href={o.paymentProof} target="_blank" rel="noreferrer" className="proof-link">Lihat Bukti</a>}
-                      </div>
-                    )}
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-
-          {/* Actions Panel */}
-          <div className="panel glass-panel" style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
-            {/* Payment Info */}
-            {session.paymentInfo && (
-              <div>
-                <h3 className="section-title"> Info Transfer Kamu</h3>
-                <div className="payment-info-card glass-panel">
-                  <div className="payment-method-tag">{session.paymentInfo.method}</div>
-                  {session.paymentInfo.bankName && <p><span className="text-secondary">Bank:</span> <strong>{session.paymentInfo.bankName}</strong></p>}
-                  <p><span className="text-secondary">Nomor:</span> <strong style={{ fontSize: '1.2rem' }}>{session.paymentInfo.accountNo}</strong></p>
-                  <p><span className="text-secondary">A.n.:</span> <strong>{session.payer}</strong></p>
-                </div>
-              </div>
-            )}
-
-            {/* Coffee Bought */}
-            {!session.coffeeBought ? (
-              <div>
-                <h3 className="section-title"> Status Pembelian</h3>
-                <p className="text-secondary text-sm mb-4">Tekan tombol ini setelah kopi sudah dibeli dan dalam perjalanan.</p>
-                <button
-                  id="coffee-bought-btn"
-                  className="btn-primary"
-                  style={{ width: '100%' }}
-                  onClick={() => setDialog({
-                    title: 'Konfirmasi Pembelian',
-                    message: 'Apakah kamu sudah membeli semua kopi? Semua peserta akan mendapat notifikasi.',
-                    onConfirm: confirmBought,
-                    confirmText: ' Ya, Kopi Sudah Dibeli!'
-                  })}
-                >
-                  Kopi Sudah Dibeli
-                </button>
-              </div>
-            ) : (
-              <div className="success-banner">
-                <span></span>
-                <div>
-                  <strong>Kopi sudah dibeli!</strong>
-                  <p className="text-secondary text-sm">{formatDate(session.coffeeBoughtAt)}</p>
-                </div>
-              </div>
-            )}
-
-            {/* Force Close */}
-            {!sessionDone && (
-              <div style={{ marginTop: 'auto' }}>
-                <button
-                  id="force-close-btn"
-                  className="btn-danger"
-                  style={{ width: '100%' }}
-                  onClick={() => setDialog({
-                    title: ' Tutup Paksa Sesi',
-                    message: `Total ${unpaidCount} orang belum bayar. Nama mereka akan tercatat sebagai hutang di histori.`,
-                    onConfirm: forceClose,
-                    confirmText: 'Tutup Paksa',
-                    danger: true
-                  })}
-                >
-                  Tutup Paksa Sesi
-                </button>
-              </div>
-            )}
-
-            {sessionDone && (
-              <button id="finish-btn" className="btn-secondary" style={{ width: '100%' }} onClick={finishViewSession}>
-                Kembali ke Home
-              </button>
-            )}
+            <button className="btn-secondary" style={{ padding: '10px' }} onClick={remindAll}><Bell size={18} /></button>
           </div>
         </div>
+
+        <div className="order-management">
+          <h4 style={{ marginBottom: '1rem', paddingLeft: '4px' }}>Status Peserta</h4>
+          <div className="card-stack">
+            {session.orders.map(o => (
+              <div key={o.id} className="item-card glass-panel" style={{ padding: '16px' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '12px', flex: 1 }}>
+                  <UserAvatar username={o.username} size={40} />
+                  <div>
+                    <p style={{ fontSize: '0.95rem', fontWeight: 700 }}>
+                      {o.username} {o.username === session.payer && <span className="text-accent" style={{ fontSize: '0.7rem' }}>(Kamu)</span>}
+                    </p>
+                    <p className="text-secondary" style={{ fontSize: '0.8rem' }}>{o.item.emoji} {o.item.name}</p>
+                  </div>
+                </div>
+                <div style={{ textAlign: 'right' }}>
+                  <p style={{ fontWeight: 800, marginBottom: '6px' }}>{formatRp(o.item.price)}</p>
+                  {o.username !== session.payer && (
+                    <button 
+                      className={`badge ${o.isPaid ? 'badge-glass' : 'badge-amber'}`} 
+                      style={{ border: 'none', cursor: 'pointer' }}
+                      onClick={() => !o.isPaid && markPaidByPayer(o.username)}
+                    >
+                      {o.isPaid ? 'LUNAS ✅' : 'Tandai Lunas'}
+                    </button>
+                  )}
+                  {o.paymentProof && (
+                    <div style={{ marginTop: '4px' }}>
+                      <a href={o.paymentProof} target="_blank" rel="noreferrer" style={{ fontSize: '0.7rem', color: 'var(--accent-primary)', fontWeight: 600 }}>Lihat Bukti</a>
+                    </div>
+                  )}
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {!sessionDone && (
+          <div style={{ marginTop: '2.5rem', paddingBottom: '2rem' }}>
+            <button className="btn-secondary" style={{ width: '100%', color: '#ef4444', borderColor: 'rgba(239,68,68,0.2)' }} onClick={() => setDialog({ title: 'Tutup Paksa?', message: 'Hutang peserta akan dicatat.', onConfirm: forceClose, danger: true, confirmText: 'Ya, Tutup' })}>
+              Tutup Paksa Sesi
+            </button>
+          </div>
+        )}
       </div>
     );
   };
 
   // ─── COMPANION PAGE ──────────────────────────────────────────────────────────
   const renderCompanionPage = () => {
-    const myOrderC = session.orders.find(o => o.username === currentUser);
     return (
-      <div className="role-layout fade-in">
-        <div className="role-header companion-header">
-          <span className="role-badge companion"> Kamu Pendamping</span>
-          <h2>Halaman Pendamping</h2>
-          <p className="text-secondary">Kamu menemani {session.payer} belanja kopi hari ini.</p>
-        </div>
-
-        <div className="dashboard-grid">
-          {/* All Orders (read-only) */}
-          <div className="panel glass-panel">
-            <h3 className="section-title"> Semua Pesanan</h3>
-            <div className="stats-box mb-4">
-              <div className="stat-row"><span>Total Semua:</span><strong>{formatRp(totalAmount)}</strong></div>
-              <div className="stat-row"><span>Terkumpul:</span><strong className="text-green">{formatRp(paidAmount)}</strong></div>
-            </div>
-            <div className="list-container" style={{ maxHeight: 'none', gap: '0.75rem' }}>
-              {session.orders.map(o => (
-                <div key={o.id} className={`payment-item ${o.isPaid ? 'paid' : ''}`}>
-                  <div className="payment-info">
-                    <span className="font-bold">{o.username} {o.username === session.payer && <span className="you-tag">Pembayar</span>} {o.username === currentUser && <span className="you-tag companion">Kamu</span>}</span>
-                    <span className="text-secondary text-sm">{o.item.emoji} {o.item.name} — {formatRp(o.item.price)}</span>
-                  </div>
-                  <span className={o.isPaid ? 'badge-paid' : 'badge-unpaid'}>{o.isPaid ? ' Lunas' : ' Belum'}</span>
-                </div>
-              ))}
-            </div>
+      <div className="companion-view fade-in" style={{ padding: '1rem' }}>
+        <div className="glass-panel" style={{ marginBottom: '1.5rem', textAlign: 'center', padding: '2rem' }}>
+          <div style={{ background: 'var(--accent-glow)', width: '64px', height: '64px', borderRadius: '32px', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 1.5rem' }}>
+            <Users size={32} className="text-accent" />
           </div>
-
-          {/* My Action */}
-          <div className="panel glass-panel" style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
-            {session.paymentInfo && (
-              <div>
-                <h3 className="section-title"> Info Transfer ke Pembayar</h3>
-                <div className="payment-info-card glass-panel">
-                  <div className="payment-method-tag">{session.paymentInfo.method}</div>
-                  {session.paymentInfo.bankName && <p><span className="text-secondary">Bank:</span> <strong>{session.paymentInfo.bankName}</strong></p>}
-                  <p><span className="text-secondary">Nomor:</span> <strong style={{ fontSize: '1.2rem' }}>{session.paymentInfo.accountNo}</strong></p>
-                  <p><span className="text-secondary">A.n.:</span> <strong>{session.payer}</strong></p>
-                </div>
-              </div>
-            )}
-
-            {session.coffeeBought && (
-              <div className="success-banner">
-                <span></span><strong>Kopi sudah dibeli dan dalam perjalanan!</strong>
-              </div>
-            )}
-
-            {myOrderC && !myOrderC.isPaid && session.status === 'active' && (
-              <div>
-                <h3 className="section-title"> Konfirmasi Pembayaranmu</h3>
-                <p className="text-secondary text-sm mb-4">
-                  Pesananmu: {myOrderC.item.emoji} {myOrderC.item.name} — <strong>{formatRp(myOrderC.item.price)}</strong>
-                </p>
-                <label className="upload-box-new mb-3">
-                  <input
-                    type="file"
-                    accept="image/*"
-                    className="hidden-file-input"
-                    disabled={isUploadingActive}
-                    onChange={async (e) => {
-                      const file = e.target.files[0];
-                      if (!file) return;
-                      setIsUploadingActive(true);
-                      try {
-                        const url = await api.uploadProof(file);
-                        setProofInput(url);
-                      } catch (err) { alert('Gagal upload.'); }
-                      finally { setIsUploadingActive(false); }
-                    }}
-                  />
-                  <div className="upload-content">
-                    {isUploadingActive ? (
-                      <Loader2 className="animate-spin" size={20} />
-                    ) : proofInput ? (
-                      <><CheckCircle className="text-green" size={20} /> <span className="text-xs">Siap Kirim</span></>
-                    ) : (
-                      <><Camera size={20} /> <span>Upload Bukti</span></>
-                    )}
-                  </div>
-                </label>
-                <button
-                  id="companion-paid-btn"
-                  className="btn-primary"
-                  style={{ width: '100%' }}
-                  disabled={isUploadingActive}
-                  onClick={() => markMyPayment(currentUser)}
-                >
-                  Tandai Sudah Bayar
-                </button>
-              </div>
-            )}
-
-            {myOrderC?.isPaid && <div className="success-banner"><span></span><strong>Pembayaranmu sudah dikonfirmasi!</strong></div>}
-
-            {sessionDone && <button className="btn-secondary" style={{ width: '100%', marginTop: 'auto' }} onClick={finishViewSession}>Kembali ke Home</button>}
-          </div>
+          <span className="badge badge-amber" style={{ marginBottom: '1rem' }}>Kamu Pendamping</span>
+          <h2 style={{ marginBottom: '1rem', fontSize: '1.5rem' }}>Bantu {session.payer} Ambil Kopi!</h2>
+          <p className="text-secondary" style={{ fontSize: '0.9rem' }}>Tugas kamu adalah menemani pembayar hari ini ke kedai kopi.</p>
         </div>
+        {renderPenitipPage()}
       </div>
     );
   };
 
   // ─── PENITIP PAGE ────────────────────────────────────────────────────────────
   const renderPenitipPage = () => {
-    const step = getStepIndex();
     const alreadyPaid = myOrder?.isPaid;
-
+    const step = getStepIndex();
+    
     return (
-      <div className="role-layout penitip-layout fade-in">
-        <div className="role-header penitip-header">
-          <span className="role-badge penitip"> Penitip</span>
-          <h2>Status Pesananmu</h2>
-        </div>
+      <div className="penitip-view fade-in" style={{ padding: '1rem' }}>
+        <div className="glass-panel" style={{ marginBottom: '1.5rem' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
+            <span className="badge badge-glass">Status Pesanan</span>
+            {alreadyPaid ? <span className="text-green" style={{ fontSize: '0.8rem', fontWeight: 800 }}>LUNAS ✅</span> : <span className="text-red" style={{ fontSize: '0.8rem', fontWeight: 800 }}>BELUM BAYAR ⏳</span>}
+          </div>
 
-        <div className="penitip-content">
-          <Stepper steps={stepperSteps} currentStep={step} />
+          <div style={{ display: 'flex', alignItems: 'center', gap: '20px', marginBottom: '2rem' }}>
+            <div style={{ fontSize: '3rem', background: 'var(--surface)', width: '80px', height: '80px', borderRadius: '24px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>{myOrder?.item.emoji || '☕'}</div>
+            <div>
+              <h3 style={{ fontSize: '1.3rem' }}>{myOrder?.item.name}</h3>
+              <p className="text-accent" style={{ fontSize: '1.5rem', fontWeight: 800 }}>{formatRp(myOrder?.item.price)}</p>
+            </div>
+          </div>
 
-          <div className="penitip-card glass-panel">
-            <h3 className="section-title"> Pesananmu</h3>
-            {myOrder ? (
-              <div className="my-order-display">
-                <span className="order-emoji">{myOrder.item.emoji}</span>
-                <div>
-                  <p className="font-bold" style={{ fontSize: '1.2rem' }}>{myOrder.item.name}</p>
-                  <p className="text-accent" style={{ fontSize: '1.4rem', fontWeight: '800' }}>{formatRp(myOrder.item.price)}</p>
-                </div>
+          <div className="transfer-info glass-panel" style={{ background: 'var(--bg-primary)', padding: '1.25rem', borderRadius: '20px' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '12px' }}>
+               <p className="text-secondary" style={{ fontSize: '0.8rem' }}>Bayar ke {session.payer}:</p>
+               <span className="text-accent" style={{ fontSize: '0.7rem', fontWeight: 800 }}>{session.paymentInfo?.method}</span>
+            </div>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <div>
+                <p style={{ fontWeight: 800, fontSize: '1.1rem', letterSpacing: '1px' }}>{session.paymentInfo?.accountNo}</p>
+                <p className="text-secondary" style={{ fontSize: '0.8rem' }}>{session.paymentInfo?.bankName || 'Digital Wallet'}</p>
               </div>
-            ) : <p className="text-secondary">Kamu tidak memiliki pesanan di sesi ini.</p>}
-
-            {session.paymentInfo && (
-              <div style={{ marginTop: '1.5rem' }}>
-                <h4 className="text-secondary" style={{ marginBottom: '0.75rem' }}> Transfer ke:</h4>
-                <div className="payment-info-card glass-panel">
-                  <div className="payment-method-tag">{session.paymentInfo.method}</div>
-                  {session.paymentInfo.bankName && <p><span className="text-secondary">Bank:</span> <strong>{session.paymentInfo.bankName}</strong></p>}
-                  <p><span className="text-secondary">Nomor:</span> <strong style={{ fontSize: '1.3rem' }}>{session.paymentInfo.accountNo}</strong></p>
-                  <p><span className="text-secondary">A.n.:</span> <strong>{session.payer}</strong></p>
-                  <p><span className="text-secondary">Total:</span> <strong className="text-accent">{myOrder ? formatRp(myOrder.item.price) : '-'}</strong></p>
-                </div>
-              </div>
-            )}
-
-            {session.coffeeBought && (
-              <div className="success-banner" style={{ marginTop: '1rem' }}>
-                <span></span><strong>Kopi sudah dibeli! Dalam perjalanan ke kamu.</strong>
-              </div>
-            )}
-
-            {myOrder && !alreadyPaid && step >= 1 && (
-              <div className="file-input-wrapper mt-4">
-                <label className="text-secondary text-sm mb-2 block">Kirim Bukti Pembayaran</label>
-                <label className="upload-box-new active-upload">
-                  <input
-                    type="file"
-                    accept="image/*"
-                    className="hidden-file-input"
-                    disabled={isUploadingActive}
-                    onChange={async (e) => {
-                      const file = e.target.files[0];
-                      if (!file) return;
-                      setIsUploadingActive(true);
-                      try {
-                        const url = await api.uploadProof(file);
-                        setProofInput(url);
-                        // Auto-submit after upload for better UX in active session?
-                        // Or let them click the button. Let's let them click.
-                      } catch (err) {
-                        alert('Gagal upload foto.');
-                      } finally {
-                        setIsUploadingActive(false);
-                      }
-                    }}
-                  />
-                  <div className="upload-content">
-                    {isUploadingActive ? (
-                      <Loader2 className="animate-spin" size={20} />
-                    ) : proofInput ? (
-                      <><CheckCircle className="text-green" size={20} /> <span className="text-xs">Foto Siap Kirim</span></>
-                    ) : (
-                      <><Camera size={20} /> <span>Pilih Cetak / Ambil Foto</span></>
-                    )}
-                  </div>
-                </label>
-
-                {proofInput && (
-                  <div className="img-preview-active mt-3 mb-3">
-                    <img src={proofInput} alt="Preview" className="rounded-md border" style={{ maxHeight: '150px' }} />
-                  </div>
-                )}
-
-                <button
-                  id="penitip-paid-btn"
-                  className="btn-primary mt-2"
-                  style={{ width: '100%' }}
-                  disabled={isUploadingActive}
-                  onClick={() => {
-                    if (!proofInput && !confirm('Kamu belum upload bukti. Tetap tandai bayar (Cash)?')) return;
-                    submitProof(currentUser);
-                  }}
-                >
-                  {isUploadingActive ? 'Sedang Upload...' : '✅ Kirim Konfirmasi Pembayaran'}
-                </button>
-              </div>
-            )}
-
-            {alreadyPaid && (
-              <div className="success-banner" style={{ marginTop: '1rem' }}>
-                <span></span><strong>Pembayaran dikonfirmasi! Terima kasih. </strong>
-              </div>
-            )}
-
-            {sessionDone && <button className="btn-secondary" style={{ width: '100%', marginTop: '1.5rem' }} onClick={finishViewSession}>Kembali ke Home</button>}
+              <button className="btn-secondary" style={{ padding: '8px 12px', fontSize: '0.75rem', width: 'auto' }} onClick={() => { navigator.clipboard.writeText(session.paymentInfo?.accountNo); alert('Nomor disalin!'); }}>Salin</button>
+            </div>
           </div>
         </div>
+
+        {!alreadyPaid && (
+          <div className="payment-actions">
+            <h4 style={{ marginBottom: '1rem', paddingLeft: '4px' }}>Upload Bukti Bayar</h4>
+            <label className="upload-box-new" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', border: '2px dashed var(--glass-border)', padding: '2.5rem', borderRadius: '24px', cursor: 'pointer', background: proofInput ? 'rgba(74, 222, 128, 0.05)' : 'transparent' }}>
+               <input type="file" accept="image/*" className="hidden-file-input" style={{ display: 'none' }} onChange={async (e) => {
+                 const file = e.target.files[0]; if(!file) return;
+                 setIsUploadingActive(true);
+                 try { const url = await api.uploadProof(file); setProofInput(url); } catch { alert('Upload gagal'); }
+                 finally { setIsUploadingActive(false); }
+               }} />
+               <div style={{ textAlign: 'center' }}>
+                 {isUploadingActive ? <Loader2 size={32} className="animate-spin" /> : proofInput ? <CheckCircle size={32} className="text-green" /> : <Camera size={32} className="text-secondary" />}
+                 <p className="text-secondary" style={{ marginTop: '8px', fontSize: '0.85rem', fontWeight: 600 }}>{proofInput ? 'Ganti Foto' : 'Ambil Foto Bukti'}</p>
+               </div>
+            </label>
+            
+            {proofInput && (
+              <div className="img-preview" style={{ marginTop: '1rem', borderRadius: '16px', overflow: 'hidden', border: '1px solid var(--glass-border)' }}>
+                <img src={proofInput} alt="Preview" style={{ width: '100%', maxHeight: '200px', objectFit: 'cover' }} />
+              </div>
+            )}
+
+            <button className="btn-primary" style={{ marginTop: '1.5rem', height: '56px', fontSize: '1rem' }} onClick={() => { if(!proofInput && !confirm('Belum ada bukti, kirim status Cash?')) return; submitProof(currentUser); }} disabled={isUploadingActive}>
+              {isUploadingActive ? 'Mengirim...' : 'Konfirmasi Pembayaran'}
+            </button>
+          </div>
+        )}
+
+        {alreadyPaid && (
+          <div className="success-banner" style={{ marginTop: '1rem', padding: '1.5rem', borderRadius: '20px' }}>
+            <span style={{ fontSize: '1.5rem', marginRight: '1rem' }}>🎉</span>
+            <div>
+              <strong style={{ display: 'block' }}>Pembayaran Berhasil!</strong>
+              <p className="text-secondary" style={{ fontSize: '0.8rem' }}>Tunggu {session.payer} membeli kopinya.</p>
+            </div>
+          </div>
+        )}
       </div>
     );
   };
 
-  // ─── GUEST PAGE (watching but didn't order) ─────────────────────────────────
+  // ─── GUEST PAGE ──────────────────────────────────────────────────────────────
   const renderGuestPage = () => (
-    <div className="role-layout fade-in">
-      <div className="role-header">
-        <span className="role-badge"> Penonton</span>
-        <h2>Kamu tidak ikut di sesi ini</h2>
-        <p className="text-secondary">Kamu tidak menitip pesanan, jadi kamu tidak masuk pool relawan.</p>
-      </div>
-      <div className="panel glass-panel" style={{ maxWidth: '500px', margin: '2rem auto' }}>
-        <h3>Status Sesi</h3>
-        <p className="text-secondary" style={{ marginTop: '0.5rem' }}>Pem bayar: <strong>{session?.payer || '-'}</strong></p>
-        <p className="text-secondary">Pendamping: <strong>{session?.companion || '-'}</strong></p>
-        <p className="text-secondary" style={{ marginTop: '0.5rem' }}>Status: <strong>{session?.status}</strong></p>
-        <button className="btn-secondary" style={{ width: '100%', marginTop: '1.5rem' }} onClick={() => setView('home')}>Kembali</button>
+    <div className="guest-view fade-in" style={{ padding: '2rem' }}>
+      <div className="glass-panel" style={{ textAlign: 'center', padding: '3rem 1.5rem' }}>
+        <div style={{ background: 'var(--surface)', width: '80px', height: '80px', borderRadius: '40px', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 2rem' }}>
+          <Coffee size={40} className="text-secondary" />
+        </div>
+        <h2 style={{ marginBottom: '1rem' }}>Kamu Sedang Menonton</h2>
+        <p className="text-secondary" style={{ marginBottom: '2.5rem' }}>Kamu tidak ikut dalam sesi ini. Tunggu sesi berikutnya untuk memesan!</p>
+        
+        <div className="status-mini-card" style={{ background: 'var(--bg-primary)', padding: '1.5rem', borderRadius: '20px', textAlign: 'left' }}>
+          <p style={{ fontSize: '0.8rem', marginBottom: '8px' }} className="text-secondary">Payer Hari Ini:</p>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+            <UserAvatar username={session.payer} size={32} />
+            <strong style={{ fontSize: '1.1rem' }}>{session.payer}</strong>
+          </div>
+        </div>
+        
+        <button className="btn-secondary" style={{ marginTop: '2.5rem', width: '100%' }} onClick={() => setView('home')}>Kembali ke Home</button>
       </div>
     </div>
   );
 
   // ─── MAIN RENDER ────────────────────────────────────────────────────────────
   return (
-    <div className="app-container">
-      <nav className="navbar">
-        <div className="nav-logo text-gradient" style={{ cursor: 'pointer' }} onClick={() => setView('home')}>
-          NgopiGak?
-        </div>
-        <div className="nav-links">
-          {session && (
-            <button className={`btn-nav ${view === 'session' ? 'active' : ''}`} onClick={() => setView('session')}>
-              {sessionDone
-                ? (session.status === 'completed' ? ' Sesi Selesai' : ' Sesi Ditutup')
-                : session.status === 'open'
-                  ? ` ${formatTime(timeLeft)}`
-                  : myRole === 'payer' ? ' Halaman Saya' : myRole === 'companion' ? ' Halaman Saya' : ' Pesanan Saya'}
-            </button>
-          )}
-          {/* Admin Menu Restricted */}
-          {currentUser.toLowerCase() === 'admin' && (
-            <button className="btn-nav" onClick={() => setShowAdminPin(true)} title="Settings">
-              ⚙️ Menu
-            </button>
-          )}
-
+    <div className="app-container main-app">
+      <header className="mobile-header">
+        <h1 className="text-gradient">NgopiGak</h1>
+        <div className="header-actions">
           <NotifBell
             notifications={session?.notifications || []}
             username={currentUser}
@@ -1901,44 +1673,43 @@ export default function App() {
             isOpen={activeMenu === 'notif'}
             onToggle={() => setActiveMenu(prev => prev === 'notif' ? null : 'notif')}
           />
-          <UserProfile
-            username={currentUser}
-            onShowProfile={() => setShowProfileModal(true)}
-            onShowHistory={() => goToHistory('all')}
-            isOpen={activeMenu === 'profile'}
-            onToggle={() => setActiveMenu(prev => prev === 'profile' ? null : 'profile')}
-            onLogout={() => setDialog({ title: 'Ingin Keluar?', message: 'Apakah kamu yakin ingin logout?', onConfirm: logout, onCancel: () => setDialog(null), danger: true, confirmText: 'Keluar' })}
-          />
         </div>
-      </nav>
+      </header>
 
       <main className="main-content">
         {view === 'home' && renderHome()}
         {view === 'session' && renderSession()}
         {view === 'admin' && (
           <div className="role-layout fade-in">
-            <div className="panel glass-panel" style={{ maxWidth: '800px', margin: '2rem auto' }}>
-              <AdminPanel
-                menu={store.menu}
-                users={store.users}
-                history={store.history}
-                activeSession={store.session}
-                onSaveMenu={saveMenu}
-                onResetPin={onResetPin}
-                onForceClose={forceClose}
-                onDeleteActiveSession={api.deleteActiveSession}
-                onDeleteHistory={api.deleteHistory}
-                onUpdateHistoricalOrder={api.updateHistoricalOrder}
-                onDeleteAllNotifs={api.deleteAllNotifications}
-                onSaveAdminPin={api.saveAdminPin}
-                onClose={() => setView('home')}
-              />
-            </div>
+            <AdminPanel
+              menu={store.menu}
+              users={store.users}
+              history={store.history}
+              activeSession={store.session}
+              onSaveMenu={saveMenu}
+              onResetPin={onResetPin}
+              onForceClose={forceClose}
+              onDeleteActiveSession={api.deleteActiveSession}
+              onDeleteHistory={api.deleteHistory}
+              onUpdateHistoricalOrder={api.updateHistoricalOrder}
+              onDeleteAllNotifs={api.deleteAllNotifications}
+              onSaveAdminPin={api.saveAdminPin}
+              onClose={() => setView('home')}
+            />
           </div>
         )}
       </main>
 
-      {/* Dialogs */}
+      {/* FAB: Start Session (Visible on Home when no session active) */}
+      {view === 'home' && (!session || sessionDone) && (
+        <button className="fab" onClick={startSession}>
+          <PlusCircle size={32} />
+        </button>
+      )}
+
+      <BottomNav />
+
+      {/* Dialogs & Modals */}
       {dialog && (
         <ConfirmDialog
           title={dialog.title}
@@ -1949,6 +1720,7 @@ export default function App() {
           danger={dialog.danger}
         />
       )}
+      
       {showAdminPin && (
         <AdminPinGate
           serverPin={store.adminPin}
@@ -1956,6 +1728,7 @@ export default function App() {
           onClose={() => setShowAdminPin(false)}
         />
       )}
+      
       {showAdminPanel && (
         <AdminPanel
           menu={store.menu}
@@ -1973,6 +1746,7 @@ export default function App() {
           onClose={() => setShowAdminPanel(false)}
         />
       )}
+
       {showProfileModal && (
         <ProfileModal
           username={currentUser}
@@ -1991,7 +1765,6 @@ export default function App() {
           onClose={() => setView('home')}
         />
       )}
-
     </div>
   );
 }
