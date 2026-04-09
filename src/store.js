@@ -77,7 +77,10 @@ async function fetchFullState() {
     // Rebuild Payer History
     memoryStore.payerHistory = {};
     (payers || []).forEach(p => {
-      memoryStore.payerHistory[p.username] = p.pay_count;
+      memoryStore.payerHistory[p.username] = { 
+        pay: p.pay_count || 0, 
+        companion: p.companion_count || 0 
+      };
     });
 
     // Rebuild Users from dedicated table
@@ -244,10 +247,20 @@ export const api = {
     await supabase.from('sessions').update(payload).eq('id', sessionId);
   },
 
-  incrementPayerCount: async (username) => {
-    const { data: current } = await supabase.from('payer_history').select('pay_count').eq('username', username).single();
-    const count = current ? current.pay_count + 1 : 1;
-    await supabase.from('payer_history').upsert({ username, pay_count: count });
+  incrementRoleCount: async (username, role = 'pay') => {
+    const column = role === 'pay' ? 'pay_count' : 'companion_count';
+    const { data: current } = await supabase.from('payer_history').select('*').eq('username', username).single();
+    
+    const updates = { username };
+    if (role === 'pay') {
+      updates.pay_count = current ? (current.pay_count || 0) + 1 : 1;
+      if (current) updates.companion_count = current.companion_count || 0;
+    } else {
+      updates.companion_count = current ? (current.companion_count || 0) + 1 : 1;
+      if (current) updates.pay_count = current.pay_count || 0;
+    }
+
+    await supabase.from('payer_history').upsert(updates);
   },
 
   markOrderPaid: async (orderId, markedByPayer) => {
@@ -520,20 +533,25 @@ export function selectRoles(participants, payerHistory, lastRoles = null) {
   // we must fall back to the participants
   const finalCandidates = primaryPool.length > 0 ? primaryPool : participants;
 
-  const sorted = [...finalCandidates].sort((a, b) => {
-    const countA = payerHistory[a] || 0;
-    const countB = payerHistory[b] || 0;
+  // 1. SELECT PAYER (Based on least pay count)
+  const sortedPayers = [...finalCandidates].sort((a, b) => {
+    const countA = (payerHistory[a]?.pay) || 0;
+    const countB = (payerHistory[b]?.pay) || 0;
     if (countA !== countB) return countA - countB;
     return a.localeCompare(b);
   });
   
-  const payer = sorted[0];
+  const payer = sortedPayers[0];
   
-  // For companion, we also prefer someone who wasn't roles last time
+  // 2. SELECT COMPANION (Based on least companion count)
   const companionCandidates = participants.filter(p => p !== payer);
   const primaryCompanionPool = companionCandidates.filter(p => !excludeSet.has(p.toLowerCase()));
-  
-  const sortedCompanions = [...(primaryCompanionPool.length > 0 ? primaryCompanionPool : companionCandidates)].sort((a, b) => {
+  const finalCompanionCandidates = primaryCompanionPool.length > 0 ? primaryCompanionPool : companionCandidates;
+
+  const sortedCompanions = [...finalCompanionCandidates].sort((a, b) => {
+    const countA = (payerHistory[a]?.companion) || 0;
+    const countB = (payerHistory[b]?.companion) || 0;
+    if (countA !== countB) return countA - countB;
     return a.localeCompare(b);
   });
 

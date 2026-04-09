@@ -981,7 +981,10 @@ export default function App() {
     await api.updateSession(s.session.id, {
       status: 'active', paymentMethod, bankName, accountNo
     });
-    await api.incrementPayerCount(payer);
+    await api.incrementRoleCount(payer, 'pay');
+    if (s.session.companion) {
+      await api.incrementRoleCount(s.session.companion, 'companion');
+    }
 
     s.session.orders.forEach(o => {
       if (o.username !== payer) {

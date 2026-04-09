@@ -55,7 +55,8 @@ CREATE TABLE IF NOT EXISTS public.menu_items (
 -- 5. Table: payer_history
 CREATE TABLE IF NOT EXISTS public.payer_history (
     username TEXT PRIMARY KEY,
-    pay_count INTEGER DEFAULT 0
+    pay_count INTEGER DEFAULT 0,
+    companion_count INTEGER DEFAULT 0
 );
 
 -- 6. Table: historic_sessions
