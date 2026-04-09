@@ -254,6 +254,7 @@ function AdminPanel({ menu, users, history, activeSession, onSaveMenu, onResetPi
 
   // History expansion
   const [expandedHistoryId, setExpandedHistoryId] = useState(null);
+  const [togglingStatus, setTogglingStatus] = useState(null); // format: "sessionId-username"
 
   return (
     <div className="dialog-overlay">
@@ -445,15 +446,25 @@ function AdminPanel({ menu, users, history, activeSession, onSaveMenu, onResetPi
                                       backgroundColor: isPaid ? '#FEE2E2' : '#D1FAE5',
                                       color: isPaid ? '#DC2626' : '#059669',
                                       borderColor: isPaid ? '#DC2626' : '#059669',
-                                      padding: '4px 10px'
+                                      padding: '4px 10px',
+                                      opacity: togglingStatus === `${h.id}-${ord.username}` ? 0.5 : 1,
+                                      cursor: togglingStatus === `${h.id}-${ord.username}` ? 'not-allowed' : 'pointer'
                                     }}
-                                    onClick={() => {
-                                      if(confirm(`Ubah status ${ord.username} menjadi ${!isPaid ? 'LUNAS' : 'HUTANG'}?`)) {
-                                        onUpdateHistoricalOrder(h.id, ord.username, { isPaid: !isPaid });
+                                    disabled={togglingStatus === `${h.id}-${ord.username}`}
+                                    onClick={async () => {
+                                      const key = `${h.id}-${ord.username}`;
+                                      setTogglingStatus(key);
+                                      try {
+                                        await onUpdateHistoricalOrder(h.id, ord.username, { isPaid: !isPaid });
+                                      } catch (err) {
+                                        console.error("Historical update failed:", err);
+                                        alert("Gagal merubah status. Silakan coba lagi.");
+                                      } finally {
+                                        setTogglingStatus(null);
                                       }
                                     }}
                                   >
-                                    {isPaid ? 'Set Hutang' : 'Set Lunas'}
+                                    {togglingStatus === `${h.id}-${ord.username}` ? '...' : (isPaid ? 'Set Hutang' : 'Set Lunas')}
                                   </button>
                                 </div>
                               </div>
