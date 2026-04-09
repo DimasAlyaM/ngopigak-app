@@ -10,6 +10,7 @@ import './App.css';
 
 // ─── UTILITY ─────────────────────────────────────────────────────────────────
 function formatRp(amount) {
+  if (amount === undefined || amount === null || isNaN(amount)) return 'Rp 0';
   return `Rp ${amount.toLocaleString('id-ID')}`;
 }
 function formatTime(seconds) {
@@ -355,11 +356,12 @@ function ProfileModal({ username, onSave, onClose }) {
 }
 
 // ─── HISTORY VIEW ─────────────────────────────────────────────────────────────
-function HistoryView({ history, currentUser, filter, setFilter, onClose }) {
+function HistoryView({ history, payerHistory, currentUser, filter, setFilter, onClose }) {
   const [expandedId, setExpandedId] = useState(null);
   const [uploadingId, setUploadingId] = useState(null);
 
-  const mySessions = history.filter(s => s.orders.some(o => o.username === currentUser));
+  const validHistory = (history || []).filter(s => s && Array.isArray(s.orders));
+  const mySessions = validHistory.filter(s => s.orders.some(o => o.username === currentUser));
   const myDebts = mySessions.filter(s => s.debtors?.includes(currentUser));
 
   const totalOwed = myDebts.reduce((acc, s) => {
@@ -367,7 +369,7 @@ function HistoryView({ history, currentUser, filter, setFilter, onClose }) {
     return acc + (myOrder?.item?.price || 0);
   }, 0);
 
-  const displayedHistory = filter === 'my-debt' ? myDebts : history;
+  const displayedHistory = filter === 'my-debt' ? myDebts : validHistory;
 
   return (
     <div className="history-view fade-in">
@@ -561,6 +563,7 @@ export default function App() {
   // Timer
   const [timeLeft, setTimeLeft] = useState(600);
   const timerRef = useRef(null);
+  const [renderError, setRenderError] = useState(null);
 
   // Dialogs
   const [dialog, setDialog] = useState(null); // { title, message, onConfirm, danger?, confirmText? }
@@ -578,7 +581,12 @@ export default function App() {
 
   // Sync store with localStorage (simulates real-time)
   const refreshStore = useCallback(() => {
-    setStore(loadStore());
+    try {
+      setStore(loadStore());
+    } catch (err) {
+      console.error("Store refresh failed:", err);
+      setRenderError(err.message);
+    }
   }, []);
 
   const closeSessionAndSelectRoles = useCallback(async () => {
@@ -913,6 +921,22 @@ export default function App() {
   const paidAmount = session?.orders?.filter(o => o.isPaid).reduce((sum, o) => sum + o.item.price, 0) || 0;
   const unpaidCount = session?.orders?.filter(o => !o.isPaid && o.username !== session.payer).length || 0;
   const sessionDone = session?.status === 'completed' || session?.status === 'force-closed';
+
+  if (renderError) {
+    return (
+      <div className="empty-state" style={{ padding: '4rem 2rem' }}>
+        <div className="glass-panel" style={{ maxWidth: '500px', margin: '0 auto', padding: '2rem', border: '2px solid var(--red)' }}>
+          <AlertTriangle size={48} className="text-red mb-4" />
+          <h2 className="text-red">Waduh, Sistem Eror!</h2>
+          <p className="text-secondary mt-2 mb-6">Terjadi masalah saat memuat data. Tenang, data ngopi kamu aman kok.</p>
+          <code style={{ display: 'block', background: '#f5f5f5', padding: '1rem', borderRadius: '4px', fontSize: '0.8rem', textAlign: 'left', overflow: 'auto' }}>
+            {renderError}
+          </code>
+          <button className="btn-primary mt-6" style={{ width: '100%' }} onClick={() => window.location.reload()}>Refresh Halaman</button>
+        </div>
+      </div>
+    );
+  }
 
   // ─── VIEW: LOGIN ────────────────────────────────────────────────────────────
   if (!currentUser) {

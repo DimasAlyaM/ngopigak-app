@@ -41,145 +41,147 @@ export async function initSupabaseSync() {
 }
 
 async function fetchFullState() {
-  const [
-    { data: sessions, error: sessionsErr },
-    { data: orders, error: ordersErr },
-    { data: notifications, error: notifErr },
-    { data: menu, error: menuErr },
-    { data: payers, error: payersErr },
-    { data: historic, error: historicErr },
-    { data: users, error: usersErr }
-  ] = await Promise.all([
-    supabase.from('sessions').select('*'),
-    supabase.from('orders').select('*'),
-    supabase.from('notifications').select('*'),
-    supabase.from('menu_items').select('*'),
-    supabase.from('payer_history').select('*'),
-    supabase.from('historic_sessions').select('*'),
-    supabase.from('users').select('*')
-  ]);
+  try {
+    const [
+      { data: sessions, error: sessionsErr },
+      { data: orders, error: ordersErr },
+      { data: notifications, error: notifErr },
+      { data: menu, error: menuErr },
+      { data: payers, error: payersErr },
+      { data: historic, error: historicErr },
+      { data: users, error: usersErr }
+    ] = await Promise.all([
+      supabase.from('sessions').select('*'),
+      supabase.from('orders').select('*'),
+      supabase.from('notifications').select('*'),
+      supabase.from('menu_items').select('*'),
+      supabase.from('payer_history').select('*'),
+      supabase.from('historic_sessions').select('*'),
+      supabase.from('users').select('*')
+    ]);
 
-  if (sessionsErr) console.error("Supabase Error (Sessions):", sessionsErr);
-  if (ordersErr) console.error("Supabase Error (Orders):", ordersErr);
+    if (sessionsErr) console.error("Supabase Error (Sessions):", sessionsErr);
+    if (ordersErr) console.error("Supabase Error (Orders):", ordersErr);
 
-  // Rebuild Menu
-  memoryStore.menu = (menu || []).map(m => ({
-    id: m.id,
-    name: m.name,
-    price: m.price,
-    emoji: m.emoji
-  }));
+    // Rebuild Menu
+    memoryStore.menu = (menu || []).map(m => ({
+      id: m.id,
+      name: m.name,
+      price: m.price,
+      emoji: m.emoji
+    }));
 
-  // Rebuild Payer History
-  memoryStore.payerHistory = {};
-  (payers || []).forEach(p => {
-    memoryStore.payerHistory[p.username] = p.pay_count;
-  });
+    // Rebuild Payer History
+    memoryStore.payerHistory = {};
+    (payers || []).forEach(p => {
+      memoryStore.payerHistory[p.username] = p.pay_count;
+    });
 
-  // Rebuild Users from dedicated table
-  memoryStore.users = (users || []).map(u => ({
-    username: u.username,
-    pin: u.pin
-  }));
-  
-  // Also track names for quick-selection (extract from history if needed)
-  const userSet = new Set((payers || []).map(p => p.username));
-  (orders || []).forEach(o => userSet.add(o.username));
-  (users || []).forEach(u => userSet.add(u.username));
-  // memoryStore.userNames = Array.from(userSet); // simplified: App.jsx uses memoryStore.users usually
-
-
-  // If session is 'open' and older than 2 hours, force-close it
-  const SESSION_TIMEOUT_MS = 2 * 60 * 60 * 1000;
-  const rawActive = (sessions || []).sort((a, b) => new Date(b.started_at) - new Date(a.started_at))[0];
-  
-  if (rawActive && rawActive.status !== 'completed' && rawActive.status !== 'force-closed' && rawActive.started_at) {
-    const elapsed = Date.now() - new Date(rawActive.started_at).getTime();
-    if (elapsed > SESSION_TIMEOUT_MS) {
-      // Calculate debtors before closing
-      const sessionOrders = (orders || []).filter(o => o.session_id === rawActive.id);
-      const debtors = sessionOrders.filter(o => !o.is_paid && o.username !== rawActive.payer).map(o => o.username);
-
-      supabase.from('sessions').update({
-        status: 'force-closed',
-        force_closed_by: 'System (Auto-Expire)',
-        closed_at: new Date().toISOString(),
-        debtors: debtors
-      }).eq('id', rawActive.id).then(async () => {
-        // Build and save history too
-        const fullSession = {
-           id: rawActive.id,
-           status: 'force-closed',
-           startedBy: rawActive.started_by,
-           startedAt: rawActive.started_at,
-           closedAt: new Date().toISOString(),
-           payer: rawActive.payer,
-           debtors: debtors,
-           orders: sessionOrders.map(o => ({
-             username: o.username,
-             isPaid: o.is_paid,
-             item: { name: o.coffee_name, price: o.coffee_price }
-           }))
-        };
-        await supabase.from('historic_sessions').insert({ id: rawActive.id, data: fullSession });
-        fetchFullState();
-      });
-      memoryStore.session = null;
-      notifyLocalUpdate();
-      return; 
-    }
-  }
-
-  const activeSessionRow = rawActive;
-  
-  if (activeSessionRow) {
-    const sessionOrders = (orders || []).filter(o => o.session_id === activeSessionRow.id);
-    const sessionNotifs = (notifications || []).filter(n => n.session_id === activeSessionRow.id);
+    // Rebuild Users from dedicated table
+    memoryStore.users = (users || []).map(u => ({
+      username: u.username,
+      pin: u.pin
+    }));
     
-    memoryStore.session = {
-      id: activeSessionRow.id,
-      status: activeSessionRow.status,
-      startedBy: activeSessionRow.started_by,
-      startedAt: activeSessionRow.started_at,
-      closedAt: activeSessionRow.closed_at,
-      payer: activeSessionRow.payer,
-      companion: activeSessionRow.companion,
-      paymentInfo: activeSessionRow.payment_method ? {
-        method: activeSessionRow.payment_method,
-        bankName: activeSessionRow.bank_name,
-        accountNo: activeSessionRow.account_no
-      } : null,
-      coffeeBought: activeSessionRow.coffee_bought,
-      coffeeBoughtAt: activeSessionRow.coffee_bought_at,
-      forceClosedBy: activeSessionRow.force_closed_by,
-      debtors: activeSessionRow.debtors || [],
-      orders: sessionOrders.map(o => ({
-        id: o.id,
-        username: o.username,
-        item: { id: o.coffee_id, name: o.coffee_name, price: o.coffee_price, emoji: o.coffee_emoji || '' },
-        isPaid: o.is_paid,
-        paidAt: o.paid_at, 
-        markedByPayer: o.marked_by_payer,
-        paymentProof: o.payment_proof
-      })),
-      notifications: sessionNotifs.map(n => ({
-        id: n.id,
-        to: n.target_user,
-        type: n.type,
-        message: n.message,
-        readBy: n.is_read_by || [],
-        createdAt: n.created_at
-      }))
-    };
-  } else {
-    memoryStore.session = null;
+    // Also track names for quick-selection (extract from history if needed)
+    const userSet = new Set((payers || []).map(p => p.username));
+    (orders || []).forEach(o => userSet.add(o.username));
+    (users || []).forEach(u => userSet.add(u.username));
+
+    // If session is 'open' and older than 2 hours, force-close it
+    const SESSION_TIMEOUT_MS = 2 * 60 * 60 * 1000;
+    const rawActive = (sessions || []).sort((a, b) => new Date(b.started_at) - new Date(a.started_at))[0];
+    
+    if (rawActive && rawActive.status !== 'completed' && rawActive.status !== 'force-closed' && rawActive.started_at) {
+      const elapsed = Date.now() - new Date(rawActive.started_at).getTime();
+      if (elapsed > SESSION_TIMEOUT_MS) {
+        // Calculate debtors before closing
+        const sessionOrders = (orders || []).filter(o => o.session_id === rawActive.id);
+        const debtors = sessionOrders.filter(o => !o.is_paid && o.username !== rawActive.payer).map(o => o.username);
+
+        supabase.from('sessions').update({
+          status: 'force-closed',
+          force_closed_by: 'System (Auto-Expire)',
+          closed_at: new Date().toISOString(),
+          debtors: debtors
+        }).eq('id', rawActive.id).then(async () => {
+          // Build and save history too
+          const fullSession = {
+             id: rawActive.id,
+             status: 'force-closed',
+             startedBy: rawActive.started_by,
+             startedAt: rawActive.started_at,
+             closedAt: new Date().toISOString(),
+             payer: rawActive.payer,
+             debtors: debtors,
+             orders: sessionOrders.map(o => ({
+               username: o.username,
+               isPaid: o.is_paid,
+               item: { name: o.coffee_name, price: o.coffee_price }
+             }))
+          };
+          await supabase.from('historic_sessions').insert({ id: rawActive.id, data: fullSession });
+          fetchFullState();
+        });
+        memoryStore.session = null;
+        notifyLocalUpdate();
+        return; 
+      }
+    }
+
+    const activeSessionRow = rawActive;
+    
+    if (activeSessionRow) {
+      const sessionOrders = (orders || []).filter(o => o.session_id === activeSessionRow.id);
+      const sessionNotifs = (notifications || []).filter(n => n.session_id === activeSessionRow.id);
+      
+      memoryStore.session = {
+        id: activeSessionRow.id,
+        status: activeSessionRow.status,
+        startedBy: activeSessionRow.started_by,
+        startedAt: activeSessionRow.started_at,
+        closedAt: activeSessionRow.closed_at,
+        payer: activeSessionRow.payer,
+        companion: activeSessionRow.companion,
+        paymentInfo: activeSessionRow.payment_method ? {
+          method: activeSessionRow.payment_method,
+          bankName: activeSessionRow.bank_name,
+          accountNo: activeSessionRow.account_no
+        } : null,
+        coffeeBought: activeSessionRow.coffee_bought,
+        coffeeBoughtAt: activeSessionRow.coffee_bought_at,
+        forceClosedBy: activeSessionRow.force_closed_by,
+        debtors: activeSessionRow.debtors || [],
+        orders: sessionOrders.map(o => ({
+          id: o.id,
+          username: o.username,
+          item: { id: o.coffee_id, name: o.coffee_name, price: o.coffee_price, emoji: o.coffee_emoji || '' },
+          isPaid: o.is_paid,
+          paidAt: o.paid_at, 
+          markedByPayer: o.marked_by_payer,
+          paymentProof: o.payment_proof
+        })),
+        notifications: sessionNotifs.map(n => ({
+          id: n.id,
+          to: n.target_user,
+          type: n.type,
+          message: n.message,
+          readBy: n.is_read_by || [],
+          createdAt: n.created_at
+        }))
+      };
+    } else {
+      memoryStore.session = null;
+    }
+
+    // Rebuild History with safety check for null data
+    memoryStore.history = (historic || []).filter(h => h && h.data).map(h => h.data);
+
+    // Notify UI
+    notifyLocalUpdate();
+  } catch (err) {
+    console.error("Critical error in fetchFullState:", err);
   }
-
-  // Rebuild History
-  memoryStore.history = (historic || []).map(h => h.data);
-
-  // Notify UI
-  notifyLocalUpdate();
 }
 
 // ============================================================================
@@ -232,7 +234,6 @@ export const api = {
   },
 
   incrementPayerCount: async (username) => {
-    // using an upsert
     const { data: current } = await supabase.from('payer_history').select('pay_count').eq('username', username).single();
     const count = current ? current.pay_count + 1 : 1;
     await supabase.from('payer_history').upsert({ username, pay_count: count });
@@ -243,12 +244,6 @@ export const api = {
       is_paid: true,
       marked_by_payer: markedByPayer ? true : false,
       paid_at: new Date().toISOString()
-    }).eq('id', orderId);
-  },
-
-  uploadProof: async (orderId, proofUrl) => {
-    await supabase.from('orders').update({
-      payment_proof: proofUrl
     }).eq('id', orderId);
   },
 
@@ -281,7 +276,6 @@ export const api = {
   },
 
   saveMenu: async (menuItems) => {
-    // Delete all and re-insert (simple approach for menu)
     await supabase.from('menu_items').delete().neq('id', 'dummy'); 
     const mapped = menuItems.map(m => ({
       id: m.id,
@@ -297,14 +291,11 @@ export const api = {
   // Auth & Profile
   login: async (username, pin) => {
     try {
-      // 1. Try to find in memory first (fastest)
       let existing = memoryStore.users.find(u => u.username.toLowerCase() === username.toLowerCase());
       
-      // 2. If not in memory (could be the first load or race condition), check the DB directly
       if (!existing) {
         const { data, error } = await supabase.from('users').select('*').eq('username', username).single();
         if (error && error.code === 'PGRST116') {
-          // No user found - this is okay, we'll register below
         } else if (error) {
           console.error("Login Check Error:", error);
           if (error.message.includes("Could not find the table")) {
@@ -315,13 +306,11 @@ export const api = {
         
         if (data) {
           existing = { username: data.username, pin: data.pin };
-          // Sync local memory while we're at it
           memoryStore.users.push(existing);
         }
       }
 
       if (!existing) {
-        // New user or Legacy claim: Register with this PIN
         const { error: insErr } = await supabase.from('users').insert({ username, pin });
         if (insErr) {
            console.error("Registration Error:", insErr);
@@ -330,7 +319,6 @@ export const api = {
         fetchFullState();
         return { success: true, isNew: true };
       } else {
-        // Verify PIN
         if (existing.pin === pin) {
           return { success: true, isNew: false };
         } else {
@@ -344,26 +332,18 @@ export const api = {
   },
 
   updateProfile: async (oldUsername, newUsername) => {
-    // This is a "Deep Rename" operation.
-    // 1. Update the base user record (Independent try-catch as it might error if newUsername exists)
     try {
       await supabase.from('users').update({ username: newUsername }).eq('username', oldUsername);
     } catch (e) {
       console.warn("Possible duplicate username when updating users table, skipping base rename.");
     }
     
-    // 2. Update payer history
     await supabase.from('payer_history').update({ username: newUsername }).eq('username', oldUsername);
-    
-    // 3. Update orders (very important for debt tracking)
     await supabase.from('orders').update({ username: newUsername }).eq('username', oldUsername);
-
-    // 4. Update sessions (where they were started_by, payer, or companion)
     await supabase.from('sessions').update({ started_by: newUsername }).eq('started_by', oldUsername);
     await supabase.from('sessions').update({ payer: newUsername }).eq('payer', oldUsername);
     await supabase.from('sessions').update({ companion: newUsername }).eq('companion', oldUsername);
 
-    // 5. Update debtors array in sessions (where they were recorded as a debtor in an active/recent session)
     const { data: allSessions } = await supabase.from('sessions').select('id, debtors');
     if (allSessions) {
       for (const s of allSessions) {
@@ -374,27 +354,23 @@ export const api = {
       }
     }
 
-    // 6. Update historic_sessions (This is where the 'History View' gets its data)
-    // The 'data' column is a JSONB blob containing everything (orders, payer, etc.)
     const { data: allHistoric } = await supabase.from('historic_sessions').select('id, data');
     if (allHistoric) {
       for (const h of allHistoric) {
+        if (!h.data) continue;
         let changed = false;
         let d = h.data;
 
-        // Sync top-level session fields inside JSONB
         if (d.payer === oldUsername) { d.payer = newUsername; changed = true; }
         if (d.companion === oldUsername) { d.companion = newUsername; changed = true; }
         if (d.started_by === oldUsername) { d.started_by = newUsername; changed = true; }
         if (d.force_closed_by === oldUsername) { d.force_closed_by = newUsername; changed = true; }
 
-        // Sync debtors array inside JSONB
         if (d.debtors?.includes(oldUsername)) {
           d.debtors = d.debtors.map(u => u === oldUsername ? newUsername : u);
           changed = true;
         }
 
-        // Sync orders array inside JSONB (Crucial for History View detail)
         if (d.orders?.some(o => o.username === oldUsername)) {
           d.orders = d.orders.map(o => o.username === oldUsername ? { ...o, username: newUsername } : o);
           changed = true;
@@ -415,9 +391,8 @@ export const api = {
   },
 
   updateHistoricalOrder: async (sessionId, username, updates) => {
-    // 1. Fetch current blob
     const { data: h, error: fetchErr } = await supabase.from('historic_sessions').select('data').eq('id', sessionId).single();
-    if (fetchErr || !h) {
+    if (fetchErr || !h || !h.data) {
       console.error("Failed to fetch historic session:", fetchErr);
       return;
     }
@@ -425,14 +400,11 @@ export const api = {
     const d = { ...h.data };
     let changed = false;
 
-    // 2. Find and update the specific order
     const orderIndex = d.orders.findIndex(o => (o.username || '').toLowerCase() === username.toLowerCase());
     if (orderIndex !== -1) {
       d.orders[orderIndex] = { ...d.orders[orderIndex], ...updates };
       
-      // If marking as paid, or if the payer is confirming it
       if (updates.isPaid) {
-        // Remove from debtors array
         d.debtors = (d.debtors || []).filter(u => (u || '').toLowerCase() !== username.toLowerCase());
       }
       changed = true;
@@ -444,12 +416,23 @@ export const api = {
     }
   },
 
-  uploadProof: async (file) => {
+  // Single upload function used by both historical and active sessions
+  uploadProof: async (orderIdOrFile, proofUrlOrUndefined) => {
+    // Legacy support for (orderId, url)
+    if (typeof orderIdOrFile === 'string' && typeof proofUrlOrUndefined === 'string') {
+      await supabase.from('orders').update({
+        payment_proof: proofUrlOrUndefined
+      }).eq('id', orderIdOrFile);
+      return;
+    }
+
+    // New support for (file)
+    const file = orderIdOrFile;
     const fileExt = file.name.split('.').pop();
     const fileName = `${Date.now()}-${Math.random().toString(36).substring(2)}.${fileExt}`;
     const filePath = `${fileName}`;
 
-    const { data, error } = await supabase.storage
+    const { error } = await supabase.storage
       .from('receipts')
       .upload(filePath, file);
 
@@ -477,10 +460,9 @@ export function selectRoles(participants, payerHistory, lastRoles = null) {
   }
 
   const primaryPool = participants.filter(p => !excludeSet.has(p.toLowerCase()));
-  const secondaryPool = participants.filter(p => excludeSet.has(p.toLowerCase()));
 
   // If primaryPool is empty (e.g., only 2 people total and they were both roles last time), 
-  // we must fall back to the secondaryPool
+  // we must fall back to the participants
   const finalCandidates = primaryPool.length > 0 ? primaryPool : participants;
 
   const sorted = [...finalCandidates].sort((a, b) => {
@@ -497,8 +479,6 @@ export function selectRoles(participants, payerHistory, lastRoles = null) {
   const primaryCompanionPool = companionCandidates.filter(p => !excludeSet.has(p.toLowerCase()));
   
   const sortedCompanions = [...(primaryCompanionPool.length > 0 ? primaryCompanionPool : companionCandidates)].sort((a, b) => {
-    // No specific companion count yet, so we just use alpha or random?
-    // Let's use alpha for deterministic behavior
     return a.localeCompare(b);
   });
 
