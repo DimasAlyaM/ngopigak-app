@@ -249,9 +249,11 @@ function AdminPanel({ menu, users, history, activeSession, onSaveMenu, onResetPi
   const removeItem = (id) => setItems(items.filter(i => i.id !== id));
   const updateItem = (id, field, val) => setItems(items.map(i => i.id === id ? { ...i, [field]: field === 'price' ? (parseInt(val) || 0) : val } : i));
 
-  // Settings States
   const [newAdminPin, setNewAdminPin] = useState('');
   const [confirmAdminPin, setConfirmAdminPin] = useState('');
+
+  // History expansion
+  const [expandedHistoryId, setExpandedHistoryId] = useState(null);
 
   return (
     <div className="dialog-overlay">
@@ -374,35 +376,82 @@ function AdminPanel({ menu, users, history, activeSession, onSaveMenu, onResetPi
               {history.length === 0 && <p className="text-center py-4 opacity-50">Belum ada histori.</p>}
               {[...history].reverse().map(h => {
                 const total = h.orders.reduce((sum, o) => sum + o.item.price, 0);
+                const isExpanded = expandedHistoryId === h.id;
+                
                 return (
-                  <div key={h.id} className="user-mgt-row" style={{ gridTemplateColumns: '2fr 1fr 1fr', padding: '15px 10px' }}>
-                    <div className="flex-col">
-                      <span className="font-bold text-sm">{formatDate(h.startedAt)}</span>
-                      <span className="text-xs opacity-70">Payer: {h.payer}</span>
+                  <div key={h.id} className="history-item-wrapper" style={{ borderBottom: '1px solid var(--text-primary)' }}>
+                    <div className="user-mgt-row" style={{ gridTemplateColumns: '2fr 1fr 1fr', padding: '15px 10px', borderBottom: 'none' }}>
+                      <div className="flex-col">
+                        <span className="font-bold text-sm">{formatDate(h.startedAt)}</span>
+                        <span className="text-xs opacity-70">Payer: {h.payer}</span>
+                      </div>
+                      <span className="text-sm font-bold">{formatRp(total)}</span>
+                      <div style={{ display: 'flex', gap: '0.5rem' }}>
+                        <button className="btn-icon-danger" style={{ padding: '6px' }} title="Hapus Histori" onClick={() => {
+                          if (confirm("Hapus histori sesi ini secara PERMANEN?")) {
+                            onDeleteHistory(h.id);
+                          }
+                        }}><Trash2 size={16} /></button>
+                        
+                        <button 
+                          className={`btn-icon ${isExpanded ? 'active' : ''}`} 
+                          style={{ 
+                            border: '1px solid var(--text-primary)', 
+                            padding: '6px',
+                            background: isExpanded ? 'var(--text-primary)' : 'transparent',
+                            color: isExpanded ? 'var(--bg-primary)' : 'var(--text-primary)'
+                          }} 
+                          title="Detail & Edit Status" 
+                          onClick={() => setExpandedHistoryId(isExpanded ? null : h.id)}
+                        >
+                          <Users size={16} />
+                        </button>
+                      </div>
                     </div>
-                    <span className="text-sm font-bold">{formatRp(total)}</span>
-                    <div style={{ display: 'flex', gap: '0.5rem' }}>
-                      <button className="btn-icon-danger" style={{ padding: '6px' }} title="Hapus Histori" onClick={() => {
-                        if (confirm("Hapus histori sesi ini secara PERMANEN?")) {
-                          onDeleteHistory(h.id);
-                        }
-                      }}><Trash2 size={16} /></button>
-                      
-                      <button className="btn-icon" style={{ border: '1px solid var(--text-primary)', padding: '6px' }} title="Detail & Edit Status" onClick={() => {
-                         const username = prompt("Masukkan Username participant untuk toggle LUNAS/HUTANG:", "");
-                         if (username) {
-                           const ord = h.orders.find(o => o.username.toLowerCase() === username.toLowerCase());
-                           if (ord) {
-                             const newStatus = !ord.isPaid;
-                             if(confirm(`Ubah status ${ord.username} menjadi ${newStatus ? 'LUNAS' : 'HUTANG'}?`)) {
-                               onUpdateHistoricalOrder(h.id, ord.username, { isPaid: newStatus });
-                             }
-                           } else {
-                             alert("Username tidak ditemukan.");
-                           }
-                         }
-                      }}><ClipboardList size={16} /></button>
-                    </div>
+
+                    {isExpanded && (
+                      <div className="admin-history-details fade-in" style={{ padding: '0 10px 15px 10px', background: 'rgba(0,0,0,0.03)' }}>
+                        <div style={{ fontSize: '0.75rem', fontWeight: '800', textTransform: 'uppercase', marginBottom: '8px', opacity: 0.6, borderBottom: '1px dashed var(--text-primary)', paddingBottom: '4px' }}>
+                          Partisipan Sesi
+                        </div>
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                          {h.orders.map((ord, idx) => {
+                            const isPaid = !h.debtors?.includes(ord.username);
+                            return (
+                              <div key={idx} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'var(--bg-primary)', padding: '8px', border: '1px solid var(--text-primary)', borderRadius: '4px' }}>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                  <UserAvatar username={ord.username} size={24} />
+                                  <div style={{ display: 'flex', flexDirection: 'column' }}>
+                                    <span style={{ fontSize: '0.85rem', fontWeight: '800' }}>{ord.username}</span>
+                                    <span style={{ fontSize: '0.7rem', opacity: 0.7 }}>{ord.item.name} ({formatRp(ord.item.price)})</span>
+                                  </div>
+                                </div>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                  <span className={`badge-status-new ${isPaid ? 'lunas' : 'hutang'}`} style={{ fontSize: '0.6rem' }}>
+                                    {isPaid ? 'LUNAS' : 'HUTANG'}
+                                  </span>
+                                  <button 
+                                    className="btn-mini" 
+                                    style={{ 
+                                      backgroundColor: isPaid ? '#FEE2E2' : '#D1FAE5',
+                                      color: isPaid ? '#DC2626' : '#059669',
+                                      borderColor: isPaid ? '#DC2626' : '#059669'
+                                    }}
+                                    onClick={() => {
+                                      if(confirm(`Ubah status ${ord.username} menjadi ${!isPaid ? 'LUNAS' : 'HUTANG'}?`)) {
+                                        onUpdateHistoricalOrder(h.id, ord.username, { isPaid: !isPaid });
+                                      }
+                                    }}
+                                  >
+                                    {isPaid ? 'Set Hutang' : 'Set Lunas'}
+                                  </button>
+                                </div>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    )}
                   </div>
                 );
               })}
