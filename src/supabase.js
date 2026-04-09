@@ -7,6 +7,7 @@ const supabaseKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
 // that throws a clear error only when called, preventing top-level module crash.
 const isConfigured = supabaseUrl && !supabaseUrl.includes('YOUR_SUPABASE_URL');
 
+// Vercel environment variables added. Triggering redeploy...
 export const supabase = isConfigured 
   ? createClient(supabaseUrl, supabaseKey)
   : new Proxy({}, {
