@@ -623,7 +623,10 @@ export default function App() {
   }, []);
 
   useEffect(() => {
-    initSupabaseSync();
+    initSupabaseSync().catch(err => {
+      console.error("Supabase initialization error:", err);
+      setRenderError(err.message);
+    });
     const handler = () => refreshStore();
     window.addEventListener('sync_store', handler);
     // Poll every 3 seconds for same-tab fallback
