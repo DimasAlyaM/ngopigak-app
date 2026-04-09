@@ -1008,19 +1008,9 @@ export default function App() {
                 Masuk <LogIn size={18} />
               </button>
             </form>
-            {loadStore().users.length > 0 && (
-              <div style={{ marginTop: '2rem' }}>
-                <p className="text-secondary text-sm" style={{ marginBottom: '1rem' }}>Login cepat:</p>
-                <div className="quick-login-grid">
-                  {loadStore().users.slice(-8).map(u => (
-                    <button key={u.username} className="quick-login-chip" onClick={() => { setLoginInput(u.username); document.getElementById('login-pin').focus(); }}>
-                      <UserAvatar username={u.username} size={20} />
-                      {u.username}
-                    </button>
-                  ))}
-                </div>
-              </div>
-            )}
+            <div className="login-footer" style={{ marginTop: '2.5rem', opacity: 0.5, fontSize: '0.8rem', fontWeight: 600, letterSpacing: '1px' }}>
+              Dimsam @2026
+            </div>
           </div>
         </div>
       </div>
