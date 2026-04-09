@@ -6,6 +6,7 @@ import {
   Camera, Upload, Loader2
 } from 'lucide-react';
 import confetti from 'canvas-confetti';
+import { Analytics } from '@vercel/analytics/react';
 import './App.css';
 
 // ─── UTILITY ─────────────────────────────────────────────────────────────────
@@ -1992,6 +1993,7 @@ export default function App() {
         />
       )}
 
+      <Analytics />
     </div>
   );
 }
