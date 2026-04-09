@@ -6,6 +6,7 @@ import {
   Camera, Upload, Loader2
 } from 'lucide-react';
 import confetti from 'canvas-confetti';
+import { SpeedInsights } from '@vercel/speed-insights/react';
 import './App.css';
 
 // ─── UTILITY ─────────────────────────────────────────────────────────────────
@@ -1252,7 +1253,7 @@ export default function App() {
     </div>
   );
 
-  // ─── VIEW: SESSION ──────────────────────────────────────────────────────────
+  // ─── VIEW: SESSION ───────────────────────────────────────────────────��──────
   const renderSession = () => {
     // No session at all
     if (!session) return (
@@ -1992,6 +1993,7 @@ export default function App() {
         />
       )}
 
+      <SpeedInsights />
     </div>
   );
 }
