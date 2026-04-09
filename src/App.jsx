@@ -577,6 +577,7 @@ export default function App() {
   // Timer
   const [timeLeft, setTimeLeft] = useState(600);
   const timerRef = useRef(null);
+  const coffeeDropdownRef = useRef(null);
   const [renderError, setRenderError] = useState(null);
 
   // Dialogs
@@ -587,6 +588,8 @@ export default function App() {
 
   // Form states
   const [selectedCoffeeId, setSelectedCoffeeId] = useState('');
+  const [coffeeSearch, setCoffeeSearch] = useState('');
+  const [showMenuResults, setShowMenuResults] = useState(false);
   const [paymentMethod, setPaymentMethod] = useState('');
   const [bankName, setBankName] = useState('');
   const [accountNo, setAccountNo] = useState('');
@@ -647,6 +650,16 @@ export default function App() {
     const poll = setInterval(refreshStore, 3000);
     return () => { window.removeEventListener('sync_store', handler); clearInterval(poll); };
   }, [refreshStore]);
+
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (coffeeDropdownRef.current && !coffeeDropdownRef.current.contains(event.target)) {
+        setShowMenuResults(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
 
   // Timer management
   useEffect(() => {
@@ -1134,14 +1147,43 @@ export default function App() {
               : <div className="no-order-hint glass-panel" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}><Info size={16} /> Kamu belum pesan! Order sekarang agar masuk undian jadi pembayar.</div>
             }
             <form onSubmit={addOrder} className="modern-form" style={{ marginTop: '1.5rem' }}>
-              <div className="form-group">
+              <div className="form-group relative">
                 <label>Pilih Menu Kopi</label>
-                <select id="coffee-select" value={selectedCoffeeId} onChange={e => setSelectedCoffeeId(e.target.value)} required>
-                  <option value="" disabled>-- Pilih Kopi --</option>
-                  {store.menu.map(m => (
-                    <option key={m.id} value={m.id}>{m.emoji} {m.name} — {formatRp(m.price)}</option>
-                  ))}
-                </select>
+                <div className="searchable-dropdown" ref={coffeeDropdownRef}>
+                  <input
+                    type="text"
+                    id="coffee-search-input"
+                    placeholder="Ketik nama kopi (misal: Latte)..."
+                    value={coffeeSearch}
+                    onFocus={() => setShowMenuResults(true)}
+                    onChange={(e) => setCoffeeSearch(e.target.value)}
+                    autoComplete="off"
+                    required={!selectedCoffeeId}
+                  />
+                  {showMenuResults && (
+                    <div className="search-results-list glass-panel">
+                      {store.menu
+                        .filter(m => m.name.toLowerCase().includes(coffeeSearch.toLowerCase()))
+                        .map(m => (
+                          <div
+                            key={m.id}
+                            className={`search-item ${selectedCoffeeId === m.id ? 'active' : ''}`}
+                            onClick={() => {
+                              setSelectedCoffeeId(m.id);
+                              setCoffeeSearch(`${m.emoji} ${m.name}`);
+                              setShowMenuResults(false);
+                            }}
+                          >
+                            <span className="item-main">{m.emoji} {m.name}</span>
+                            <span className="item-price">{formatRp(m.price)}</span>
+                          </div>
+                      ))}
+                      {store.menu.filter(m => m.name.toLowerCase().includes(coffeeSearch.toLowerCase())).length === 0 && (
+                        <div className="search-empty">Menu tidak ditemukan...</div>
+                      )}
+                    </div>
+                  )}
+                </div>
               </div>
               <button id="order-submit" type="submit" className="btn-primary">{myOrder ? ' Update Pesanan' : '+ Tambah Pesanan'}</button>
             </form>
