@@ -345,14 +345,14 @@ function AdminPanel({ menu, users, history, activeSession, onSaveMenu, onResetPi
                 <div className="stat-row"><span>Status:</span><strong>{activeSession.status.toUpperCase()}</strong></div>
                 <div className="stat-row"><span>Pembuat:</span><strong>{activeSession.startedBy}</strong></div>
                 <div className="stat-row"><span>Pesanan:</span><strong>{activeSession.orders.length} Item</strong></div>
-                
+
                 <div className="dialog-actions mt-6" style={{ flexDirection: 'column', gap: '0.75rem' }}>
                   <button className="btn-danger" style={{ width: '100%' }} onClick={() => {
                     if (confirm("Tutup paksa sesi ini? Peserta yang belum bayar akan tercatat berhutang.")) {
                       onForceClose();
                     }
                   }}>Tutup Paksa & Simpan Histori</button>
-                  
+
                   <button className="btn-secondary" style={{ width: '100%', color: '#B91C1C', borderColor: '#B91C1C' }} onClick={() => {
                     if (confirm("HAPUS PERMANEN sesi ini? Data pesanan akan hilang total dan tidak masuk histori.")) {
                       onDeleteActiveSession(activeSession.id);
@@ -378,7 +378,7 @@ function AdminPanel({ menu, users, history, activeSession, onSaveMenu, onResetPi
               {[...history].reverse().map(h => {
                 const total = h.orders.reduce((sum, o) => sum + o.item.price, 0);
                 const isExpanded = expandedHistoryId === h.id;
-                
+
                 return (
                   <div key={h.id} className="history-item-wrapper" style={{ borderBottom: '1px solid var(--text-primary)' }}>
                     <div className="user-mgt-row" style={{ gridTemplateColumns: '2fr 1fr 1fr', padding: '15px 10px', borderBottom: 'none' }}>
@@ -393,16 +393,16 @@ function AdminPanel({ menu, users, history, activeSession, onSaveMenu, onResetPi
                             onDeleteHistory(h.id);
                           }
                         }}><Trash2 size={16} /></button>
-                        
-                        <button 
-                          className={`btn-icon ${isExpanded ? 'active' : ''}`} 
-                          style={{ 
-                            border: '1px solid var(--text-primary)', 
+
+                        <button
+                          className={`btn-icon ${isExpanded ? 'active' : ''}`}
+                          style={{
+                            border: '1px solid var(--text-primary)',
                             padding: '6px',
                             background: isExpanded ? 'var(--text-primary)' : 'transparent',
                             color: isExpanded ? 'var(--bg-primary)' : 'var(--text-primary)'
-                          }} 
-                          title="Detail & Edit Status" 
+                          }}
+                          title="Detail & Edit Status"
                           onClick={() => setExpandedHistoryId(isExpanded ? null : h.id)}
                         >
                           <Users size={16} />
@@ -419,13 +419,13 @@ function AdminPanel({ menu, users, history, activeSession, onSaveMenu, onResetPi
                           {h.orders.map((ord, idx) => {
                             const isPaid = !h.debtors?.some(d => (d || '').toLowerCase() === (ord.username || '').toLowerCase());
                             return (
-                              <div key={idx} style={{ 
-                                display: 'flex', 
-                                justifyContent: 'space-between', 
-                                alignItems: 'center', 
-                                background: 'var(--bg-primary)', 
-                                padding: '12px', 
-                                border: '2px solid var(--text-primary)', 
+                              <div key={idx} style={{
+                                display: 'flex',
+                                justifyContent: 'space-between',
+                                alignItems: 'center',
+                                background: 'var(--bg-primary)',
+                                padding: '12px',
+                                border: '2px solid var(--text-primary)',
                                 borderRadius: '8px',
                                 boxShadow: '4px 4px 0 var(--text-primary)'
                               }}>
@@ -440,9 +440,9 @@ function AdminPanel({ menu, users, history, activeSession, onSaveMenu, onResetPi
                                   <span className={`badge-status-new ${isPaid ? 'lunas' : 'hutang'}`} style={{ fontSize: '0.65rem', padding: '2px 10px' }}>
                                     {isPaid ? 'LUNAS' : 'HUTANG'}
                                   </span>
-                                  <button 
-                                    className="btn-mini" 
-                                    style={{ 
+                                  <button
+                                    className="btn-mini"
+                                    style={{
                                       backgroundColor: isPaid ? '#FEE2E2' : '#D1FAE5',
                                       color: isPaid ? '#DC2626' : '#059669',
                                       borderColor: isPaid ? '#DC2626' : '#059669',
@@ -487,11 +487,11 @@ function AdminPanel({ menu, users, history, activeSession, onSaveMenu, onResetPi
               <div className="modern-form">
                 <div className="form-group">
                   <label>PIN Baru (4-8 digit)</label>
-                  <input type="password" value={newAdminPin} onChange={e => setNewAdminPin(e.target.value.replace(/\D/g,''))} maxLength={8} placeholder="****" />
+                  <input type="password" value={newAdminPin} onChange={e => setNewAdminPin(e.target.value.replace(/\D/g, ''))} maxLength={8} placeholder="****" />
                 </div>
                 <div className="form-group">
                   <label>Konfirmasi PIN</label>
-                  <input type="password" value={confirmAdminPin} onChange={e => setConfirmAdminPin(e.target.value.replace(/\D/g,''))} maxLength={8} placeholder="****" />
+                  <input type="password" value={confirmAdminPin} onChange={e => setConfirmAdminPin(e.target.value.replace(/\D/g, ''))} maxLength={8} placeholder="****" />
                 </div>
                 <button className="btn-primary" onClick={() => {
                   if (newAdminPin.length < 4) { alert("PIN minimal 4 digit."); return; }
@@ -1207,7 +1207,7 @@ export default function App() {
               </button>
             </form>
             <div className="login-footer" style={{ marginTop: '2.5rem', opacity: 0.5, fontSize: '0.8rem', fontWeight: 600, letterSpacing: '1px' }}>
-              Dimsam @2026
+              Dimsam - 2026
             </div>
           </div>
         </div>
