@@ -13,7 +13,8 @@ let memoryStore = {
   history: [],
   payerHistory: {},
   menu: [],
-  users: [] // will store { username, pin } objects
+  users: [], // will store { username, pin } objects
+  adminPin: null // global admin pin for menu access
 };
 
 export function loadStore() {
@@ -49,7 +50,8 @@ async function fetchFullState() {
       { data: menu, error: menuErr },
       { data: payers, error: payersErr },
       { data: historic, error: historicErr },
-      { data: users, error: usersErr }
+      { data: users, error: usersErr },
+      { data: settings, error: settingsErr }
     ] = await Promise.all([
       supabase.from('sessions').select('*'),
       supabase.from('orders').select('*'),
@@ -57,7 +59,8 @@ async function fetchFullState() {
       supabase.from('menu_items').select('*'),
       supabase.from('payer_history').select('*'),
       supabase.from('historic_sessions').select('*'),
-      supabase.from('users').select('*')
+      supabase.from('users').select('*'),
+      supabase.from('app_settings').select('*')
     ]);
 
     if (sessionsErr) console.error("Supabase Error (Sessions):", sessionsErr);
@@ -82,6 +85,10 @@ async function fetchFullState() {
       username: u.username,
       pin: u.pin
     }));
+
+    // Rebuild Admin Pin
+    const adminPinRow = (settings || []).find(s => s.key === 'admin_pin');
+    memoryStore.adminPin = adminPinRow ? adminPinRow.value : null;
     
     // Also track names for quick-selection (extract from history if needed)
     const userSet = new Set((payers || []).map(p => p.username));
@@ -446,6 +453,11 @@ export const api = {
       .getPublicUrl(filePath);
 
     return publicUrl;
+  },
+
+  saveAdminPin: async (newPin) => {
+    await supabase.from('app_settings').upsert({ key: 'admin_pin', value: newPin });
+    fetchFullState();
   }
 };
 

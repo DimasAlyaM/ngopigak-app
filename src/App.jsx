@@ -148,11 +148,9 @@ function Stepper({ steps, currentStep }) {
 }
 
 // ─── ADMIN PIN GATE ──────────────────────────────────────────────────────────
-const ADMIN_PIN_KEY = 'ngopi_admin_pin';
 
-function AdminPinGate({ onSuccess, onClose }) {
-  const storedPin = localStorage.getItem(ADMIN_PIN_KEY);
-  const isFirstTime = !storedPin;
+function AdminPinGate({ serverPin, onSuccess, onClose }) {
+  const isFirstTime = !serverPin;
 
   const [pin, setPin] = useState('');
   const [confirmPin, setConfirmPin] = useState('');
@@ -169,10 +167,10 @@ function AdminPinGate({ onSuccess, onClose }) {
     if (pin.length < 4) { setError('PIN minimal 4 digit.'); triggerShake(); return; }
     if (isFirstTime) {
       if (pin !== confirmPin) { setError('PIN tidak cocok, coba lagi.'); triggerShake(); setPin(''); setConfirmPin(''); return; }
-      localStorage.setItem(ADMIN_PIN_KEY, pin);
+      api.saveAdminPin(pin);
       onSuccess();
     } else {
-      if (pin !== storedPin) { setError('PIN salah!'); triggerShake(); setPin(''); return; }
+      if (pin !== serverPin) { setError('PIN salah!'); triggerShake(); setPin(''); return; }
       onSuccess();
     }
   };
@@ -1751,6 +1749,7 @@ export default function App() {
       )}
       {showAdminPin && (
         <AdminPinGate
+          serverPin={store.adminPin}
           onSuccess={() => { setShowAdminPin(false); setShowAdminPanel(true); }}
           onClose={() => setShowAdminPin(false)}
         />
