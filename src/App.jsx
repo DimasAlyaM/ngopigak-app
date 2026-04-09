@@ -500,9 +500,9 @@ function HistoryView({ history, payerHistory, currentUser, filter, setFilter, on
                                     try {
                                       const url = await api.uploadProof(file);
                                       await api.updateHistoricalOrder(s.id, currentUser, { paymentProof: url });
-                                      alert('Bukti pembayaran ter-upload! Tunggu konfirmasi pembayar.');
+                                      // No alert, just reactive update
                                     } catch (err) {
-                                      alert('Gagal upload. Pastikan SQL Storage sudah dijalankan.');
+                                      console.error("Upload failed:", err);
                                     } finally {
                                       setUploadingId(null);
                                     }
@@ -519,12 +519,26 @@ function HistoryView({ history, payerHistory, currentUser, filter, setFilter, on
                             </div>
                           )}
                           {mOrder.paymentProof && (
-                            <div className="proof-confirmed mt-2">
-                              <div className="flex items-center gap-1 text-green text-xs font-bold">
-                                <CheckCircle size={14} /> Bukti terkirim
+                            <div className="proof-area-enhanced mt-3">
+                              <div className="flex items-center justify-between mb-2">
+                                <div className="flex items-center gap-1 text-green text-xs font-bold">
+                                  <CheckCircle size={14} /> Bukti terunggah
+                                </div>
+                                {isDbt && (
+                                  <button 
+                                    className="btn-mini btn-green shadow-sm"
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      api.updateHistoricalOrder(s.id, currentUser, { isPaid: true });
+                                    }}
+                                  >
+                                    KONFIRMASI SAYA SUDAH BAYAR
+                                  </button>
+                                )}
                               </div>
-                              <a href={mOrder.paymentProof} target="_blank" rel="noreferrer" className="img-preview-mini mt-2">
-                                <img src={mOrder.paymentProof} alt="Bukti" />
+                              <a href={mOrder.paymentProof} target="_blank" rel="noreferrer" className="img-preview-major">
+                                <img src={mOrder.paymentProof} alt="Bukti Transfer" />
+                                <div className="preview-overlay">Klik untuk zoom</div>
                               </a>
                             </div>
                           )}
