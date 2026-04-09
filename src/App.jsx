@@ -414,20 +414,29 @@ function AdminPanel({ menu, users, history, activeSession, onSaveMenu, onResetPi
                         <div style={{ fontSize: '0.75rem', fontWeight: '800', textTransform: 'uppercase', marginBottom: '8px', opacity: 0.6, borderBottom: '1px dashed var(--text-primary)', paddingBottom: '4px' }}>
                           Partisipan Sesi
                         </div>
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
                           {h.orders.map((ord, idx) => {
-                            const isPaid = !h.debtors?.includes(ord.username);
+                            const isPaid = !h.debtors?.some(d => (d || '').toLowerCase() === (ord.username || '').toLowerCase());
                             return (
-                              <div key={idx} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'var(--bg-primary)', padding: '8px', border: '1px solid var(--text-primary)', borderRadius: '4px' }}>
-                                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                                  <UserAvatar username={ord.username} size={24} />
+                              <div key={idx} style={{ 
+                                display: 'flex', 
+                                justifyContent: 'space-between', 
+                                alignItems: 'center', 
+                                background: 'var(--bg-primary)', 
+                                padding: '12px', 
+                                border: '2px solid var(--text-primary)', 
+                                borderRadius: '8px',
+                                boxShadow: '4px 4px 0 var(--text-primary)'
+                              }}>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                                  <UserAvatar username={ord.username} size={28} />
                                   <div style={{ display: 'flex', flexDirection: 'column' }}>
-                                    <span style={{ fontSize: '0.85rem', fontWeight: '800' }}>{ord.username}</span>
-                                    <span style={{ fontSize: '0.7rem', opacity: 0.7 }}>{ord.item.name} ({formatRp(ord.item.price)})</span>
+                                    <span style={{ fontSize: '0.9rem', fontWeight: '900', textTransform: 'uppercase' }}>{ord.username}</span>
+                                    <span style={{ fontSize: '0.75rem', opacity: 0.8, fontFamily: 'var(--font-body)' }}>{ord.item.name} • {formatRp(ord.item.price)}</span>
                                   </div>
                                 </div>
                                 <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                                  <span className={`badge-status-new ${isPaid ? 'lunas' : 'hutang'}`} style={{ fontSize: '0.6rem' }}>
+                                  <span className={`badge-status-new ${isPaid ? 'lunas' : 'hutang'}`} style={{ fontSize: '0.65rem', padding: '2px 10px' }}>
                                     {isPaid ? 'LUNAS' : 'HUTANG'}
                                   </span>
                                   <button 
@@ -435,7 +444,8 @@ function AdminPanel({ menu, users, history, activeSession, onSaveMenu, onResetPi
                                     style={{ 
                                       backgroundColor: isPaid ? '#FEE2E2' : '#D1FAE5',
                                       color: isPaid ? '#DC2626' : '#059669',
-                                      borderColor: isPaid ? '#DC2626' : '#059669'
+                                      borderColor: isPaid ? '#DC2626' : '#059669',
+                                      padding: '4px 10px'
                                     }}
                                     onClick={() => {
                                       if(confirm(`Ubah status ${ord.username} menjadi ${!isPaid ? 'LUNAS' : 'HUTANG'}?`)) {

@@ -415,8 +415,16 @@ export const api = {
     if (orderIndex !== -1) {
       d.orders[orderIndex] = { ...d.orders[orderIndex], ...updates };
       
+      const uName = d.orders[orderIndex].username; // use the original username from the order object
+
       if (updates.isPaid) {
+        // Remove from debtors
         d.debtors = (d.debtors || []).filter(u => (u || '').toLowerCase() !== username.toLowerCase());
+      } else {
+        // Add back to debtors if not already there
+        if (!d.debtors?.some(u => (u || '').toLowerCase() === username.toLowerCase())) {
+           d.debtors = [...(d.debtors || []), uName];
+        }
       }
       changed = true;
     }
