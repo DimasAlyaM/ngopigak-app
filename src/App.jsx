@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import { loadStore, api, initSupabaseSync, selectRoles } from './store.js';
 import {
   Bell, Info, CreditCard, Coffee, Clock, CheckCircle, AlertTriangle, LogOut, ClipboardList,
-  Lock, Unlock, LogIn, History, X, Trash2, PlusCircle, Shield, Users, User, ChevronDown, 
+  Lock, Unlock, LogIn, History, X, Trash2, PlusCircle, Shield, Users, User, ChevronDown,
   Camera, Upload, Loader2
 } from 'lucide-react';
 import confetti from 'canvas-confetti';
@@ -234,7 +234,7 @@ function AdminPinGate({ serverPin, onSuccess, onClose }) {
 }
 
 // ─── ADMIN PANEL (MENU & USERS) ──────────────────────────────────────────────
-function AdminPanel({ menu, users, history, onSaveMenu, onResetPin, onClose }) {
+function AdminPanel({ menu, users, history, activeSession, onSaveMenu, onResetPin, onForceClose, onDeleteActiveSession, onDeleteHistory, onUpdateHistoricalOrder, onDeleteAllNotifs, onSaveAdminPin, onClose }) {
   const [tab, setTab] = useState('menu');
   const [items, setItems] = useState(menu.map(m => ({ ...m })));
   const [newName, setNewName] = useState('');
@@ -249,33 +249,28 @@ function AdminPanel({ menu, users, history, onSaveMenu, onResetPin, onClose }) {
   const removeItem = (id) => setItems(items.filter(i => i.id !== id));
   const updateItem = (id, field, val) => setItems(items.map(i => i.id === id ? { ...i, [field]: field === 'price' ? (parseInt(val) || 0) : val } : i));
 
-  // Calculate debts per user from history
-  const userDebts = {};
-  history.forEach(session => {
-    if (session.debtors) {
-      session.debtors.forEach(debtor => {
-        const order = session.orders.find(o => o.username === debtor);
-        const amount = order?.item?.price || 0;
-        userDebts[debtor] = (userDebts[debtor] || 0) + amount;
-      });
-    }
-  });
+  // Settings States
+  const [newAdminPin, setNewAdminPin] = useState('');
+  const [confirmAdminPin, setConfirmAdminPin] = useState('');
 
   return (
     <div className="dialog-overlay">
-      <div className="dialog-box glass-panel admin-panel" style={{ maxWidth: tab === 'users' ? '800px' : '640px' }}>
+      <div className="dialog-box glass-panel admin-panel" style={{ maxWidth: (tab === 'users' || tab === 'history') ? '800px' : '640px' }}>
         <div className="admin-header">
           <h3 style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}><Shield size={20} /> Panel Admin</h3>
           <button className="btn-icon" onClick={onClose}><X size={20} /></button>
         </div>
 
-        <div className="tab-buttons mb-4">
-          <button className={`tab-btn ${tab === 'menu' ? 'active' : ''}`} onClick={() => setTab('menu')}>☕ Menu Kopi</button>
-          <button className={`tab-btn ${tab === 'users' ? 'active' : ''}`} onClick={() => setTab('users')}>👥 Manajemen User</button>
+        <div className="tab-buttons mb-4" style={{ overflowX: 'auto', whiteSpace: 'nowrap', paddingBottom: '0.5rem' }}>
+          <button className={`tab-btn ${tab === 'menu' ? 'active' : ''}`} onClick={() => setTab('menu')}>☕ Menu</button>
+          <button className={`tab-btn ${tab === 'users' ? 'active' : ''}`} onClick={() => setTab('users')}>👥 User</button>
+          <button className={`tab-btn ${tab === 'session' ? 'active' : ''}`} onClick={() => setTab('session')}>⚡ Sesi Aktif</button>
+          <button className={`tab-btn ${tab === 'history' ? 'active' : ''}`} onClick={() => setTab('history')}>📜 Riwayat</button>
+          <button className={`tab-btn ${tab === 'settings' ? 'active' : ''}`} onClick={() => setTab('settings')}>⚙️ Pengaturan</button>
         </div>
 
-        {tab === 'menu' ? (
-          <>
+        {tab === 'menu' && (
+          <div className="fade-in">
             <div className="menu-list">
               {items.map(item => (
                 <div key={item.id} className="menu-edit-row">
@@ -287,7 +282,7 @@ function AdminPanel({ menu, users, history, onSaveMenu, onResetPin, onClose }) {
               ))}
             </div>
             <div className="menu-edit-row" style={{ marginTop: '1rem', borderTop: '1px solid var(--glass-border)', paddingTop: '1rem' }}>
-              <input className="emoji-input" value={newEmoji} onChange={e => setNewEmoji(e.target.value)} maxLength={2} placeholder="" />
+              <input className="emoji-input" value={newEmoji} onChange={e => setNewEmoji(e.target.value)} maxLength={2} placeholder="☕" />
               <input value={newName} onChange={e => setNewName(e.target.value)} placeholder="Nama menu baru" />
               <input type="number" value={newPrice} onChange={e => setNewPrice(e.target.value)} placeholder="Harga" style={{ width: '120px' }} />
               <button className="btn-primary btn-small" onClick={addItem}>+ Tambah</button>
@@ -296,31 +291,157 @@ function AdminPanel({ menu, users, history, onSaveMenu, onResetPin, onClose }) {
               <button className="btn-secondary" onClick={onClose}>Batal</button>
               <button className="btn-primary" onClick={() => { onSaveMenu(items); onClose(); }}>Simpan Perubahan</button>
             </div>
-          </>
-        ) : (
-          <div className="user-management-list">
+          </div>
+        )}
+
+        {tab === 'users' && (
+          <div className="user-management-list fade-in">
             <div className="table-header">
               <span>User</span>
               <span>Total Hutang</span>
               <span>Aksi</span>
             </div>
             <div className="scroll-container" style={{ maxHeight: '400px' }}>
-              {users.map(u => (
-                <div key={u.username} className="user-mgt-row">
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-                    <UserAvatar username={u.username} size={24} />
-                    <strong>{u.username}</strong>
+              {users.map(u => {
+                let debt = 0;
+                history.forEach(session => {
+                  if (session.debtors?.includes(u.username)) {
+                    const order = session.orders.find(o => o.username === u.username);
+                    debt += order?.item?.price || 0;
+                  }
+                });
+                return (
+                  <div key={u.username} className="user-mgt-row">
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                      <UserAvatar username={u.username} size={24} />
+                      <strong>{u.username}</strong>
+                    </div>
+                    <span className={debt > 0 ? 'text-red' : ''}>
+                      {formatRp(debt)}
+                    </span>
+                    <button className="btn-secondary btn-small" onClick={() => {
+                      if (confirm(`Reset PIN untuk ${u.username}? PIN baru akan menjadi '1234'.`)) {
+                        onResetPin(u.username);
+                      }
+                    }}>Reset PIN</button>
                   </div>
-                  <span className={userDebts[u.username] > 0 ? 'text-red' : ''}>
-                    {formatRp(userDebts[u.username] || 0)}
-                  </span>
-                  <button className="btn-secondary btn-small" onClick={() => {
-                    if (confirm(`Reset PIN untuk ${u.username}? PIN baru akan menjadi '1234'.`)) {
-                      onResetPin(u.username);
-                    }
-                  }}>Reset PIN</button>
+                );
+              })}
+            </div>
+          </div>
+        )}
+
+        {tab === 'session' && (
+          <div className="admin-session-management fade-in">
+            {activeSession ? (
+              <div className="panel bg-secondary" style={{ borderStyle: 'dashed' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
+                  <span className="badge-status-new hutang">Sesi Sedang Berjalan</span>
+                  <span className="text-secondary text-sm">{formatDate(activeSession.startedAt)}</span>
                 </div>
-              ))}
+                <div className="stat-row"><span>Status:</span><strong>{activeSession.status.toUpperCase()}</strong></div>
+                <div className="stat-row"><span>Pembuat:</span><strong>{activeSession.startedBy}</strong></div>
+                <div className="stat-row"><span>Pesanan:</span><strong>{activeSession.orders.length} Item</strong></div>
+                
+                <div className="dialog-actions mt-6" style={{ flexDirection: 'column', gap: '0.75rem' }}>
+                  <button className="btn-danger" style={{ width: '100%' }} onClick={() => {
+                    if (confirm("Tutup paksa sesi ini? Peserta yang belum bayar akan tercatat berhutang.")) {
+                      onForceClose();
+                    }
+                  }}>Tutup Paksa & Simpan Histori</button>
+                  
+                  <button className="btn-secondary" style={{ width: '100%', color: '#B91C1C', borderColor: '#B91C1C' }} onClick={() => {
+                    if (confirm("HAPUS PERMANEN sesi ini? Data pesanan akan hilang total dan tidak masuk histori.")) {
+                      onDeleteActiveSession(activeSession.id);
+                    }
+                  }}>Hapus Total (Tanpa Histori)</button>
+                </div>
+              </div>
+            ) : (
+              <div className="empty-state">Tidak ada sesi aktif saat ini.</div>
+            )}
+          </div>
+        )}
+
+        {tab === 'history' && (
+          <div className="admin-history-management fade-in">
+            <div className="table-header">
+              <span>Tanggal / Sesi</span>
+              <span>Total Sesi</span>
+              <span>Aksi</span>
+            </div>
+            <div className="scroll-container" style={{ maxHeight: '400px' }}>
+              {history.length === 0 && <p className="text-center py-4 opacity-50">Belum ada histori.</p>}
+              {[...history].reverse().map(h => {
+                const total = h.orders.reduce((sum, o) => sum + o.item.price, 0);
+                return (
+                  <div key={h.id} className="user-mgt-row" style={{ gridTemplateColumns: '2fr 1fr 1fr', padding: '15px 10px' }}>
+                    <div className="flex-col">
+                      <span className="font-bold text-sm">{formatDate(h.startedAt)}</span>
+                      <span className="text-xs opacity-70">Payer: {h.payer}</span>
+                    </div>
+                    <span className="text-sm font-bold">{formatRp(total)}</span>
+                    <div style={{ display: 'flex', gap: '0.5rem' }}>
+                      <button className="btn-icon-danger" style={{ padding: '6px' }} title="Hapus Histori" onClick={() => {
+                        if (confirm("Hapus histori sesi ini secara PERMANEN?")) {
+                          onDeleteHistory(h.id);
+                        }
+                      }}><Trash2 size={16} /></button>
+                      
+                      <button className="btn-icon" style={{ border: '1px solid var(--text-primary)', padding: '6px' }} title="Detail & Edit Status" onClick={() => {
+                         const username = prompt("Masukkan Username participant untuk toggle LUNAS/HUTANG:", "");
+                         if (username) {
+                           const ord = h.orders.find(o => o.username.toLowerCase() === username.toLowerCase());
+                           if (ord) {
+                             const newStatus = !ord.isPaid;
+                             if(confirm(`Ubah status ${ord.username} menjadi ${newStatus ? 'LUNAS' : 'HUTANG'}?`)) {
+                               onUpdateHistoricalOrder(h.id, ord.username, { isPaid: newStatus });
+                             }
+                           } else {
+                             alert("Username tidak ditemukan.");
+                           }
+                         }
+                      }}><ClipboardList size={16} /></button>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        )}
+
+        {tab === 'settings' && (
+          <div className="admin-settings-tab fade-in">
+            <div className="panel bg-secondary mb-6">
+              <h4 className="section-title">Ganti PIN Admin</h4>
+              <div className="modern-form">
+                <div className="form-group">
+                  <label>PIN Baru (4-8 digit)</label>
+                  <input type="password" value={newAdminPin} onChange={e => setNewAdminPin(e.target.value.replace(/\D/g,''))} maxLength={8} placeholder="****" />
+                </div>
+                <div className="form-group">
+                  <label>Konfirmasi PIN</label>
+                  <input type="password" value={confirmAdminPin} onChange={e => setConfirmAdminPin(e.target.value.replace(/\D/g,''))} maxLength={8} placeholder="****" />
+                </div>
+                <button className="btn-primary" onClick={() => {
+                  if (newAdminPin.length < 4) { alert("PIN minimal 4 digit."); return; }
+                  if (newAdminPin !== confirmAdminPin) { alert("PIN konfirmasi tidak cocok."); return; }
+                  onSaveAdminPin(newAdminPin);
+                  setNewAdminPin(''); setConfirmAdminPin('');
+                  alert("PIN Admin berhasil diperbarui!");
+                }}>Update PIN</button>
+              </div>
+            </div>
+
+            <div className="panel" style={{ borderColor: '#B91C1C' }}>
+              <h4 className="section-title" style={{ color: '#B91C1C', borderColor: '#B91C1C' }}>Pembersihan Data</h4>
+              <p className="text-secondary text-sm mb-4">Hapus semua notifikasi lama untuk menjaga kecepatan aplikasi.</p>
+              <button className="btn-danger" style={{ width: '100%' }} onClick={() => {
+                if (confirm("HAPUS SEMUA notifikasi? Tindakan ini tidak bisa dibatalkan.")) {
+                  onDeleteAllNotifs();
+                  alert("Semua notifikasi telah dibersihkan.");
+                }
+              }}>Bersihkan Semua Notifikasi</button>
             </div>
           </div>
         )}
@@ -450,22 +571,22 @@ function HistoryView({ history, payerHistory, currentUser, filter, setFilter, on
                                   ? <span className="badge-debt-small">HUTANG</span>
                                   : <span className="badge-paid-small">LUNAS</span>
                                 }
-                                
+
                                 {/* Payer Action: Confirm Payment for others or self if it was my session */}
-                                {(currentUser || '').toLowerCase() === (s.payer || '').toLowerCase() && 
-                                 s.debtors?.some(d => (d || '').toLowerCase() === (o.username || '').toLowerCase()) && (
-                                  <button 
-                                    className="btn-mini btn-green ms-2"
-                                    onClick={(e) => {
-                                      e.stopPropagation();
-                                      if(confirm(`Konfirmasi pembayaran dari ${o.username}?`)) {
-                                        api.updateHistoricalOrder(s.id, o.username, { isPaid: true, markedByPayer: true });
-                                      }
-                                    }}
-                                  >
-                                    Konfirmasi
-                                  </button>
-                                )}
+                                {(currentUser || '').toLowerCase() === (s.payer || '').toLowerCase() &&
+                                  s.debtors?.some(d => (d || '').toLowerCase() === (o.username || '').toLowerCase()) && (
+                                    <button
+                                      className="btn-mini btn-green ms-2"
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        if (confirm(`Konfirmasi pembayaran dari ${o.username}?`)) {
+                                          api.updateHistoricalOrder(s.id, o.username, { isPaid: true, markedByPayer: true });
+                                        }
+                                      }}
+                                    >
+                                      Konfirmasi
+                                    </button>
+                                  )}
                               </div>
                               {o.paymentProof && (
                                 <div className="proof-link-mini">
@@ -482,13 +603,13 @@ function HistoryView({ history, payerHistory, currentUser, filter, setFilter, on
                       {isDbt && mOrder && (
                         <div className="debt-instruction-box mt-6">
                           <p>⚠️ Kamu berhutang **{formatRp(mOrder.item.price)}** kepada **{s.payer}**.</p>
-                          
+
                           {!mOrder.paymentProof && (
                             <div className="historical-proof-submit mt-3">
                               <label className="upload-box-new">
-                                <input 
-                                  type="file" 
-                                  accept="image/*" 
+                                <input
+                                  type="file"
+                                  accept="image/*"
                                   className="hidden-file-input"
                                   disabled={!!uploadingId}
                                   onChange={async (e) => {
@@ -523,7 +644,7 @@ function HistoryView({ history, payerHistory, currentUser, filter, setFilter, on
                                   <CheckCircle size={14} /> Bukti terunggah
                                 </div>
                                 {isDbt && (
-                                  <button 
+                                  <button
                                     className="btn-mini btn-green shadow-sm"
                                     onClick={(e) => {
                                       e.stopPropagation();
@@ -618,7 +739,7 @@ export default function App() {
     }
 
     const participants = [...new Set(s.session.orders.map(o => o.username))];
-    
+
     // Find last roles from history to exclude them
     const sortedHistory = [...s.history].sort((a, b) => new Date(b.startedAt) - new Date(a.startedAt));
     const lastSession = sortedHistory[0];
@@ -1009,7 +1130,7 @@ export default function App() {
               </button>
             </form>
             <div className="login-footer" style={{ marginTop: '2.5rem', opacity: 0.5, fontSize: '0.8rem', fontWeight: 600, letterSpacing: '1px' }}>
-              Dimsam @2026
+              Dimsam 2026
             </div>
           </div>
         </div>
@@ -1165,7 +1286,7 @@ export default function App() {
                             <span className="item-main">{m.emoji} {m.name}</span>
                             <span className="item-price">{formatRp(m.price)}</span>
                           </div>
-                      ))}
+                        ))}
                       {store.menu.filter(m => m.name.toLowerCase().includes(coffeeSearch.toLowerCase())).length === 0 && (
                         <div className="search-empty">Menu tidak ditemukan...</div>
                       )}
@@ -1491,9 +1612,9 @@ export default function App() {
                   Pesananmu: {myOrderC.item.emoji} {myOrderC.item.name} — <strong>{formatRp(myOrderC.item.price)}</strong>
                 </p>
                 <label className="upload-box-new mb-3">
-                  <input 
-                    type="file" 
-                    accept="image/*" 
+                  <input
+                    type="file"
+                    accept="image/*"
                     className="hidden-file-input"
                     disabled={isUploadingActive}
                     onChange={async (e) => {
@@ -1517,10 +1638,10 @@ export default function App() {
                     )}
                   </div>
                 </label>
-                <button 
-                  id="companion-paid-btn" 
-                  className="btn-primary" 
-                  style={{ width: '100%' }} 
+                <button
+                  id="companion-paid-btn"
+                  className="btn-primary"
+                  style={{ width: '100%' }}
                   disabled={isUploadingActive}
                   onClick={() => markMyPayment(currentUser)}
                 >
@@ -1588,9 +1709,9 @@ export default function App() {
               <div className="file-input-wrapper mt-4">
                 <label className="text-secondary text-sm mb-2 block">Kirim Bukti Pembayaran</label>
                 <label className="upload-box-new active-upload">
-                  <input 
-                    type="file" 
-                    accept="image/*" 
+                  <input
+                    type="file"
+                    accept="image/*"
                     className="hidden-file-input"
                     disabled={isUploadingActive}
                     onChange={async (e) => {
@@ -1626,10 +1747,10 @@ export default function App() {
                   </div>
                 )}
 
-                <button 
-                  id="penitip-paid-btn" 
-                  className="btn-primary mt-2" 
-                  style={{ width: '100%' }} 
+                <button
+                  id="penitip-paid-btn"
+                  className="btn-primary mt-2"
+                  style={{ width: '100%' }}
                   disabled={isUploadingActive}
                   onClick={() => {
                     if (!proofInput && !confirm('Kamu belum upload bukti. Tetap tandai bayar (Cash)?')) return;
@@ -1720,7 +1841,21 @@ export default function App() {
         {view === 'admin' && (
           <div className="role-layout fade-in">
             <div className="panel glass-panel" style={{ maxWidth: '800px', margin: '2rem auto' }}>
-              <AdminPanel menu={store.menu} users={store.users} history={store.history} onSaveMenu={saveMenu} onResetPin={onResetPin} onClose={() => setView('home')} />
+              <AdminPanel
+                menu={store.menu}
+                users={store.users}
+                history={store.history}
+                activeSession={store.session}
+                onSaveMenu={saveMenu}
+                onResetPin={onResetPin}
+                onForceClose={forceClose}
+                onDeleteActiveSession={api.deleteActiveSession}
+                onDeleteHistory={api.deleteHistory}
+                onUpdateHistoricalOrder={api.updateHistoricalOrder}
+                onDeleteAllNotifs={api.deleteAllNotifications}
+                onSaveAdminPin={api.saveAdminPin}
+                onClose={() => setView('home')}
+              />
             </div>
           </div>
         )}
@@ -1749,8 +1884,15 @@ export default function App() {
           menu={store.menu}
           users={store.users}
           history={store.history}
+          activeSession={store.session}
           onSaveMenu={saveMenu}
           onResetPin={onResetPin}
+          onForceClose={forceClose}
+          onDeleteActiveSession={api.deleteActiveSession}
+          onDeleteHistory={api.deleteHistory}
+          onUpdateHistoricalOrder={api.updateHistoricalOrder}
+          onDeleteAllNotifs={api.deleteAllNotifications}
+          onSaveAdminPin={api.saveAdminPin}
           onClose={() => setShowAdminPanel(false)}
         />
       )}

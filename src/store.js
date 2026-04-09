@@ -458,6 +458,25 @@ export const api = {
   saveAdminPin: async (newPin) => {
     await supabase.from('app_settings').upsert({ key: 'admin_pin', value: newPin });
     fetchFullState();
+  },
+
+  deleteHistory: async (sessionId) => {
+    await supabase.from('historic_sessions').delete().eq('id', sessionId);
+    fetchFullState();
+  },
+
+  deleteActiveSession: async (sessionId) => {
+    // Orders will be deleted automatically due to ON DELETE CASCADE in schema
+    await supabase.from('sessions').delete().eq('id', sessionId);
+    // Cleanup notifications for this session manually
+    await supabase.from('notifications').delete().eq('session_id', sessionId);
+    fetchFullState();
+  },
+
+  deleteAllNotifications: async () => {
+    // Delete all from notifications table
+    await supabase.from('notifications').delete().neq('id', 0);
+    fetchFullState();
   }
 };
 
