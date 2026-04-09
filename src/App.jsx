@@ -3,7 +3,7 @@ import { loadStore, api, initSupabaseSync, selectRoles } from './store.js';
 import {
   Bell, Info, CreditCard, Coffee, Clock, CheckCircle, AlertTriangle, LogOut, ClipboardList,
   Lock, Unlock, LogIn, History, X, Trash2, PlusCircle, Shield, Users, User, ChevronDown, 
-  Camera, Upload, ImageIcon, Loader2
+  Camera, Upload, Loader2
 } from 'lucide-react';
 import confetti from 'canvas-confetti';
 import './App.css';
