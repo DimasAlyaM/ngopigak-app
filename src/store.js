@@ -97,9 +97,11 @@ async function fetchFullState() {
 
     // If session is 'open' and older than 2 hours, force-close it
     const SESSION_TIMEOUT_MS = 2 * 60 * 60 * 1000;
-    const rawActive = (sessions || []).sort((a, b) => new Date(b.started_at) - new Date(a.started_at))[0];
+    // Only consider sessions that are NOT completed or force-closed
+    const activeCandidates = (sessions || []).filter(s => s.status !== 'completed' && s.status !== 'force-closed');
+    const rawActive = activeCandidates.sort((a, b) => new Date(b.started_at) - new Date(a.started_at))[0];
     
-    if (rawActive && rawActive.status !== 'completed' && rawActive.status !== 'force-closed' && rawActive.started_at) {
+    if (rawActive && rawActive.started_at) {
       const elapsed = Date.now() - new Date(rawActive.started_at).getTime();
       if (elapsed > SESSION_TIMEOUT_MS) {
         // Calculate debtors before closing
@@ -128,6 +130,8 @@ async function fetchFullState() {
              }))
           };
           await supabase.from('historic_sessions').insert({ id: rawActive.id, data: fullSession });
+          // After moving to history, remove from active sessions table
+          await supabase.from('sessions').delete().eq('id', rawActive.id);
           fetchFullState();
         });
         memoryStore.session = null;
@@ -466,11 +470,23 @@ export const api = {
   },
 
   deleteActiveSession: async (sessionId) => {
-    // Orders will be deleted automatically due to ON DELETE CASCADE in schema
-    await supabase.from('sessions').delete().eq('id', sessionId);
-    // Cleanup notifications for this session manually
-    await supabase.from('notifications').delete().eq('session_id', sessionId);
-    fetchFullState();
+    try {
+      console.log("Deleting session:", sessionId);
+      // Orders will be deleted automatically due to ON DELETE CASCADE in schema
+      const { error: sessionError } = await supabase.from('sessions').delete().eq('id', sessionId);
+      if (sessionError) throw sessionError;
+      
+      // Cleanup notifications for this session manually
+      const { error: notifError } = await supabase.from('notifications').delete().eq('session_id', sessionId);
+      if (notifError) throw notifError;
+      
+      await fetchFullState();
+      return { success: true };
+    } catch (err) {
+      console.error("Failed to delete active session:", err);
+      alert("Gagal menghapus sesi: " + err.message);
+      return { success: false, error: err };
+    }
   },
 
   deleteAllNotifications: async () => {

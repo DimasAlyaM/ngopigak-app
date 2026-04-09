@@ -978,6 +978,8 @@ export default function App() {
           }))
         };
         await api.saveHistory(s.session.id, historyPayload);
+        // After moving to history, remove from active sessions table
+        await api.deleteActiveSession(s.session.id);
         s.session.orders.forEach(o => {
           api.notify(s.session.id, o.username, 'done', ' Sesi selesai! Semua sudah bayar. Makasih! ');
         });
@@ -995,6 +997,8 @@ export default function App() {
     await api.updateSession(s.session.id, { status: 'force-closed', forceClosedBy: currentUser, debtors });
     const full = { ...loadStore().session, status: 'force-closed', forceClosedBy: currentUser, debtors };
     await api.saveHistory(s.session.id, full);
+    // After moving to history, remove from active sessions table
+    await api.deleteActiveSession(s.session.id);
 
     if (debtors.length > 0) {
       debtors.forEach(d => api.notify(s.session.id, d, 'debt', ` Sesi ditutup paksa. Kamu tercatat belum bayar Rp ${s.session.orders.find(o => o.username === d)?.item.price.toLocaleString()}`));
