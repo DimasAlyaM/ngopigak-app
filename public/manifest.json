@@ -29,5 +29,21 @@
       "type": "image/png",
       "purpose": "maskable"
     }
+  ],
+  "screenshots": [
+    {
+      "src": "/screenshot-mobile.png",
+      "sizes": "1000x1514",
+      "type": "image/png",
+      "form_factor": "narrow",
+      "label": "Tampilan Mobile NgopiGak"
+    },
+    {
+      "src": "/screenshot-desktop.png",
+      "sizes": "2560x1426",
+      "type": "image/png",
+      "form_factor": "wide",
+      "label": "Tampilan Desktop NgopiGak"
+    }
   ]
 }
