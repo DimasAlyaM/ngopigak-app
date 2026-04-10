@@ -492,8 +492,18 @@ function AdminPanel({ menu, users, history, activeSession, onSaveMenu, onResetPi
 
 // ─── USER PROFILE EDIT MODAL ──────────────────────────────────────────────────
 // ─── USER PROFILE VIEW ────────────────────────────────────────────────────────
-function ProfileView({ username, onSave, onLogout }) {
+function ProfileView({ username, history, onSave, onLogout }) {
   const [name, setName] = useState(username);
+
+  const validHistory = (history || []).filter(s => s && Array.isArray(s.orders));
+  const mySessions = validHistory.filter(s => s.orders.some(o => (o.username || '').toLowerCase() === (username || '').toLowerCase()));
+  const myDebts = mySessions.filter(s => s.debtors?.some(d => (d || '').toLowerCase() === (username || '').toLowerCase()));
+
+  const totalOwed = myDebts.reduce((acc, s) => {
+    const myOrder = s.orders.find(o => (o.username || '').toLowerCase() === (username || '').toLowerCase());
+    return acc + (myOrder?.item?.price || 0);
+  }, 0);
+
   return (
     <div className="profile-view fade-in">
       <div className="profile-container glass-panel-premium" style={{ padding: '2rem' }}>
@@ -506,6 +516,16 @@ function ProfileView({ username, onSave, onLogout }) {
              <UserAvatar username={username} size={96} />
           </div>
           <p className="text-secondary text-sm mt-4 text-center">Avatar dihasilkan otomatis dari namamu.</p>
+        </div>
+
+        <div className="debt-card-modern mb-8 fade-in">
+          <span className="text-secondary text-xs uppercase font-bold tracking-wider">Total Hutang Saya</span>
+          <div className="flex-between align-end">
+            <h1 className={totalOwed > 0 ? 'text-red' : 'text-green'} style={{ fontSize: '2.5rem', margin: 0 }}>
+              {formatRp(totalOwed)}
+            </h1>
+            {totalOwed > 0 && <span className="text-red text-xs mb-2">Belum Lunas</span>}
+          </div>
         </div>
 
         <div className="modern-form">
@@ -566,17 +586,6 @@ function HistoryView({ history, payerHistory, currentUser, filter, setFilter }) 
           <button className={`tab-pill ${filter === 'my-debt' ? 'active' : ''}`} onClick={() => setFilter('my-debt')}>Hutang Saya</button>
         </div>
 
-        {filter === 'my-debt' && (
-          <div className="debt-card-modern mb-6 fade-in">
-            <span className="text-secondary text-xs uppercase font-bold tracking-wider">Total Hutang Saya</span>
-            <div className="flex-between align-end">
-              <h1 className={totalOwed > 0 ? 'text-red' : 'text-green'} style={{ fontSize: '2.5rem', margin: 0 }}>
-                {formatRp(totalOwed)}
-              </h1>
-              {totalOwed > 0 && <span className="text-red text-xs mb-2">Belum Lunas</span>}
-            </div>
-          </div>
-        )}
 
         <div className="history-list">
           {displayedHistory.length === 0 ? (
@@ -1712,6 +1721,7 @@ export default function App() {
         {view === 'profile' && (
           <ProfileView
             username={currentUser}
+            history={store.history}
             onSave={onUpdateProfile}
             onLogout={() => {
               localStorage.removeItem('ngopi_current_user');
