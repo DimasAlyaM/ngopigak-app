@@ -491,23 +491,51 @@ function AdminPanel({ menu, users, history, activeSession, onSaveMenu, onResetPi
 }
 
 // ─── USER PROFILE EDIT MODAL ──────────────────────────────────────────────────
-function ProfileModal({ username, onSave, onClose }) {
+// ─── USER PROFILE EDIT MODAL ──────────────────────────────────────────────────
+function ProfileModal({ username, onSave, onLogout, onClose }) {
   const [name, setName] = useState(username);
   return (
     <div className="dialog-overlay" onClick={onClose}>
-      <div className="dialog-box glass-panel" style={{ maxWidth: '400px' }} onClick={e => e.stopPropagation()}>
-        <h3 className="mb-4">Edit Profil</h3>
-        <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '1.5rem' }}>
-          <UserAvatar username={username} size={80} />
+      <div className="dialog-box glass-panel-premium" style={{ maxWidth: '400px', padding: '2rem' }} onClick={e => e.stopPropagation()}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem' }}>
+          <h3 style={{ margin: 0 }}>Profil Saya</h3>
+          <button className="btn-icon-close" onClick={onClose}><X size={24} /></button>
         </div>
-        <p className="text-secondary text-sm mb-4 text-center">Avatar kamu otomatis dihasilkan dari nama.</p>
-        <div className="form-group mb-6">
-          <label>Nama Tampilan</label>
-          <input type="text" value={name} onChange={e => setName(e.target.value)} placeholder="Masukkan nama baru" />
+        
+        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', marginBottom: '2.5rem' }}>
+          <div className="avatar-wrapper">
+             <UserAvatar username={username} size={96} />
+          </div>
+          <p className="text-secondary text-sm mt-4 text-center">Avatar dihasilkan otomatis dari namamu.</p>
         </div>
-        <div className="dialog-actions">
-          <button className="btn-secondary" onClick={onClose}>Batal</button>
-          <button className="btn-primary" onClick={() => onSave(username, name)}>Simpan Perubahan</button>
+
+        <div className="modern-form">
+          <div className="form-group mb-8">
+            <label>NAMA TAMPILAN</label>
+            <input 
+              type="text" 
+              value={name} 
+              onChange={e => setName(e.target.value)} 
+              placeholder="Ketik nama baru..."
+              className="premium-input"
+            />
+          </div>
+          
+          <div className="flex-col gap-3">
+            <button className="btn-primary-pill" onClick={() => onSave(username, name)}>
+              Simpan Perubahan
+            </button>
+            <button className="btn-secondary-pill" onClick={onClose}>
+              Batal
+            </button>
+            
+            <div style={{ height: '1px', background: 'var(--glass-border)', margin: '1.5rem 0' }} />
+            
+            <button className="btn-logout" onClick={onLogout}>
+              <LogOut size={18} style={{ marginRight: '8px' }} />
+              Log Out dari Akun
+            </button>
+          </div>
         </div>
       </div>
     </div>
@@ -532,31 +560,35 @@ function HistoryView({ history, payerHistory, currentUser, filter, setFilter, on
 
   return (
     <div className="history-view fade-in">
-      <div className="history-container glass-panel">
-        <div className="admin-header">
-          <h3 style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}><History size={24} /> Histori Sesi</h3>
-          <button className="btn-icon" onClick={onClose}><X size={24} /></button>
+      <div className="history-container glass-panel-full">
+        <div className="view-header">
+          <h2 className="text-gradient"><History size={28} style={{ verticalAlign: 'middle', marginRight: '8px' }} /> Histori Sesi</h2>
+          <button className="btn-icon-close" onClick={onClose}><X size={28} /></button>
         </div>
 
-        {/* Debt Dashboard - Only show in My Debt tab or make it very compact */}
+        <div className="premium-tabs mb-6">
+          <button className={`tab-pill ${filter === 'all' ? 'active' : ''}`} onClick={() => setFilter('all')}>Semua Sesi</button>
+          <button className={`tab-pill ${filter === 'my-debt' ? 'active' : ''}`} onClick={() => setFilter('my-debt')}>Hutang Saya</button>
+        </div>
+
         {filter === 'my-debt' && (
-          <div className="debt-dashboard-card mb-4 fade-in">
-            <div className="debt-stat">
-              <span className="text-secondary text-sm">Total Hutang Saya</span>
-              <h2 className={totalOwed > 0 ? 'text-red' : 'text-green'}>{formatRp(totalOwed)}</h2>
+          <div className="debt-card-modern mb-6 fade-in">
+            <span className="text-secondary text-xs uppercase font-bold tracking-wider">Total Hutang Saya</span>
+            <div className="flex-between align-end">
+              <h1 className={totalOwed > 0 ? 'text-red' : 'text-green'} style={{ fontSize: '2.5rem', margin: 0 }}>
+                {formatRp(totalOwed)}
+              </h1>
+              {totalOwed > 0 && <span className="text-red text-xs mb-2">Belum Lunas</span>}
             </div>
-            {totalOwed > 0 && <p className="text-xs mt-2 opacity-70">Bayar ke pembayar masing-masing sesi ya!</p>}
           </div>
         )}
 
-        <div className="tab-buttons mb-4">
-          <button className={`tab-btn ${filter === 'all' ? 'active' : ''}`} onClick={() => setFilter('all')}>Semua Sesi</button>
-          <button className={`tab-btn ${filter === 'my-debt' ? 'active' : ''}`} onClick={() => setFilter('my-debt')}>Hutang Saya</button>
-        </div>
-
-        <div className="history-list" style={{ paddingBottom: '2rem' }}>
+        <div className="history-list">
           {displayedHistory.length === 0 ? (
-            <div className="empty-state">Belum ada histori {filter === 'my-debt' ? 'hutang' : 'sesi'}.</div>
+            <div className="empty-state-card">
+              <History size={48} className="text-secondary opacity-20 mb-4" />
+              <p>Belum ada histori {filter === 'my-debt' ? 'hutang' : 'sesi'}.</p>
+            </div>
           ) : (
             [...displayedHistory].reverse().map(s => {
               const isExpanded = expandedId === s.id;
@@ -1728,6 +1760,12 @@ export default function App() {
         <ProfileModal
           username={currentUser}
           onSave={onUpdateProfile}
+          onLogout={() => {
+            localStorage.removeItem('ngopi_current_user');
+            setCurrentUser('');
+            setShowProfileModal(false);
+            setView('home');
+          }}
           onClose={() => setShowProfileModal(false)}
         />
       )}
