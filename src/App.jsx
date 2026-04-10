@@ -101,36 +101,6 @@ function notifIcon(type) {
   return icons[type] || <Bell size={16} />;
 }
 
-// ─── USER PROFILE COMPONENT ──────────────────────────────────────────────────
-function UserProfile({ username, onLogout, onShowHistory, onShowProfile, isOpen, onToggle }) {
-  return (
-    <div className="notif-wrapper">
-      <div className="user-chip" onClick={onToggle} title="Profil">
-        <UserAvatar username={username} size={28} />
-        <span>{username}</span>
-      </div>
-      {isOpen && (
-        <>
-          <div className="dialog-overlay bg-transparent" onClick={onToggle} style={{ display: window.innerWidth <= 768 ? 'block' : 'none', background: 'transparent' }} />
-          <div className="notif-dropdown profile-dropdown">
-            <div className="notif-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              Menu Profil
-              <button className="btn-icon" onClick={onToggle} style={{ padding: 0 }}><X size={18} /></button>
-            </div>
-            <div className="notif-item" onClick={() => { onToggle(); onShowHistory(); }} style={{ cursor: 'pointer' }}>
-              <span className="notif-type"><ClipboardList size={18} /></span>
-              <div className="notif-msg" style={{ marginTop: '2px' }}>Histori Order</div>
-            </div>
-            <div className="notif-item" onClick={() => { onToggle(); onLogout(); }} style={{ cursor: 'pointer', color: '#B91C1C' }}>
-              <span className="notif-type"><LogOut size={18} /></span>
-              <div className="notif-msg" style={{ marginTop: '2px' }}>Keluar (Logout)</div>
-            </div>
-          </div>
-        </>
-      )}
-    </div>
-  );
-}
 
 // ─── STEPPER COMPONENT (for Penitip) ─────────────────────────────────────────
 function Stepper({ steps, currentStep }) {
@@ -979,7 +949,12 @@ export default function App() {
     const payer = s.session.payer;
 
     await api.updateSession(s.session.id, {
-      status: 'active', paymentMethod, bankName, accountNo
+      status: 'active',
+      paymentInfo: {
+        method: paymentMethod,
+        bankName: paymentMethod === 'BANK' ? bankName : null,
+        accountNo: accountNo
+      }
     });
     await api.incrementRoleCount(payer, 'pay');
     if (s.session.companion) {
@@ -995,6 +970,29 @@ export default function App() {
     });
 
     setPaymentMethod(''); setBankName(''); setAccountNo('');
+  };
+
+  const submitProof = async (username) => {
+    const s = loadStore();
+    if (!s.session) return;
+    const order = s.session.orders.find(o => o.username === username);
+    if (!order) return;
+    
+    await api.updateOrder(order.id, { paymentProof: proofInput });
+    api.notify(s.session.id, s.session.payer, 'payment', `${username} telah mengirimkan bukti pembayaran.`);
+    alert('Bukti pembayaran terkirim!');
+    setProofInput('');
+  };
+
+  const remindAll = async () => {
+    const s = loadStore();
+    if (!s.session) return;
+    s.session.orders.forEach(o => {
+      if (o.username !== s.session.payer && !o.isPaid) {
+        api.notify(s.session.id, o.username, 'payment', `Tagihan ngopi! Jangan lupa bayar ke ${s.session.payer} ya bro.`);
+      }
+    });
+    alert('Notifikasi tagihan dikirim!');
   };
 
   const confirmBought = async () => {
@@ -1015,7 +1013,7 @@ export default function App() {
     const order = s.session.orders.find(o => o.username === username);
     if (order && !order.isPaid) {
       await api.markOrderPaid(order.id, false);
-      api.notify(s.session.id, s.session.payer, 'payment', ` ${username} sudah konfirmasi pembayaran.`);
+      api.notify(s.session.id, s.session.payer, 'payment', `${username} sudah bayar (menunggu verifikasi).`);
       checkSessionComplete(s, order.id);
     }
   };
@@ -1026,22 +1024,19 @@ export default function App() {
     const order = s.session.orders.find(o => o.username === username);
     if (order && !order.isPaid) {
       await api.markOrderPaid(order.id, true);
-      api.notify(s.session.id, username, 'payment', ` ${s.session.payer} menandai pembayaranmu sebagai lunas (cash).`);
+      api.notify(s.session.id, username, 'payment', `${s.session.payer} mengonfirmasi pembayaranmu.`);
       checkSessionComplete(s, order.id);
     }
   };
 
   async function checkSessionComplete(s, newlyPaidOrderId) {
     const others = s.session.orders.filter(o => o.username !== s.session.payer);
-    // Simulate current state + the one we just updated
     const allOthersPaid = others.every(o => o.isPaid || o.id === newlyPaidOrderId);
     if (allOthersPaid) {
-      alert('Selamat Ngopi Ndan!');
+      alert('Selamat Ngopi! Semua pembayaran sudah lunas.');
       setView('home');
-
       try {
         await api.updateSession(s.session.id, { status: 'completed' });
-        // Build history payload directly from local state (avoid stale loadStore)
         const historyPayload = {
           ...s.session,
           status: 'completed',
@@ -1051,13 +1046,12 @@ export default function App() {
           }))
         };
         await api.saveHistory(s.session.id, historyPayload);
-        // After moving to history, remove from active sessions table
         await api.deleteActiveSession(s.session.id);
         s.session.orders.forEach(o => {
-          api.notify(s.session.id, o.username, 'done', ' Sesi selesai! Semua sudah bayar. Makasih! ');
+          api.notify(s.session.id, o.username, 'done', 'Sesi ngopi selesai! Makasih sudah patungan adil.');
         });
       } catch (e) {
-        console.error("Error sealing session history", e);
+        console.error("Error closing session history:", e);
       }
     }
   }
@@ -1070,11 +1064,10 @@ export default function App() {
     await api.updateSession(s.session.id, { status: 'force-closed', forceClosedBy: currentUser, debtors });
     const full = { ...loadStore().session, status: 'force-closed', forceClosedBy: currentUser, debtors };
     await api.saveHistory(s.session.id, full);
-    // After moving to history, remove from active sessions table
     await api.deleteActiveSession(s.session.id);
 
     if (debtors.length > 0) {
-      debtors.forEach(d => api.notify(s.session.id, d, 'debt', ` Sesi ditutup paksa. Kamu tercatat belum bayar Rp ${s.session.orders.find(o => o.username === d)?.item.price.toLocaleString()}`));
+      debtors.forEach(d => api.notify(s.session.id, d, 'debt', `Sesi ditutup paksa. Hutangmu dicatat.`));
     }
     s.session.orders.forEach(o => {
       api.notify(s.session.id, o.username, 'done', `Sesi ditutup paksa oleh ${currentUser}.`);
@@ -1666,6 +1659,9 @@ export default function App() {
       <header className="mobile-header">
         <h1 className="text-gradient">NgopiGak</h1>
         <div className="header-actions">
+          <button className="btn-icon" onClick={() => setShowAdminPin(true)} style={{ marginRight: '0.5rem' }}>
+            <Shield size={18} />
+          </button>
           <NotifBell
             notifications={session?.notifications || []}
             username={currentUser}
@@ -1679,25 +1675,6 @@ export default function App() {
       <main className="main-content">
         {view === 'home' && renderHome()}
         {view === 'session' && renderSession()}
-        {view === 'admin' && (
-          <div className="role-layout fade-in">
-            <AdminPanel
-              menu={store.menu}
-              users={store.users}
-              history={store.history}
-              activeSession={store.session}
-              onSaveMenu={saveMenu}
-              onResetPin={onResetPin}
-              onForceClose={forceClose}
-              onDeleteActiveSession={api.deleteActiveSession}
-              onDeleteHistory={api.deleteHistory}
-              onUpdateHistoricalOrder={api.updateHistoricalOrder}
-              onDeleteAllNotifs={api.deleteAllNotifications}
-              onSaveAdminPin={api.saveAdminPin}
-              onClose={() => setView('home')}
-            />
-          </div>
-        )}
       </main>
 
       {/* FAB: Start Session (Visible on Home when no session active) */}
