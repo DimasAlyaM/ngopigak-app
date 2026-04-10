@@ -1018,22 +1018,6 @@ export default function App() {
     }
   };
 
-  const submitProof = async (username) => {
-    const s = loadStore();
-    if (!s.session) return;
-    const order = s.session.orders.find(o => o.username === username);
-    if (order && !order.isPaid) {
-      // Save proof URL if exists
-      if (proofInput) {
-        await api.uploadProof(order.id, proofInput);
-      }
-      await api.markOrderPaid(order.id, false);
-      api.notify(s.session.id, s.session.payer, 'payment', ` ${username} sudah konfirmasi pembayaran.`);
-      checkSessionComplete(s, order.id);
-      setProofInput('');
-    }
-  };
-
   const markPaidByPayer = async (username) => {
     const s = loadStore();
     if (!s.session) return;
