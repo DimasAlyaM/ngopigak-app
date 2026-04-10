@@ -491,15 +491,14 @@ function AdminPanel({ menu, users, history, activeSession, onSaveMenu, onResetPi
 }
 
 // ─── USER PROFILE EDIT MODAL ──────────────────────────────────────────────────
-// ─── USER PROFILE EDIT MODAL ──────────────────────────────────────────────────
-function ProfileModal({ username, onSave, onLogout, onClose }) {
+// ─── USER PROFILE VIEW ────────────────────────────────────────────────────────
+function ProfileView({ username, onSave, onLogout }) {
   const [name, setName] = useState(username);
   return (
-    <div className="dialog-overlay" onClick={onClose}>
-      <div className="dialog-box glass-panel-premium" style={{ maxWidth: '400px', padding: '2rem' }} onClick={e => e.stopPropagation()}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem' }}>
-          <h3 style={{ margin: 0 }}>Profil Saya</h3>
-          <button className="btn-icon-close" onClick={onClose}><X size={24} /></button>
+    <div className="profile-view fade-in">
+      <div className="profile-container glass-panel-premium" style={{ padding: '2rem' }}>
+        <div className="view-header">
+          <h2 className="text-gradient">Profil Saya</h2>
         </div>
         
         <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', marginBottom: '2.5rem' }}>
@@ -525,9 +524,6 @@ function ProfileModal({ username, onSave, onLogout, onClose }) {
             <button className="btn-primary-pill" onClick={() => onSave(username, name)}>
               Simpan Perubahan
             </button>
-            <button className="btn-secondary-pill" onClick={onClose}>
-              Batal
-            </button>
             
             <div style={{ height: '1px', background: 'var(--glass-border)', margin: '1.5rem 0' }} />
             
@@ -543,7 +539,7 @@ function ProfileModal({ username, onSave, onLogout, onClose }) {
 }
 
 // ─── HISTORY VIEW ─────────────────────────────────────────────────────────────
-function HistoryView({ history, payerHistory, currentUser, filter, setFilter, onClose }) {
+function HistoryView({ history, payerHistory, currentUser, filter, setFilter }) {
   const [expandedId, setExpandedId] = useState(null);
   const [uploadingId, setUploadingId] = useState(null);
 
@@ -563,7 +559,6 @@ function HistoryView({ history, payerHistory, currentUser, filter, setFilter, on
       <div className="history-container glass-panel-full">
         <div className="view-header">
           <h2 className="text-gradient"><History size={28} style={{ verticalAlign: 'middle', marginRight: '8px' }} /> Histori Sesi</h2>
-          <button className="btn-icon-close" onClick={onClose}><X size={28} /></button>
         </div>
 
         <div className="premium-tabs mb-6">
@@ -775,7 +770,6 @@ export default function App() {
   const [dialog, setDialog] = useState(null); // { title, message, onConfirm, danger?, confirmText? }
   const [showAdminPanel, setShowAdminPanel] = useState(false);
   const [showAdminPin, setShowAdminPin] = useState(false);
-  const [showProfileModal, setShowProfileModal] = useState(false);
 
   // Form states
   const [selectedCoffeeId, setSelectedCoffeeId] = useState('');
@@ -1141,7 +1135,6 @@ export default function App() {
       localStorage.setItem('ngopi_current_user', trimmed);
       setDialog(null); // Close confirmation if any
       setActiveMenu(null); // Close dropdown menu
-      setShowProfileModal(false); // Close the profile modal itself
       alert("Profil berhasil diperbarui!");
     } catch (err) {
       console.error(err);
@@ -1258,7 +1251,7 @@ export default function App() {
         <div className="nav-icon"><History size={20} /></div>
         <span>History</span>
       </div>
-      <div className={`nav-item ${view === 'profile' ? 'active' : ''}`} onClick={() => setShowProfileModal(true)}>
+      <div className={`nav-item ${view === 'profile' ? 'active' : ''}`} onClick={() => setView('profile')}>
         <div className="nav-icon"><User size={20} /></div>
         <span>Profile</span>
       </div>
@@ -1707,6 +1700,26 @@ export default function App() {
       <main className="main-content">
         {view === 'home' && renderHome()}
         {view === 'session' && renderSession()}
+        {view === 'history' && (
+          <HistoryView
+            history={store.history}
+            payerHistory={store.payerHistory}
+            currentUser={currentUser}
+            filter={historyFilter}
+            setFilter={setHistoryFilter}
+          />
+        )}
+        {view === 'profile' && (
+          <ProfileView
+            username={currentUser}
+            onSave={onUpdateProfile}
+            onLogout={() => {
+              localStorage.removeItem('ngopi_current_user');
+              setCurrentUser('');
+              setView('home');
+            }}
+          />
+        )}
       </main>
 
       {/* FAB: Start Session (Visible on Home when no session active) */}
@@ -1753,31 +1766,6 @@ export default function App() {
           onDeleteAllNotifs={api.deleteAllNotifications}
           onSaveAdminPin={api.saveAdminPin}
           onClose={() => setShowAdminPanel(false)}
-        />
-      )}
-
-      {showProfileModal && (
-        <ProfileModal
-          username={currentUser}
-          onSave={onUpdateProfile}
-          onLogout={() => {
-            localStorage.removeItem('ngopi_current_user');
-            setCurrentUser('');
-            setShowProfileModal(false);
-            setView('home');
-          }}
-          onClose={() => setShowProfileModal(false)}
-        />
-      )}
-
-      {view === 'history' && (
-        <HistoryView
-          history={store.history}
-          payerHistory={store.payerHistory}
-          currentUser={currentUser}
-          filter={historyFilter}
-          setFilter={setHistoryFilter}
-          onClose={() => setView('home')}
         />
       )}
     </div>
