@@ -79,7 +79,7 @@ h1, h2, h3, h4, h5, h6 {
   width: 100%;
   max-width: 500px;
   height: calc(var(--nav-height) + var(--safe-bottom));
-  background: rgba(15, 10, 7, 0.85);
+  background: rgba(15, 10, 7, 0.9);
   backdrop-filter: blur(20px);
   -webkit-backdrop-filter: blur(20px);
   border-top: 1px solid var(--glass-border);
@@ -88,6 +88,7 @@ h1, h2, h3, h4, h5, h6 {
   align-items: center;
   padding-bottom: var(--safe-bottom);
   z-index: 1000;
+  transition: transform 0.3s ease;
 }
 
 .nav-item {
