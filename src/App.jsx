@@ -3,7 +3,7 @@ import { loadStore, api, initSupabaseSync, selectRoles } from './store.js';
 import {
   Bell, Info, CreditCard, Coffee, Clock, CheckCircle, AlertTriangle, LogOut, ClipboardList,
   Lock, Unlock, LogIn, History, X, Trash2, PlusCircle, Shield, Users, User, ChevronDown,
-  Camera, Upload, Loader2
+  Camera, Upload, Loader2, Home
 } from 'lucide-react';
 import confetti from 'canvas-confetti';
 import './App.css';
@@ -1215,7 +1215,7 @@ export default function App() {
   const BottomNav = () => (
     <nav className="bottom-nav">
       <div className={`nav-item ${view === 'home' ? 'active' : ''}`} onClick={() => setView('home')}>
-        <div className="nav-icon"><LogIn size={20} /></div>
+        <div className="nav-icon"><Home size={20} /></div>
         <span>Home</span>
       </div>
       <div className={`nav-item ${view === 'session' ? 'active' : ''}`} onClick={() => setView('session')}>
