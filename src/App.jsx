@@ -812,6 +812,7 @@ export default function App() {
     const lastRoles = lastSession ? { payer: lastSession.payer, companion: lastSession.companion } : null;
 
     const { payer, companion } = selectRoles(participants, s.payerHistory, lastRoles);
+    console.log("ROLES SELECTED:", { payer, companion });
 
     await api.updateSession(s.session.id, {
       status: 'payment-setup',
@@ -1066,7 +1067,7 @@ export default function App() {
         const historyPayload = {
           ...s.session,
           status: 'completed',
-          companion: s.session.companion, // Explicitly ensure companion is here
+          companion: s.session.companion, // Ensure it's not nullified
           orders: s.session.orders.map(o => ({
             ...o,
             isPaid: o.id === newlyPaidOrderId ? true : o.isPaid
@@ -1089,7 +1090,8 @@ export default function App() {
     const debtors = s.session.orders.filter(o => !o.isPaid && o.username !== s.session.payer).map(o => o.username);
 
     await api.updateSession(s.session.id, { status: 'force-closed', forceClosedBy: currentUser, debtors });
-    const full = { ...loadStore().session, status: 'force-closed', forceClosedBy: currentUser, debtors, companion: loadStore().session.companion };
+    const currentSession = loadStore().session;
+    const full = { ...currentSession, status: 'force-closed', forceClosedBy: currentUser, debtors, companion: currentSession.companion };
     await api.saveHistory(s.session.id, full);
     await api.deleteActiveSession(s.session.id);
 

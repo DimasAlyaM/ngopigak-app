@@ -535,24 +535,24 @@ export function selectRoles(participants, payerHistory, lastRoles = null) {
 
   // 1. SELECT PAYER (Based on least pay count)
   const sortedPayers = [...finalCandidates].sort((a, b) => {
-    const countA = (payerHistory[a]?.pay) || 0;
-    const countB = (payerHistory[b]?.pay) || 0;
+    const countA = (payerHistory[a]?.pay || payerHistory[a.toLowerCase()]?.pay || 0);
+    const countB = (payerHistory[b]?.pay || payerHistory[b.toLowerCase()]?.pay || 0);
     if (countA !== countB) return countA - countB;
-    return a.localeCompare(b);
+    return a.toLowerCase().localeCompare(b.toLowerCase());
   });
   
   const payer = sortedPayers[0];
   
   // 2. SELECT COMPANION (Based on least companion count)
-  const companionCandidates = participants.filter(p => p !== payer);
+  const companionCandidates = participants.filter(p => p.toLowerCase() !== payer.toLowerCase());
   const primaryCompanionPool = companionCandidates.filter(p => !excludeSet.has(p.toLowerCase()));
   const finalCompanionCandidates = primaryCompanionPool.length > 0 ? primaryCompanionPool : companionCandidates;
 
   const sortedCompanions = [...finalCompanionCandidates].sort((a, b) => {
-    const countA = (payerHistory[a]?.companion) || 0;
-    const countB = (payerHistory[b]?.companion) || 0;
+    const countA = (payerHistory[a]?.companion || payerHistory[a.toLowerCase()]?.companion || 0);
+    const countB = (payerHistory[b]?.companion || payerHistory[b.toLowerCase()]?.companion || 0);
     if (countA !== countB) return countA - countB;
-    return a.localeCompare(b);
+    return a.toLowerCase().localeCompare(b.toLowerCase());
   });
 
   const companion = sortedCompanions.length > 0 ? sortedCompanions[0] : null;
