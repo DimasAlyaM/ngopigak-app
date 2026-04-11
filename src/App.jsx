@@ -581,40 +581,42 @@ function HistoryView({ history, payerHistory, currentUser, filter, setFilter }) 
           <h2 className="text-gradient"><History size={28} style={{ verticalAlign: 'middle', marginRight: '8px' }} /> Histori Sesi</h2>
         </div>
 
-        <div className="premium-tabs mb-6">
-          <button className={`tab-pill ${filter === 'all' ? 'active' : ''}`} onClick={() => setFilter('all')}>Semua Sesi</button>
-          <button className={`tab-pill ${filter === 'my-debt' ? 'active' : ''}`} onClick={() => setFilter('my-debt')}>Hutang Saya</button>
-        </div>
-
-
         <div className="history-list">
           {displayedHistory.length === 0 ? (
             <div className="empty-state-card">
               <History size={48} className="text-secondary opacity-20 mb-4" />
-              <p>Belum ada histori {filter === 'my-debt' ? 'hutang' : 'sesi'}.</p>
+              <p>Belum ada histori sesi.</p>
             </div>
           ) : (
             [...displayedHistory].reverse().map(s => {
               const isExpanded = expandedId === s.id;
               const isDbt = s.debtors?.some(d => (d || '').toLowerCase() === (currentUser || '').toLowerCase());
-              const mOrder = s.orders.find(o => (o.username || '').toLowerCase() === (currentUser || '').toLowerCase());
+              
+              const totalAmount = s.orders.reduce((sum, o) => sum + (o.item?.price || 0), 0);
 
               return (
-                <div key={s.id} className={`history-card-new ${isDbt ? 'has-debt' : ''}`} onClick={() => setExpandedId(isExpanded ? null : s.id)}>
-                  <div className="history-card-header">
-                    <div className="flex-col">
-                      <span className="history-date">{formatDate(s.startedAt)}</span>
-                      <span className="text-xs opacity-70">Pembayar: <strong>{s.payer}</strong></span>
+                <div key={s.id} className="history-card-wrapper" style={{ marginBottom: '12px' }}>
+                  <div 
+                    className={`item-card glass-panel ${isExpanded ? 'active-border' : ''}`} 
+                    style={{ padding: '16px', borderRadius: '24px', cursor: 'pointer', borderLeft: isDbt ? '4px solid #ef4444' : '1px solid var(--glass-border)' }}
+                    onClick={() => setExpandedId(isExpanded ? null : s.id)}
+                  >
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                      <div style={{ background: 'var(--bg-primary)', padding: '10px', borderRadius: '16px' }}>
+                        <Coffee size={24} className="text-accent" />
+                      </div>
+                      <div>
+                        <p style={{ fontSize: '1rem', fontWeight: 700 }}>{formatDate(s.startedAt).split(',')[0]}</p>
+                        <p className="text-secondary" style={{ fontSize: '0.8rem' }}>
+                          {s.orders.length} Peserta &bull; {s.payer}
+                        </p>
+                      </div>
                     </div>
-                    <div className="badge-status-group">
-                      <span className={`badge-status-new ${isDbt ? 'hutang' : 'lunas'}`}>
-                        {isDbt ? 'HUTANG SAYA' : 'LUNAS'}
+                    <div style={{ textAlign: 'right' }}>
+                      <p style={{ fontWeight: 800, fontSize: '1.1rem' }}>{formatRp(totalAmount)}</p>
+                      <span style={{ fontSize: '0.65rem', fontWeight: 800, color: isDbt ? '#ef4444' : '#4ade80' }}>
+                        {isDbt ? 'HUTANG' : 'LUNAS'}
                       </span>
-                      {mOrder && isDbt && (
-                        <span className="text-xs font-bold text-red">
-                          Belum Bayar {formatRp(mOrder.item.price)}
-                        </span>
-                      )}
                     </div>
                   </div>
 
@@ -956,7 +958,7 @@ export default function App() {
       return;
     }
     await api.createSession(currentUser);
-    setView('session');
+    setView('live-session');
   };
 
   const addOrder = async (e) => {
@@ -1252,11 +1254,11 @@ export default function App() {
         <div className="nav-icon"><Home size={20} /></div>
         <span>Home</span>
       </div>
-      <div className={`nav-item ${view === 'session' ? 'active' : ''}`} onClick={() => setView('session')}>
+      <div className={`nav-item ${view === 'orders' ? 'active' : ''}`} onClick={() => setView('orders')}>
         <div className="nav-icon"><Clock size={20} /></div>
-        <span>{session?.status === 'open' ? 'Sesi' : 'Pesanan'}</span>
+        <span>Pesanan</span>
       </div>
-      <div className={`nav-item ${view === 'history' ? 'active' : ''}`} onClick={() => goToHistory('all')}>
+      <div className={`nav-item ${view === 'history' ? 'active' : ''}`} onClick={() => goToHistory()}>
         <div className="nav-icon"><History size={20} /></div>
         <span>History</span>
       </div>
@@ -1274,66 +1276,142 @@ export default function App() {
         <p className="text-secondary" style={{ fontSize: '0.9rem', fontWeight: 500 }}>Selamat Pagi,</p>
         <h2 style={{ fontSize: '1.8rem' }}>{currentUser}! 👋</h2>
       </div>
+      
+      {/* Dynamic Banner Section */}
+      <div className="home-banner glass-panel" style={{ 
+        background: 'linear-gradient(135deg, var(--accent-primary) 0%, #ffb347 100%)', 
+        padding: '1.5rem', 
+        borderRadius: '24px', 
+        marginBottom: '2rem',
+        color: 'white',
+        boxShadow: '0 10px 30px rgba(230, 145, 56, 0.3)'
+      }}>
+        <h3 style={{ fontSize: '1.2rem', marginBottom: '8px' }}>Siap untuk secangkir kopi?</h3>
+        <p style={{ fontSize: '0.9rem', opacity: 0.9, marginBottom: '1.25rem' }}>Mulai sesi bareng teman-teman sekarang dan bagikan momen seru.</p>
+        <button 
+           className="btn-primary" 
+           style={{ background: 'white', color: 'var(--accent-primary)', width: 'auto', padding: '10px 24px', fontSize: '0.9rem' }}
+           onClick={() => setView('live-session')}
+        >
+          {session && !sessionDone ? 'Lanjut Ngopi' : 'Mulai Baru'}
+        </button>
+      </div>
+
+      <div className="section-title" style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '1rem' }}>
+         <div style={{ width: '4px', height: '18px', background: 'var(--accent-primary)', borderRadius: '2px' }}></div>
+         <h4 style={{ fontSize: '1.1rem', fontWeight: 800 }}>Statistik Kamu</h4>
+      </div>
 
       <div className="status-grid" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', marginBottom: '2rem' }}>
-        <div className="glass-panel stat-card" style={{ padding: '1.25rem', borderRadius: '20px' }}>
+        <div className="glass-panel stat-card" style={{ padding: '1.25rem', borderRadius: '24px' }}>
+          <div style={{ background: 'rgba(230, 145, 56, 0.1)', width: '36px', height: '36px', borderRadius: '10px', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '12px' }}>
+             <Clock size={14} className="text-accent" />
+          </div>
           <span className="text-secondary" style={{ fontSize: '0.75rem', fontWeight: 600 }}>Total Sesi</span>
           <p style={{ fontSize: '1.5rem', fontWeight: 800 }}>{store.history.length}</p>
         </div>
-        <div className="glass-panel stat-card" style={{ padding: '1.25rem', borderRadius: '20px' }}>
-          <span className="text-secondary" style={{ fontSize: '0.75rem', fontWeight: 600 }}>Giliran Kamu</span>
-          <p style={{ fontSize: '1.5rem', fontWeight: 800 }}>{store.payerHistory[currentUser] || 0}</p>
+        <div className="glass-panel stat-card" style={{ padding: '1.25rem', borderRadius: '24px' }}>
+          <div style={{ background: 'rgba(230, 145, 56, 0.1)', width: '36px', height: '36px', borderRadius: '10px', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '12px' }}>
+             <Coffee size={14} className="text-accent" />
+          </div>
+          <span className="text-secondary" style={{ fontSize: '0.75rem', fontWeight: 600 }}>Kopi Dipesan</span>
+          <p style={{ fontSize: '1.5rem', fontWeight: 800 }}>{store.history.filter(s => s.orders.some(o => o.username === currentUser)).length}</p>
         </div>
       </div>
 
-      <div className="active-session-promo" style={{ marginBottom: '2rem' }}>
-        {session && !sessionDone ? (
-          <div className="glass-panel session-card active" style={{ background: 'var(--accent-glow)', borderColor: 'var(--accent-primary)', position: 'relative', overflow: 'hidden' }}>
-            <div className="live-badge" style={{ position: 'absolute', top: '12px', right: '12px', background: 'var(--accent-primary)', padding: '4px 8px', borderRadius: '8px', fontSize: '0.6rem', fontWeight: 800 }}>LIVE</div>
-            <h3 style={{ marginBottom: '4px' }}>Sesi Ngopi Aktif</h3>
-            <p className="text-secondary" style={{ fontSize: '0.85rem', marginBottom: '1rem' }}>{session.orders.length} rekan tim sudah bergabung.</p>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-              <div className="timer-pill" style={{ background: 'var(--bg-primary)', padding: '6px 12px', borderRadius: '12px', fontSize: '0.8rem', fontWeight: 700 }}>
-                <Clock size={14} style={{ marginRight: '4px', verticalAlign: 'middle' }} /> {formatTime(timeLeft)}
-              </div>
-              <button className="btn-primary" style={{ padding: '8px 16px', fontSize: '0.85rem', width: 'auto' }} onClick={() => setView('session')}>
-                Lanjutkan Pesanan
-              </button>
-            </div>
-          </div>
-        ) : (
-          <div className="glass-panel empty-session-card" style={{ padding: '2rem', textAlign: 'center', borderStyle: 'dashed', opacity: 0.8 }}>
-            <div style={{ background: 'var(--surface)', width: '60px', height: '60px', borderRadius: '30px', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 1rem' }}>
-              <Coffee size={30} className="text-secondary" />
-            </div>
-            <h3 className="text-secondary">Belum ada sesi</h3>
-            <p className="text-secondary" style={{ fontSize: '0.85rem', marginTop: '4px' }}>Tap '+' untuk mulai sesi baru.</p>
-          </div>
-        )}
-      </div>
-
-      <div className="recent-history" style={{ marginBottom: '2rem' }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
-          <h3>Riwayat Terakhir</h3>
-          <span className="text-accent" style={{ fontSize: '0.85rem', fontWeight: 600, cursor: 'pointer' }} onClick={() => goToHistory('all')}>Lihat Semua</span>
-        </div>
-        <div className="card-stack">
-          {store.history.slice(0, 3).map(h => (
-            <div key={h.id} className="item-card glass-panel" style={{ padding: '12px 16px' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                <div style={{ background: 'var(--bg-primary)', padding: '8px', borderRadius: '12px' }}><Coffee size={20} className="text-accent" /></div>
-                <div>
-                  <p style={{ fontSize: '0.9rem', fontWeight: 700 }}>{formatDate(h.startedAt).split(',')[0]}</p>
-                  <p className="text-secondary" style={{ fontSize: '0.75rem' }}>{h.orders.length} Peserta &bull; {h.payer}</p>
-                </div>
-              </div>
-              <span style={{ fontWeight: 700, fontSize: '0.9rem' }}>{formatRp(h.orders.reduce((s, o) => s + o.item.price, 0))}</span>
-            </div>
-          ))}
-        </div>
+      <div className="quick-actions-grid" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+         <button className="glass-panel action-btn" style={{ padding: '1rem', textAlign: 'center', borderRadius: '20px', border: '1px solid var(--glass-border)', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px' }} onClick={() => setView('history')}>
+            <History size={20} className="text-secondary" />
+            <span style={{ fontSize: '0.8rem', fontWeight: 600 }}>Riwayat</span>
+         </button>
+         <button className="glass-panel action-btn" style={{ padding: '1rem', textAlign: 'center', borderRadius: '20px', border: '1px solid var(--glass-border)', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px' }} onClick={() => setView('profile')}>
+            <User size={20} className="text-secondary" />
+            <span style={{ fontSize: '0.8rem', fontWeight: 600 }}>Profil</span>
+         </button>
       </div>
     </div>
   );
+
+  const renderMyOrders = () => {
+    // Collect all orders for currentUser across history and active session
+    const allPersonalOrders = [];
+    
+    // Past orders from history
+    store.history.forEach(s => {
+      const myOrder = s.orders.find(o => o.username === currentUser);
+      if (myOrder) {
+        allPersonalOrders.push({
+          ...myOrder,
+          sessionDate: s.startedAt,
+          payer: s.payer,
+          isPaid: !s.debtors?.includes(currentUser),
+          sessionId: s.id
+        });
+      }
+    });
+
+    // Active session order if exists
+    if (session && !sessionDone) {
+      const myActiveOrder = session.orders.find(o => o.username === currentUser);
+      if (myActiveOrder) {
+        allPersonalOrders.push({
+           ...myActiveOrder,
+           sessionDate: session.startedAt,
+           payer: session.payer,
+           isPaid: myActiveOrder.isPaid || false,
+           sessionId: 'active',
+           isLive: true
+        });
+      }
+    }
+
+    return (
+      <div className="orders-view fade-in" style={{ padding: '1rem' }}>
+        <div className="view-header" style={{ marginBottom: '1.5rem' }}>
+          <h2 className="text-gradient">Pesanan Kamu</h2>
+          <p className="text-secondary" style={{ fontSize: '0.9rem' }}>Daftar kopi yang pernah kamu pesan.</p>
+        </div>
+
+        <div className="card-stack">
+          {allPersonalOrders.length === 0 ? (
+            <div className="glass-panel empty-state" style={{ padding: '3rem 1.5rem', textAlign: 'center' }}>
+              <Coffee size={48} className="text-secondary opacity-20 mb-4" />
+              <p className="text-secondary">Belum ada pesanan.</p>
+            </div>
+          ) : (
+            [...allPersonalOrders].reverse().map((o, idx) => (
+              <div key={idx} className="item-card glass-panel" style={{ padding: '16px', borderRadius: '24px' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                  <div style={{ background: 'var(--bg-primary)', padding: '10px', borderRadius: '16px', fontSize: '1.2rem' }}>
+                    {o.item.emoji || '☕'}
+                  </div>
+                  <div>
+                    <h4 style={{ fontSize: '1rem', fontWeight: 700, margin: 0 }}>{o.item.name}</h4>
+                    <p className="text-secondary" style={{ fontSize: '0.75rem' }}>
+                      {formatDate(o.sessionDate).split(',')[0]} &bull; {o.isLive ? 'Sesi Aktif' : `Dibayar oleh ${o.payer}`}
+                    </p>
+                  </div>
+                </div>
+                <div style={{ textAlign: 'right' }}>
+                  <p style={{ fontWeight: 800, fontSize: '1rem', marginBottom: '4px' }}>{formatRp(o.item.price)}</p>
+                  <span style={{ 
+                    fontSize: '0.6rem', 
+                    fontWeight: 800, 
+                    padding: '4px 8px', 
+                    borderRadius: '8px',
+                    background: o.isPaid ? 'rgba(74, 222, 128, 0.1)' : 'rgba(239, 68, 68, 0.1)',
+                    color: o.isPaid ? '#4ade80' : '#ef4444'
+                  }}>
+                    {o.isPaid ? 'LUNAS' : 'HUTANG'}
+                  </span>
+                </div>
+              </div>
+            ))
+          )}
+        </div>
+      </div>
+    );
+  };
 
   // ─── VIEW: SESSION ──────────────────────────────────────────────────────────
   const renderSession = () => {
@@ -1708,7 +1786,8 @@ export default function App() {
 
       <main className="main-content">
         {view === 'home' && renderHome()}
-        {view === 'session' && renderSession()}
+        {view === 'orders' && renderMyOrders()}
+        {view === 'live-session' && renderSession()}
         {view === 'history' && (
           <HistoryView
             history={store.history}
