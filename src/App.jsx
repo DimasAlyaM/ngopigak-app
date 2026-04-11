@@ -565,7 +565,7 @@ function HistoryView({ history, payerHistory, currentUser, onSelectSession }) {
 
   return (
     <div className="history-view fade-in">
-      <div className="history-container glass-panel-full">
+      <div className="history-container">
         <div className="view-header" style={{ marginBottom: '1.5rem' }}>
           <h2 className="text-gradient"><History size={28} style={{ verticalAlign: 'middle', marginRight: '8px' }} /> Histori Sesi</h2>
         </div>
