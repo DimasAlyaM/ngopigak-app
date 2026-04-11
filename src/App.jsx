@@ -204,7 +204,7 @@ function AdminPinGate({ serverPin, onSuccess, onClose }) {
 }
 
 // ─── ADMIN PANEL (MENU & USERS) ──────────────────────────────────────────────
-function AdminPanel({ menu, users, history, activeSession, onSaveMenu, onResetPin, onForceClose, onDeleteActiveSession, onDeleteHistory, onUpdateHistoricalOrder, onDeleteAllNotifs, onSaveAdminPin, onClose }) {
+function AdminView({ menu, users, history, activeSession, onSaveMenu, onResetPin, onForceClose, onDeleteActiveSession, onDeleteHistory, onUpdateHistoricalOrder, onDeleteAllNotifs, onSaveAdminPin }) {
   const [tab, setTab] = useState('menu');
   const [items, setItems] = useState(menu.map(m => ({ ...m })));
   const [newName, setNewName] = useState('');
@@ -222,269 +222,269 @@ function AdminPanel({ menu, users, history, activeSession, onSaveMenu, onResetPi
   const [newAdminPin, setNewAdminPin] = useState('');
   const [confirmAdminPin, setConfirmAdminPin] = useState('');
 
-  // History expansion
   const [expandedHistoryId, setExpandedHistoryId] = useState(null);
-  const [togglingStatus, setTogglingStatus] = useState(null); // format: "sessionId-username"
+  const [togglingStatus, setTogglingStatus] = useState(null);
 
   return (
-    <div className="dialog-overlay">
-      <div className="dialog-box glass-panel admin-panel" style={{ maxWidth: (tab === 'users' || tab === 'history') ? '800px' : '640px' }}>
-        <div className="admin-header">
-          <h3 style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}><Shield size={20} /> Panel Admin</h3>
-          <button className="btn-icon" onClick={onClose}><X size={20} /></button>
+    <div className="admin-view fade-in">
+      <div className="admin-container">
+        <div className="view-header">
+          <h2 className="text-gradient"><Shield size={28} style={{ verticalAlign: 'middle', marginRight: '8px' }} /> Panel Admin</h2>
         </div>
 
-        <div className="tab-buttons mb-4" style={{ overflowX: 'auto', whiteSpace: 'nowrap', paddingBottom: '0.5rem' }}>
-          <button className={`tab-btn ${tab === 'menu' ? 'active' : ''}`} onClick={() => setTab('menu')}>☕ Menu</button>
-          <button className={`tab-btn ${tab === 'users' ? 'active' : ''}`} onClick={() => setTab('users')}>👥 User</button>
-          <button className={`tab-btn ${tab === 'session' ? 'active' : ''}`} onClick={() => setTab('session')}>⚡ Sesi Aktif</button>
-          <button className={`tab-btn ${tab === 'history' ? 'active' : ''}`} onClick={() => setTab('history')}>📜 Riwayat</button>
-          <button className={`tab-btn ${tab === 'settings' ? 'active' : ''}`} onClick={() => setTab('settings')}>⚙️ Pengaturan</button>
+        <div className="admin-tabs-modern">
+          <button className={`admin-tab-item ${tab === 'menu' ? 'active' : ''}`} onClick={() => setTab('menu')}>☕ Menu</button>
+          <button className={`admin-tab-item ${tab === 'users' ? 'active' : ''}`} onClick={() => setTab('users')}>👥 User</button>
+          <button className={`admin-tab-item ${tab === 'session' ? 'active' : ''}`} onClick={() => setTab('session')}>⚡ Sesi Aktif</button>
+          <button className={`admin-tab-item ${tab === 'history' ? 'active' : ''}`} onClick={() => setTab('history')}>📜 Riwayat</button>
+          <button className={`admin-tab-item ${tab === 'settings' ? 'active' : ''}`} onClick={() => setTab('settings')}>⚙️ Pengaturan</button>
         </div>
 
-        {tab === 'menu' && (
-          <div className="fade-in">
-            <div className="menu-list">
-              {items.map(item => (
-                <div key={item.id} className="menu-edit-row">
-                  <input className="emoji-input" value={item.emoji} onChange={e => updateItem(item.id, 'emoji', e.target.value)} maxLength={2} />
-                  <input value={item.name} onChange={e => updateItem(item.id, 'name', e.target.value)} placeholder="Nama menu" />
-                  <input type="number" value={item.price} onChange={e => updateItem(item.id, 'price', e.target.value)} placeholder="Harga" style={{ width: '120px' }} />
-                  <button className="btn-icon-danger" onClick={() => removeItem(item.id)}><Trash2 size={18} /></button>
-                </div>
-              ))}
-            </div>
-            <div className="menu-edit-row" style={{ marginTop: '1rem', borderTop: '1px solid var(--glass-border)', paddingTop: '1rem' }}>
-              <input className="emoji-input" value={newEmoji} onChange={e => setNewEmoji(e.target.value)} maxLength={2} placeholder="☕" />
-              <input value={newName} onChange={e => setNewName(e.target.value)} placeholder="Nama menu baru" />
-              <input type="number" value={newPrice} onChange={e => setNewPrice(e.target.value)} placeholder="Harga" style={{ width: '120px' }} />
-              <button className="btn-primary btn-small" onClick={addItem}>+ Tambah</button>
-            </div>
-            <div className="dialog-actions" style={{ marginTop: '1.5rem' }}>
-              <button className="btn-secondary" onClick={onClose}>Batal</button>
-              <button className="btn-primary" onClick={() => { onSaveMenu(items); onClose(); }}>Simpan Perubahan</button>
-            </div>
-          </div>
-        )}
-
-        {tab === 'users' && (
-          <div className="user-management-list fade-in">
-            <div className="table-header">
-              <span>User</span>
-              <span>Total Hutang</span>
-              <span>Aksi</span>
-            </div>
-            <div className="scroll-container" style={{ maxHeight: '400px' }}>
-              {users.map(u => {
-                let debt = 0;
-                history.forEach(session => {
-                  if (session.debtors?.includes(u.username)) {
-                    const order = session.orders.find(o => o.username === u.username);
-                    debt += order?.item?.price || 0;
-                  }
-                });
-                return (
-                  <div key={u.username} className="user-mgt-row">
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-                      <UserAvatar username={u.username} size={24} />
-                      <strong>{u.username}</strong>
+        <div className="admin-content-wrapper" style={{ flex: 1, overflowY: 'auto' }}>
+          {tab === 'menu' && (
+            <div className="fade-in">
+              <div className="admin-card">
+                <h4 style={{ marginBottom: '1rem', fontSize: '1rem', fontWeight: 800 }}>Daftar Menu Kopi</h4>
+                <div className="menu-list">
+                  {items.map(item => (
+                    <div key={item.id} className="admin-list-item">
+                      <div style={{ display: 'flex', gap: '8px', flex: 1 }}>
+                        <input className="emoji-input" style={{ width: '40px', background: 'transparent', border: 'none', textAlign: 'center' }} value={item.emoji} onChange={e => updateItem(item.id, 'emoji', e.target.value)} maxLength={2} />
+                        <input style={{ background: 'transparent', border: 'none', color: '#fff', fontWeight: 600, flex: 1 }} value={item.name} onChange={e => updateItem(item.id, 'name', e.target.value)} placeholder="Nama menu" />
+                      </div>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                        <input type="number" style={{ width: '80px', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '8px', padding: '4px', textAlign: 'right', color: '#fff' }} value={item.price} onChange={e => updateItem(item.id, 'price', e.target.value)} placeholder="Harga" />
+                        <button className="btn-icon-danger" style={{ padding: '8px' }} onClick={() => removeItem(item.id)}><Trash2 size={16} /></button>
+                      </div>
                     </div>
-                    <span className={debt > 0 ? 'text-red' : ''}>
-                      {formatRp(debt)}
-                    </span>
-                    <button className="btn-secondary btn-small" onClick={() => {
-                      if (confirm(`Reset PIN untuk ${u.username}? PIN baru akan menjadi '1234'.`)) {
-                        onResetPin(u.username);
+                  ))}
+                </div>
+                
+                <div style={{ height: '1px', background: 'rgba(255,255,255,0.1)', margin: '1.5rem 0' }} />
+                
+                <h4 style={{ marginBottom: '1rem', fontSize: '0.9rem', fontWeight: 700, opacity: 0.7 }}>+ Tambah Menu Baru</h4>
+                <div className="admin-list-item" style={{ background: 'rgba(var(--accent-primary-rgb), 0.05)', borderColor: 'rgba(var(--accent-primary-rgb), 0.1)' }}>
+                  <div style={{ display: 'flex', gap: '8px', flex: 1 }}>
+                    <input className="emoji-input" style={{ width: '40px', background: 'transparent', border: 'none', textAlign: 'center' }} value={newEmoji} onChange={e => setNewEmoji(e.target.value)} maxLength={2} placeholder="☕" />
+                    <input style={{ background: 'transparent', border: 'none', color: '#fff', fontWeight: 600, flex: 1 }} value={newName} onChange={e => setNewName(e.target.value)} placeholder="Nama menu baru" />
+                  </div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <input type="number" style={{ width: '80px', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '8px', padding: '4px', textAlign: 'right', color: '#fff' }} value={newPrice} onChange={e => setNewPrice(e.target.value)} placeholder="Harga" />
+                    <button className="btn-primary btn-small" style={{ borderRadius: '10px' }} onClick={addItem}>Add</button>
+                  </div>
+                </div>
+
+                <div style={{ marginTop: '2rem', display: 'flex', gap: '10px' }}>
+                  <button className="btn-primary-pill" style={{ flex: 1 }} onClick={() => { onSaveMenu(items); alert("Menu berhasil diperbarui!"); }}>Simpan Perubahan Menu</button>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {tab === 'users' && (
+            <div className="fade-in">
+              <div className="admin-card">
+                <h4 style={{ marginBottom: '1.5rem', fontSize: '1rem', fontWeight: 800 }}>Manajemen User</h4>
+                <div className="user-list">
+                  {users.map(u => {
+                    let debt = 0;
+                    history.forEach(session => {
+                      if (session.debtors?.includes(u.username)) {
+                        const order = session.orders.find(o => o.username === u.username);
+                        debt += order?.item?.price || 0;
                       }
-                    }}>Reset PIN</button>
-                  </div>
-                );
-              })}
-            </div>
-          </div>
-        )}
-
-        {tab === 'session' && (
-          <div className="admin-session-management fade-in">
-            {activeSession ? (
-              <div className="panel bg-secondary" style={{ borderStyle: 'dashed' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
-                  <span className="badge-status-new hutang">Sesi Sedang Berjalan</span>
-                  <span className="text-secondary text-sm">{formatDate(activeSession.startedAt)}</span>
-                </div>
-                <div className="stat-row"><span>Status:</span><strong>{activeSession.status.toUpperCase()}</strong></div>
-                <div className="stat-row"><span>Pembuat:</span><strong>{activeSession.startedBy}</strong></div>
-                <div className="stat-row"><span>Pesanan:</span><strong>{activeSession.orders.length} Item</strong></div>
-
-                <div className="dialog-actions mt-6" style={{ flexDirection: 'column', gap: '0.75rem' }}>
-                  <button className="btn-danger" style={{ width: '100%' }} onClick={() => {
-                    if (confirm("Tutup paksa sesi ini? Peserta yang belum bayar akan tercatat berhutang.")) {
-                      onForceClose();
-                    }
-                  }}>Tutup Paksa & Simpan Histori</button>
-
-                  <button className="btn-secondary" style={{ width: '100%', color: '#B91C1C', borderColor: '#B91C1C' }} onClick={() => {
-                    if (confirm("HAPUS PERMANEN sesi ini? Data pesanan akan hilang total dan tidak masuk histori.")) {
-                      onDeleteActiveSession(activeSession.id);
-                    }
-                  }}>Hapus Total (Tanpa Histori)</button>
+                    });
+                    return (
+                      <div key={u.username} className="admin-list-item">
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                          <UserAvatar username={u.username} size={36} />
+                          <div style={{ display: 'flex', flexDirection: 'column' }}>
+                            <span style={{ fontWeight: 700, fontSize: '0.95rem' }}>{u.username}</span>
+                            <span className={debt > 0 ? 'text-red' : 'text-green'} style={{ fontSize: '0.75rem', fontWeight: 600 }}>
+                              {debt > 0 ? `Hutang: ${formatRp(debt)}` : 'Lunas'}
+                            </span>
+                          </div>
+                        </div>
+                        <button className="btn-secondary" style={{ padding: '6px 12px', fontSize: '0.75rem', borderRadius: '10px' }} onClick={() => {
+                          if (confirm(`Reset PIN untuk ${u.username}? PIN baru akan menjadi '1234'.`)) {
+                            onResetPin(u.username);
+                          }
+                        }}>Reset PIN</button>
+                      </div>
+                    );
+                  })}
                 </div>
               </div>
-            ) : (
-              <div className="empty-state">Tidak ada sesi aktif saat ini.</div>
-            )}
-          </div>
-        )}
-
-        {tab === 'history' && (
-          <div className="admin-history-management fade-in">
-            <div className="table-header">
-              <span>Tanggal / Sesi</span>
-              <span>Total Sesi</span>
-              <span>Aksi</span>
             </div>
-            <div className="scroll-container" style={{ maxHeight: '400px' }}>
-              {history.length === 0 && <p className="text-center py-4 opacity-50">Belum ada histori.</p>}
-              {[...history].reverse().map(h => {
-                const total = h.orders.reduce((sum, o) => sum + o.item.price, 0);
-                const isExpanded = expandedHistoryId === h.id;
+          )}
 
-                return (
-                  <div key={h.id} className="history-item-wrapper" style={{ borderBottom: '1px solid var(--text-primary)' }}>
-                    <div className="user-mgt-row" style={{ gridTemplateColumns: '2fr 1fr 1fr', padding: '15px 10px', borderBottom: 'none' }}>
-                      <div className="flex-col">
-                        <span className="font-bold text-sm">{formatDate(h.startedAt)}</span>
-                        <span className="text-xs opacity-70">Payer: {h.payer}</span>
-                      </div>
-                      <span className="text-sm font-bold">{formatRp(total)}</span>
-                      <div style={{ display: 'flex', gap: '0.5rem' }}>
-                        <button className="btn-icon-danger" style={{ padding: '6px' }} title="Hapus Histori" onClick={() => {
-                          if (confirm("Hapus histori sesi ini secara PERMANEN?")) {
-                            onDeleteHistory(h.id);
-                          }
-                        }}><Trash2 size={16} /></button>
-
-                        <button
-                          className={`btn-icon ${isExpanded ? 'active' : ''}`}
-                          style={{
-                            border: '1px solid var(--text-primary)',
-                            padding: '6px',
-                            background: isExpanded ? 'var(--text-primary)' : 'transparent',
-                            color: isExpanded ? 'var(--bg-primary)' : 'var(--text-primary)'
-                          }}
-                          title="Detail & Edit Status"
-                          onClick={() => setExpandedHistoryId(isExpanded ? null : h.id)}
-                        >
-                          <Users size={16} />
-                        </button>
-                      </div>
+          {tab === 'session' && (
+            <div className="fade-in">
+              <div className="admin-card">
+                <h4 style={{ marginBottom: '1.5rem', fontSize: '1rem', fontWeight: 800 }}>Sesi Aktif</h4>
+                {activeSession ? (
+                  <div style={{ padding: '1.25rem', background: 'rgba(230, 145, 56, 0.05)', borderRadius: '20px', border: '1px solid rgba(230, 145, 56, 0.2)' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.25rem' }}>
+                      <span className="admin-stat-badge" style={{ background: 'rgba(230, 145, 56, 0.2)', color: 'var(--accent-primary)' }}>RUNNING</span>
+                      <span style={{ opacity: 0.6, fontSize: '0.75rem' }}>{formatDate(activeSession.startedAt)}</span>
+                    </div>
+                    
+                    <div className="stat-row" style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px', fontSize: '0.9rem' }}>
+                      <span style={{ opacity: 0.7 }}>Pembuat:</span>
+                      <span style={{ fontWeight: 700 }}>{activeSession.startedBy}</span>
+                    </div>
+                    <div className="stat-row" style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px', fontSize: '0.9rem' }}>
+                      <span style={{ opacity: 0.7 }}>Jumlah Pesanan:</span>
+                      <span style={{ fontWeight: 700 }}>{activeSession.orders.length} Item</span>
+                    </div>
+                    <div className="stat-row" style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px', fontSize: '0.9rem' }}>
+                      <span style={{ opacity: 0.7 }}>Status:</span>
+                      <span style={{ fontWeight: 800, color: 'var(--accent-primary)' }}>{activeSession.status.toUpperCase()}</span>
                     </div>
 
-                    {isExpanded && (
-                      <div className="admin-history-details fade-in" style={{ padding: '0 10px 15px 10px', background: 'rgba(0,0,0,0.03)' }}>
-                        <div style={{ fontSize: '0.75rem', fontWeight: '800', textTransform: 'uppercase', marginBottom: '8px', opacity: 0.6, borderBottom: '1px dashed var(--text-primary)', paddingBottom: '4px' }}>
-                          Partisipan Sesi
-                        </div>
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-                          {h.orders.map((ord, idx) => {
-                            const isPaid = !h.debtors?.some(d => (d || '').toLowerCase() === (ord.username || '').toLowerCase());
-                            return (
-                              <div key={idx} style={{
-                                display: 'flex',
-                                justifyContent: 'space-between',
-                                alignItems: 'center',
-                                background: 'var(--bg-primary)',
-                                padding: '12px',
-                                border: '2px solid var(--text-primary)',
-                                borderRadius: '8px',
-                                boxShadow: '4px 4px 0 var(--text-primary)'
-                              }}>
-                                <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                                  <UserAvatar username={ord.username} size={28} />
-                                  <div style={{ display: 'flex', flexDirection: 'column' }}>
-                                    <span style={{ fontSize: '0.9rem', fontWeight: '900', textTransform: 'uppercase' }}>{ord.username}</span>
-                                    <span style={{ fontSize: '0.75rem', opacity: 0.8, fontFamily: 'var(--font-body)' }}>{ord.item.name} • {formatRp(ord.item.price)}</span>
-                                  </div>
-                                </div>
-                                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                                  <span className={`badge-status-new ${isPaid ? 'lunas' : 'hutang'}`} style={{ fontSize: '0.65rem', padding: '2px 10px' }}>
-                                    {isPaid ? 'LUNAS' : 'HUTANG'}
-                                  </span>
-                                  <button
-                                    className="btn-mini"
-                                    style={{
-                                      backgroundColor: isPaid ? '#FEE2E2' : '#D1FAE5',
-                                      color: isPaid ? '#DC2626' : '#059669',
-                                      borderColor: isPaid ? '#DC2626' : '#059669',
-                                      padding: '4px 10px',
-                                      opacity: togglingStatus === `${h.id}-${ord.username}` ? 0.5 : 1,
-                                      cursor: togglingStatus === `${h.id}-${ord.username}` ? 'not-allowed' : 'pointer'
-                                    }}
-                                    disabled={togglingStatus === `${h.id}-${ord.username}`}
-                                    onClick={async () => {
-                                      const key = `${h.id}-${ord.username}`;
-                                      setTogglingStatus(key);
-                                      try {
-                                        await onUpdateHistoricalOrder(h.id, ord.username, { isPaid: !isPaid });
-                                      } catch (err) {
-                                        console.error("Historical update failed:", err);
-                                        alert("Gagal merubah status. Silakan coba lagi.");
-                                      } finally {
-                                        setTogglingStatus(null);
-                                      }
-                                    }}
-                                  >
-                                    {togglingStatus === `${h.id}-${ord.username}` ? '...' : (isPaid ? 'Set Hutang' : 'Set Lunas')}
-                                  </button>
-                                </div>
-                              </div>
-                            );
-                          })}
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                );
-              })}
-            </div>
-          </div>
-        )}
+                    <div style={{ marginTop: '2rem', display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                      <button className="btn-primary-pill" style={{ background: '#ef4444' }} onClick={() => {
+                        if (confirm("Tutup paksa sesi ini? Peserta yang belum bayar akan tercatat berhutang.")) {
+                          onForceClose();
+                        }
+                      }}>Tutup Paksa & Simpan Histori</button>
 
-        {tab === 'settings' && (
-          <div className="admin-settings-tab fade-in">
-            <div className="panel bg-secondary mb-6">
-              <h4 className="section-title">Ganti PIN Admin</h4>
-              <div className="modern-form">
-                <div className="form-group">
-                  <label>PIN Baru (4-8 digit)</label>
-                  <input type="password" value={newAdminPin} onChange={e => setNewAdminPin(e.target.value.replace(/\D/g, ''))} maxLength={8} placeholder="****" />
-                </div>
-                <div className="form-group">
-                  <label>Konfirmasi PIN</label>
-                  <input type="password" value={confirmAdminPin} onChange={e => setConfirmAdminPin(e.target.value.replace(/\D/g, ''))} maxLength={8} placeholder="****" />
-                </div>
-                <button className="btn-primary" onClick={() => {
-                  if (newAdminPin.length < 4) { alert("PIN minimal 4 digit."); return; }
-                  if (newAdminPin !== confirmAdminPin) { alert("PIN konfirmasi tidak cocok."); return; }
-                  onSaveAdminPin(newAdminPin);
-                  setNewAdminPin(''); setConfirmAdminPin('');
-                  alert("PIN Admin berhasil diperbarui!");
-                }}>Update PIN</button>
+                      <button className="btn-logout" style={{ background: 'transparent', border: '1px solid rgba(239, 68, 68, 0.3)', color: '#ef4444', fontSize: '0.8rem' }} onClick={() => {
+                        if (confirm("HAPUS PERMANEN sesi ini? Data pesanan akan hilang total dan tidak masuk histori.")) {
+                          onDeleteActiveSession(activeSession.id);
+                        }
+                      }}>Hapus Total (Tanpa Histori)</button>
+                    </div>
+                  </div>
+                ) : (
+                  <div style={{ textAlign: 'center', padding: '3rem 1rem', opacity: 0.5 }}>
+                    <Coffee size={48} style={{ marginBottom: '1rem' }} />
+                    <p>Tidak ada sesi aktif saat ini.</p>
+                  </div>
+                )}
               </div>
             </div>
+          )}
 
-            <div className="panel" style={{ borderColor: '#B91C1C' }}>
-              <h4 className="section-title" style={{ color: '#B91C1C', borderColor: '#B91C1C' }}>Pembersihan Data</h4>
-              <p className="text-secondary text-sm mb-4">Hapus semua notifikasi lama untuk menjaga kecepatan aplikasi.</p>
-              <button className="btn-danger" style={{ width: '100%' }} onClick={() => {
-                if (confirm("HAPUS SEMUA notifikasi? Tindakan ini tidak bisa dibatalkan.")) {
-                  onDeleteAllNotifs();
-                  alert("Semua notifikasi telah dibersihkan.");
-                }
-              }}>Bersihkan Semua Notifikasi</button>
+          {tab === 'history' && (
+            <div className="fade-in">
+              <div className="admin-card">
+                <h4 style={{ marginBottom: '1.5rem', fontSize: '1rem', fontWeight: 800 }}>Manajemen Histori</h4>
+                {history.length === 0 ? (
+                   <p style={{ textAlign: 'center', opacity: 0.5 }}>Belum ada histori.</p>
+                ) : (
+                  [...history].reverse().map(h => {
+                    const total = h.orders.reduce((sum, o) => sum + o.item.price, 0);
+                    const isExpanded = expandedHistoryId === h.id;
+
+                    return (
+                      <div key={h.id} style={{ marginBottom: '12px', background: 'rgba(255,255,255,0.03)', borderRadius: '16px', overflow: 'hidden', border: '1px solid rgba(255,255,255,0.05)' }}>
+                        <div style={{ padding: '12px 16px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                          <div onClick={() => setExpandedHistoryId(isExpanded ? null : h.id)} style={{ cursor: 'pointer', flex: 1 }}>
+                            <p style={{ fontWeight: 700, fontSize: '0.9rem', margin: 0 }}>{formatDate(h.startedAt)}</p>
+                            <p style={{ fontSize: '0.75rem', opacity: 0.6, margin: 0 }}>Payer: {h.payer} • {formatRp(total)}</p>
+                          </div>
+                          <div style={{ display: 'flex', gap: '8px' }}>
+                             <button className="btn-icon-danger" style={{ padding: '8px', background: 'rgba(239, 68, 68, 0.1)' }} onClick={() => {
+                               if (confirm("Hapus histori sesi ini secara PERMANEN?")) {
+                                 onDeleteHistory(h.id);
+                               }
+                             }}><Trash2 size={16} /></button>
+                             <button 
+                                className="btn-icon" 
+                                style={{ padding: '8px', background: isExpanded ? 'rgba(255,255,255,0.1)' : 'transparent' }}
+                                onClick={() => setExpandedHistoryId(isExpanded ? null : h.id)}
+                             >
+                               <ChevronDown size={16} style={{ transform: isExpanded ? 'rotate(180deg)' : 'none', transition: 'transform 0.3s' }} />
+                             </button>
+                          </div>
+                        </div>
+
+                        {isExpanded && (
+                          <div className="fade-in" style={{ padding: '0 16px 16px 16px', borderTop: '1px solid rgba(255,255,255,0.05)' }}>
+                            <div style={{ marginTop: '12px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                              {h.orders.map((ord, idx) => {
+                                const isPaid = !h.debtors?.some(d => (d || '').toLowerCase() === (ord.username || '').toLowerCase());
+                                return (
+                                  <div key={idx} className="admin-list-item" style={{ background: 'rgba(0,0,0,0.2)', padding: '10px' }}>
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                                      <UserAvatar username={ord.username} size={24} />
+                                      <div style={{ display: 'flex', flexDirection: 'column' }}>
+                                        <span style={{ fontSize: '0.85rem', fontWeight: 700 }}>{ord.username}</span>
+                                        <span style={{ fontSize: '0.7rem', opacity: 0.6 }}>{ord.item.name}</span>
+                                      </div>
+                                    </div>
+                                    <button
+                                      className="admin-stat-badge"
+                                      style={{ 
+                                        border: 'none', 
+                                        cursor: 'pointer',
+                                        background: isPaid ? 'rgba(74, 222, 128, 0.2)' : 'rgba(239, 68, 68, 0.2)',
+                                        color: isPaid ? '#4ade80' : '#f87171'
+                                      }}
+                                      onClick={async () => {
+                                        const key = `${h.id}-${ord.username}`;
+                                        setTogglingStatus(key);
+                                        try {
+                                          await onUpdateHistoricalOrder(h.id, ord.username, { isPaid: !isPaid });
+                                        } finally {
+                                          setTogglingStatus(null);
+                                        }
+                                      }}
+                                    >
+                                      {togglingStatus === `${h.id}-${ord.username}` ? '...' : (isPaid ? 'LUNAS' : 'HUTANG')}
+                                    </button>
+                                  </div>
+                                );
+                              })}
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })
+                )}
+              </div>
             </div>
-          </div>
-        )}
+          )}
+
+          {tab === 'settings' && (
+            <div className="fade-in">
+              <div className="admin-card">
+                <h4 style={{ marginBottom: '1.5rem', fontSize: '1rem', fontWeight: 800 }}>Pengaturan Sistem</h4>
+                <div style={{ padding: '1.25rem', background: 'rgba(255,255,255,0.03)', borderRadius: '20px', marginBottom: '1.5rem' }}>
+                  <h5 style={{ margin: '0 0 1rem 0', fontSize: '0.9rem' }}>Ganti PIN Admin</h5>
+                  <div className="modern-form">
+                    <div className="form-group" style={{ marginBottom: '12px' }}>
+                      <input type="password" style={{ background: 'rgba(0,0,0,0.2)' }} value={newAdminPin} onChange={e => setNewAdminPin(e.target.value.replace(/\D/g, ''))} maxLength={8} placeholder="PIN Baru" />
+                    </div>
+                    <div className="form-group" style={{ marginBottom: '16px' }}>
+                      <input type="password" style={{ background: 'rgba(0,0,0,0.2)' }} value={confirmAdminPin} onChange={e => setConfirmAdminPin(e.target.value.replace(/\D/g, ''))} maxLength={8} placeholder="Konfirmasi PIN" />
+                    </div>
+                    <button className="btn-primary-pill" style={{ fontSize: '0.85rem' }} onClick={() => {
+                      if (newAdminPin.length < 4) { alert("PIN minimal 4 digit."); return; }
+                      if (newAdminPin !== confirmAdminPin) { alert("PIN konfirmasi tidak cocok."); return; }
+                      onSaveAdminPin(newAdminPin);
+                      setNewAdminPin(''); setConfirmAdminPin('');
+                      alert("PIN Admin berhasil diperbarui!");
+                    }}>Update PIN Admin</button>
+                  </div>
+                </div>
+
+                <div style={{ padding: '1.25rem', border: '1px solid rgba(239, 68, 68, 0.2)', background: 'rgba(239, 68, 68, 0.05)', borderRadius: '20px' }}>
+                  <h5 style={{ margin: '0 0 8px 0', fontSize: '0.9rem', color: '#f87171' }}>Pembersihan Data</h5>
+                  <p style={{ fontSize: '0.75rem', opacity: 0.6, marginBottom: '1.25rem' }}>Hapus semua notifikasi lama untuk menjaga kecepatan aplikasi.</p>
+                  <button className="btn-logout" style={{ background: 'transparent', border: '1px solid rgba(239, 68, 68, 0.3)', color: '#f87171', fontSize: '0.8rem' }} onClick={() => {
+                    if (confirm("HAPUS SEMUA notifikasi? Tindakan ini tidak bisa dibatalkan.")) {
+                      onDeleteAllNotifs();
+                      alert("Semua notifikasi telah dibersihkan.");
+                    }
+                  }}>Bersihkan Semua Notifikasi</button>
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
       </div>
     </div>
   );
@@ -768,8 +768,7 @@ export default function App() {
 
   // Dialogs
   const [dialog, setDialog] = useState(null); // { title, message, onConfirm, danger?, confirmText? }
-  const [showAdminPanel, setShowAdminPanel] = useState(false);
-  const [showAdminPin, setShowAdminPin] = useState(false);
+  const [isAdminUnlocked, setIsAdminUnlocked] = useState(false);
 
   // Form states
   const [selectedCoffeeId, setSelectedCoffeeId] = useState('');
@@ -1258,6 +1257,12 @@ export default function App() {
         <div className="nav-icon"><User size={20} /></div>
         <span>Profile</span>
       </div>
+      {currentUser.toLowerCase() === 'admin' && (
+        <div className={`nav-item ${view === 'admin' ? 'active' : ''}`} onClick={() => setView('admin')}>
+          <div className="nav-icon"><Shield size={20} /></div>
+          <span>Admin</span>
+        </div>
+      )}
     </nav>
   );
 
@@ -1752,9 +1757,6 @@ export default function App() {
       <header className="mobile-header">
         <h1 className="text-gradient">NgopiGak</h1>
         <div className="header-actions">
-          <button className="btn-icon" onClick={() => setShowAdminPin(true)} style={{ marginRight: '0.5rem' }}>
-            <Shield size={18} />
-          </button>
           <NotifBell
             notifications={session?.notifications || []}
             username={currentUser}
@@ -1800,6 +1802,30 @@ export default function App() {
             }}
           />
         )}
+        {view === 'admin' && (
+          !isAdminUnlocked ? (
+            <AdminPinGate
+              serverPin={store.adminPin}
+              onSuccess={() => setIsAdminUnlocked(true)}
+              onClose={() => setView('home')}
+            />
+          ) : (
+            <AdminView
+              menu={store.menu}
+              users={store.users}
+              history={store.history}
+              activeSession={store.session}
+              onSaveMenu={saveMenu}
+              onResetPin={onResetPin}
+              onForceClose={forceClose}
+              onDeleteActiveSession={api.deleteActiveSession}
+              onDeleteHistory={api.deleteHistory}
+              onUpdateHistoricalOrder={api.updateHistoricalOrder}
+              onDeleteAllNotifs={api.deleteAllNotifications}
+              onSaveAdminPin={api.saveAdminPin}
+            />
+          )
+        )}
       </main>
 
       {/* FAB: Start Session (Visible on Home when no session active) */}
@@ -1823,31 +1849,6 @@ export default function App() {
         />
       )}
       
-      {showAdminPin && (
-        <AdminPinGate
-          serverPin={store.adminPin}
-          onSuccess={() => { setShowAdminPin(false); setShowAdminPanel(true); }}
-          onClose={() => setShowAdminPin(false)}
-        />
-      )}
-      
-      {showAdminPanel && (
-        <AdminPanel
-          menu={store.menu}
-          users={store.users}
-          history={store.history}
-          activeSession={store.session}
-          onSaveMenu={saveMenu}
-          onResetPin={onResetPin}
-          onForceClose={forceClose}
-          onDeleteActiveSession={api.deleteActiveSession}
-          onDeleteHistory={api.deleteHistory}
-          onUpdateHistoricalOrder={api.updateHistoricalOrder}
-          onDeleteAllNotifs={api.deleteAllNotifications}
-          onSaveAdminPin={api.saveAdminPin}
-          onClose={() => setShowAdminPanel(false)}
-        />
-      )}
     </div>
   );
 }

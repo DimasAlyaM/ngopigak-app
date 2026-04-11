@@ -918,3 +918,77 @@ input:focus, select:focus { outline: none; background: var(--bg-secondary); bord
   .order-detail-row { flex-wrap: wrap; gap: 0.25rem; padding: 6px; }
   .order-detail-row .text-sm { font-size: 0.75rem; }
 }
+
+/* ─── ADMIN VIEW (NEW) ───────────────────────────────────────────────────────── */
+.admin-view {
+  min-height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
+.admin-container {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  padding: 1.5rem;
+}
+
+.admin-tabs-modern {
+  display: flex;
+  gap: 8px;
+  overflow-x: auto;
+  padding: 4px;
+  margin-bottom: 2rem;
+  scrollbar-width: none;
+}
+
+.admin-tabs-modern::-webkit-scrollbar {
+  display: none;
+}
+
+.admin-tab-item {
+  padding: 10px 20px;
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  color: var(--text-secondary);
+  font-size: 0.85rem;
+  font-weight: 600;
+  white-space: nowrap;
+  transition: all 0.3s ease;
+  cursor: pointer;
+}
+
+.admin-tab-item.active {
+  background: var(--text-primary);
+  color: var(--bg-primary);
+  border-color: var(--text-primary);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(255, 255, 255, 0.1);
+}
+
+.admin-card {
+  background: rgba(15, 10, 7, 0.4);
+  border-radius: 24px;
+  border: 1px solid var(--glass-border);
+  padding: 1.5rem;
+  margin-bottom: 1rem;
+}
+
+.admin-list-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 1rem;
+  background: rgba(255, 255, 255, 0.02);
+  border-radius: 16px;
+  margin-bottom: 8px;
+  border: 1px solid rgba(255, 255, 255, 0.03);
+}
+
+.admin-stat-badge {
+    padding: 2px 8px;
+    border-radius: 6px;
+    font-size: 0.7rem;
+    font-weight: 700;
+}
