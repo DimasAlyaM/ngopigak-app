@@ -595,7 +595,7 @@ function HistoryView({ history, payerHistory, currentUser, onSelectSession }) {
                       <div>
                         <p style={{ fontSize: '1rem', fontWeight: 700 }}>{formatDate(s.startedAt).split(',')[0]}</p>
                         <p className="text-secondary" style={{ fontSize: '0.8rem' }}>
-                          {s.orders.length} Peserta &bull; {s.payer}
+                          {s.orders.length} Peserta &bull; {s.payer}{s.companion ? ` & ${s.companion}` : ''}
                         </p>
                       </div>
                     </div>
@@ -1066,6 +1066,7 @@ export default function App() {
         const historyPayload = {
           ...s.session,
           status: 'completed',
+          companion: s.session.companion, // Explicitly ensure companion is here
           orders: s.session.orders.map(o => ({
             ...o,
             isPaid: o.id === newlyPaidOrderId ? true : o.isPaid
@@ -1088,7 +1089,7 @@ export default function App() {
     const debtors = s.session.orders.filter(o => !o.isPaid && o.username !== s.session.payer).map(o => o.username);
 
     await api.updateSession(s.session.id, { status: 'force-closed', forceClosedBy: currentUser, debtors });
-    const full = { ...loadStore().session, status: 'force-closed', forceClosedBy: currentUser, debtors };
+    const full = { ...loadStore().session, status: 'force-closed', forceClosedBy: currentUser, debtors, companion: loadStore().session.companion };
     await api.saveHistory(s.session.id, full);
     await api.deleteActiveSession(s.session.id);
 
