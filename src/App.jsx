@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import { loadStore, api, initSupabaseSync, selectRoles } from './store.js';
 import {
   Bell, Info, CreditCard, Coffee, Clock, CheckCircle, AlertTriangle, LogOut, ClipboardList,
-  Lock, Unlock, LogIn, History, X, Trash2, PlusCircle, Shield, Users, User, ChevronDown,
+  Lock, Unlock, LogIn, History, X, Trash2, PlusCircle, Shield, Users, User, ChevronDown, ChevronLeft,
   Camera, Upload, Loader2, Home
 } from 'lucide-react';
 import confetti from 'canvas-confetti';
@@ -747,15 +747,6 @@ function HistoryDetailView({ session, onBack, currentUser, api }) {
   );
 }
 
-                </div>
-              );
-            })
-          )}
-        </div>
-      </div>
-    </div>
-  );
-}
 
 // ─── MAIN APP ─────────────────────────────────────────────────────────────────
 export default function App() {
