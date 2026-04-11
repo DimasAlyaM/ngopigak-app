@@ -559,25 +559,14 @@ function ProfileView({ username, history, onSave, onLogout }) {
 }
 
 // ─── HISTORY VIEW ─────────────────────────────────────────────────────────────
-function HistoryView({ history, payerHistory, currentUser, filter, setFilter }) {
-  const [expandedId, setExpandedId] = useState(null);
-  const [uploadingId, setUploadingId] = useState(null);
-
+function HistoryView({ history, payerHistory, currentUser, onSelectSession }) {
   const validHistory = (history || []).filter(s => s && Array.isArray(s.orders));
-  const mySessions = validHistory.filter(s => s.orders.some(o => o.username === currentUser));
-  const myDebts = mySessions.filter(s => s.debtors?.includes(currentUser));
-
-  const totalOwed = myDebts.reduce((acc, s) => {
-    const myOrder = s.orders.find(o => o.username === currentUser);
-    return acc + (myOrder?.item?.price || 0);
-  }, 0);
-
-  const displayedHistory = filter === 'my-debt' ? myDebts : validHistory;
+  const displayedHistory = validHistory;
 
   return (
     <div className="history-view fade-in">
       <div className="history-container glass-panel-full">
-        <div className="view-header">
+        <div className="view-header" style={{ marginBottom: '1.5rem' }}>
           <h2 className="text-gradient"><History size={28} style={{ verticalAlign: 'middle', marginRight: '8px' }} /> Histori Sesi</h2>
         </div>
 
@@ -589,17 +578,15 @@ function HistoryView({ history, payerHistory, currentUser, filter, setFilter }) 
             </div>
           ) : (
             [...displayedHistory].reverse().map(s => {
-              const isExpanded = expandedId === s.id;
               const isDbt = s.debtors?.some(d => (d || '').toLowerCase() === (currentUser || '').toLowerCase());
-              
               const totalAmount = s.orders.reduce((sum, o) => sum + (o.item?.price || 0), 0);
 
               return (
                 <div key={s.id} className="history-card-wrapper" style={{ marginBottom: '12px' }}>
                   <div 
-                    className={`item-card glass-panel ${isExpanded ? 'active-border' : ''}`} 
+                    className="item-card glass-panel" 
                     style={{ padding: '16px', borderRadius: '24px', cursor: 'pointer', borderLeft: isDbt ? '4px solid #ef4444' : '1px solid var(--glass-border)' }}
-                    onClick={() => setExpandedId(isExpanded ? null : s.id)}
+                    onClick={() => onSelectSession(s)}
                   >
                     <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
                       <div style={{ background: 'var(--bg-primary)', padding: '10px', borderRadius: '16px' }}>
@@ -619,137 +606,147 @@ function HistoryView({ history, payerHistory, currentUser, filter, setFilter }) 
                       </span>
                     </div>
                   </div>
+                </div>
+              );
+            })
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
 
-                  {isExpanded && (
-                    <div className="history-card-details fade-in" onClick={e => e.stopPropagation()}>
-                      <div className="detail-section">
-                        <h4> DETAIL SESI</h4>
-                        <div className="detail-info-list mt-2">
-                          <p className="text-sm">Pembayar Utama: <strong className="text-green">{s.payer}</strong></p>
-                          <p className="text-sm">Pendamping: <strong>{s.companion || '-'}</strong></p>
-                          <p className="text-sm">Total Sesi: <strong>{formatRp(s.orders.reduce((sum, o) => sum + o.item.price, 0))}</strong></p>
-                        </div>
-                      </div>
+// ─── HISTORY DETAIL VIEW ──────────────────────────────────────────────────────
+function HistoryDetailView({ session, onBack, currentUser, api }) {
+  const [uploadingId, setUploadingId] = useState(null);
+  if (!session) return null;
 
-                      <div className="detail-section mt-6">
-                        <h4> PENITIP & PESANAN</h4>
-                        <div className="order-details-vertical mt-2">
-                          {s.orders.map((o, idx) => (
-                            <div key={idx} className="order-detail-row-flat">
-                              <div className="row-main">
-                                <UserAvatar username={o.username} size={24} />
-                                <div className="user-info">
-                                  <span className="username">{o.username}</span>
-                                  <span className="item-name opacity-70">{o.item.name}</span>
-                                </div>
-                              </div>
-                              <div className="row-meta">
-                                <span className="price">{formatRp(o.item.price)}</span>
-                                {s.debtors?.some(d => (d || '').toLowerCase() === (o.username || '').toLowerCase())
-                                  ? <span className="badge-debt-small">HUTANG</span>
-                                  : <span className="badge-paid-small">LUNAS</span>
-                                }
+  const isDbt = session.debtors?.some(d => (d || '').toLowerCase() === (currentUser || '').toLowerCase());
+  const mOrder = session.orders.find(o => (o.username || '').toLowerCase() === (currentUser || '').toLowerCase());
+  const totalSession = session.orders.reduce((sum, o) => sum + o.item.price, 0);
 
-                                {/* Payer Action: Confirm Payment for others or self if it was my session */}
-                                {(currentUser || '').toLowerCase() === (s.payer || '').toLowerCase() &&
-                                  s.debtors?.some(d => (d || '').toLowerCase() === (o.username || '').toLowerCase()) && (
-                                    <button
-                                      className="btn-mini btn-green ms-2"
-                                      onClick={(e) => {
-                                        e.stopPropagation();
-                                        if (confirm(`Konfirmasi pembayaran dari ${o.username}?`)) {
-                                          api.updateHistoricalOrder(s.id, o.username, { isPaid: true, markedByPayer: true });
-                                        }
-                                      }}
-                                    >
-                                      Konfirmasi
-                                    </button>
-                                  )}
-                              </div>
-                              {o.paymentProof && (
-                                <div className="proof-link-mini">
-                                  <a href={o.paymentProof} target="_blank" rel="noreferrer" className="text-xs text-blue underline">
-                                    Lihat Bukti
-                                  </a>
-                                </div>
-                              )}
-                            </div>
-                          ))}
-                        </div>
-                      </div>
+  return (
+    <div className="history-detail-view fade-in" style={{ padding: '1rem' }}>
+      <div className="detail-header" style={{ display: 'flex', alignItems: 'center', gap: '16px', marginBottom: '1.5rem' }}>
+         <button className="glass-panel" style={{ padding: '8px', borderRadius: '12px', border: '1px solid var(--glass-border)', display: 'flex', alignItems: 'center', justifyContent: 'center' }} onClick={onBack}>
+            <ChevronLeft size={24} />
+         </button>
+         <h2 className="text-gradient">Detail Sesi</h2>
+      </div>
 
-                      {isDbt && mOrder && (
-                        <div className="debt-instruction-box mt-6">
-                          <p>⚠️ Kamu berhutang **{formatRp(mOrder.item.price)}** kepada **{s.payer}**.</p>
+      <div className="glass-panel" style={{ padding: '24px', borderRadius: '32px', marginBottom: '2rem', background: 'rgba(255,255,255,0.02)' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '1.5rem' }}>
+          <div>
+            <span className="text-secondary" style={{ fontSize: '0.75rem', fontWeight: 800, textTransform: 'uppercase' }}>Tanggal Sesi</span>
+            <p style={{ fontSize: '1.1rem', fontWeight: 700 }}>{formatDate(session.startedAt)}</p>
+          </div>
+          <div style={{ textAlign: 'right' }}>
+            <span className="text-secondary" style={{ fontSize: '0.75rem', fontWeight: 800, textTransform: 'uppercase' }}>Total Putaran</span>
+            <p style={{ fontSize: '1.25rem', fontWeight: 800, color: 'var(--accent-primary)' }}>{formatRp(totalSession)}</p>
+          </div>
+        </div>
 
-                          {!mOrder.paymentProof && (
-                            <div className="historical-proof-submit mt-3">
-                              <label className="upload-box-new">
-                                <input
-                                  type="file"
-                                  accept="image/*"
-                                  className="hidden-file-input"
-                                  disabled={!!uploadingId}
-                                  onChange={async (e) => {
-                                    const file = e.target.files[0];
-                                    if (!file) return;
-                                    setUploadingId(s.id);
-                                    try {
-                                      const url = await api.uploadProof(file);
-                                      await api.updateHistoricalOrder(s.id, currentUser, { paymentProof: url });
-                                      // No alert, just reactive update
-                                    } catch (err) {
-                                      console.error("Upload failed:", err);
-                                    } finally {
-                                      setUploadingId(null);
-                                    }
-                                  }}
-                                />
-                                <div className="upload-content">
-                                  {uploadingId === s.id ? (
-                                    <Loader2 className="animate-spin" size={20} />
-                                  ) : (
-                                    <><Camera size={20} /> <span>Upload Foto Bukti</span></>
-                                  )}
-                                </div>
-                              </label>
-                            </div>
-                          )}
-                          {mOrder.paymentProof && (
-                            <div className="proof-area-enhanced mt-3">
-                              <div className="flex items-center justify-between mb-2">
-                                <div className="flex items-center gap-1 text-green text-xs font-bold">
-                                  <CheckCircle size={14} /> Bukti terunggah
-                                </div>
-                                {isDbt && (
-                                  <button
-                                    className="btn-mini btn-green shadow-sm"
-                                    onClick={(e) => {
-                                      e.stopPropagation();
-                                      api.updateHistoricalOrder(s.id, currentUser, { isPaid: true });
-                                    }}
-                                  >
-                                    KONFIRMASI SAYA SUDAH BAYAR
-                                  </button>
-                                )}
-                              </div>
-                              <a href={mOrder.paymentProof} target="_blank" rel="noreferrer" className="img-preview-major">
-                                <img src={mOrder.paymentProof} alt="Bukti Transfer" />
-                                <div className="preview-overlay">Klik untuk zoom</div>
-                              </a>
-                            </div>
-                          )}
-                        </div>
-                      )}
-                    </div>
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', background: 'var(--bg-primary)', padding: '1rem', borderRadius: '20px' }}>
+           <div>
+             <span className="text-secondary" style={{ fontSize: '0.7rem', fontWeight: 700 }}>PEMBAYAR UTAMA</span>
+             <p style={{ fontWeight: 800 }}>{session.payer}</p>
+           </div>
+           <div>
+             <span className="text-secondary" style={{ fontSize: '0.7rem', fontWeight: 700 }}>PENDAMPING</span>
+             <p style={{ fontWeight: 800 }}>{session.companion || '-'}</p>
+           </div>
+        </div>
+      </div>
+
+      <div style={{ marginBottom: '1rem', paddingLeft: '4px' }}>
+         <h4 style={{ fontSize: '1.1rem', fontWeight: 800 }}>Daftar Pesanan ({session.orders.length})</h4>
+      </div>
+
+      <div className="card-stack" style={{ marginBottom: '2rem' }}>
+        {session.orders.map((o, idx) => {
+          const orderDebt = session.debtors?.some(d => (d || '').toLowerCase() === (o.username || '').toLowerCase());
+          return (
+            <div key={idx} className="item-card glass-panel" style={{ padding: '12px 16px', borderRadius: '24px' }}>
+               <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                  <UserAvatar username={o.username} size={36} />
+                  <div>
+                    <p style={{ fontSize: '0.9rem', fontWeight: 700 }}>{o.username}</p>
+                    <p className="text-secondary" style={{ fontSize: '0.8rem' }}>{o.item.name}</p>
+                  </div>
+               </div>
+               <div style={{ textAlign: 'right' }}>
+                  <p style={{ fontWeight: 700, fontSize: '0.9rem' }}>{formatRp(o.item.price)}</p>
+                  <span style={{ fontSize: '0.65rem', fontWeight: 800, color: orderDebt ? '#ef4444' : '#4ade80' }}>
+                    {orderDebt ? 'HUTANG' : 'LUNAS'}
+                  </span>
+
+                  {(currentUser || '').toLowerCase() === (session.payer || '').toLowerCase() && orderDebt && (
+                    <button
+                      className="btn-mini btn-green shadow-sm mt-1"
+                      style={{ fontSize: '0.6rem', padding: '2px 8px', borderRadius: '4px', marginLeft: '8px' }}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        if (confirm(`Konfirmasi pembayaran dari ${o.username}?`)) {
+                          api.updateHistoricalOrder(session.id, o.username, { isPaid: true, markedByPayer: true });
+                        }
+                      }}
+                    >
+                      Konfirmasi
+                    </button>
                   )}
+               </div>
+            </div>
+          );
+        })}
+      </div>
 
-                  {!isExpanded && (
-                    <div className="expand-hint">
-                      <span>Lihat Detail</span>
-                      <ChevronDown size={14} />
-                    </div>
-                  )}
+      {isDbt && mOrder && (
+        <div className="glass-panel" style={{ padding: '1.5rem', borderRadius: '24px', border: '1px solid rgba(239, 68, 68, 0.2)', background: 'rgba(239, 68, 68, 0.05)' }}>
+          <p style={{ fontSize: '0.9rem', marginBottom: '1rem' }}>⚠️ Kamu berhutang **{formatRp(mOrder.item.price)}** kepada **{session.payer}**.</p>
+          
+          {!mOrder.paymentProof && (
+            <label className="btn-primary" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', cursor: 'pointer', opacity: uploadingId === session.id ? 0.7 : 1 }}>
+              <input
+                type="file"
+                accept="image/*"
+                className="hidden-file-input"
+                style={{ display: 'none' }}
+                disabled={!!uploadingId}
+                onChange={async (e) => {
+                  const file = e.target.files[0];
+                  if (!file) return;
+                  setUploadingId(session.id);
+                  try {
+                    const url = await api.uploadProof(file);
+                    await api.updateHistoricalOrder(session.id, currentUser, { paymentProof: url });
+                  } catch (err) {
+                    console.error("Upload failed:", err);
+                  } finally {
+                    setUploadingId(null);
+                  }
+                }}
+              />
+              {uploadingId === session.id ? <Loader2 className="animate-spin" size={20} /> : <><Camera size={20} /> <span>Upload Bukti</span></>}
+            </label>
+          )}
+
+          {mOrder.paymentProof && (
+            <div className="proof-area" style={{ marginTop: '1rem' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
+                 <span className="text-green" style={{ fontSize: '0.75rem', fontWeight: 800 }}>BUKTI TERUNGGAH</span>
+                 <button className="btn-mini btn-green" onClick={() => api.updateHistoricalOrder(session.id, currentUser, { isPaid: true })}>KONFIRMASI BAYAR</button>
+              </div>
+              <a href={mOrder.paymentProof} target="_blank" rel="noreferrer" style={{ display: 'block', borderRadius: '16px', overflow: 'hidden' }}>
+                <img src={mOrder.paymentProof} alt="Bukti" style={{ width: '100%', display: 'block' }} />
+              </a>
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
                 </div>
               );
             })
@@ -766,7 +763,8 @@ export default function App() {
   const [currentUser, setCurrentUser] = useState(() => localStorage.getItem('ngopi_current_user') || '');
   const [loginInput, setLoginInput] = useState('');
   const [pinInput, setPinInput] = useState('');
-  const [view, setView] = useState('home'); // home | session | history | admin
+  const [view, setView] = useState('home'); // home | orders | live-session | history | history-detail | profile
+  const [selectedSession, setSelectedSession] = useState(null);
   const [historyFilter, setHistoryFilter] = useState('all'); // all | my-debt
   const [expandedSession, setExpandedSession] = useState(null);
   const [activeMenu, setActiveMenu] = useState(null); // 'notif' | 'profile' | null
@@ -1318,17 +1316,6 @@ export default function App() {
           <p style={{ fontSize: '1.5rem', fontWeight: 800 }}>{store.history.filter(s => s.orders.some(o => o.username === currentUser)).length}</p>
         </div>
       </div>
-
-      <div className="quick-actions-grid" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
-         <button className="glass-panel action-btn" style={{ padding: '1rem', textAlign: 'center', borderRadius: '20px', border: '1px solid var(--glass-border)', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px' }} onClick={() => setView('history')}>
-            <History size={20} className="text-secondary" />
-            <span style={{ fontSize: '0.8rem', fontWeight: 600 }}>Riwayat</span>
-         </button>
-         <button className="glass-panel action-btn" style={{ padding: '1rem', textAlign: 'center', borderRadius: '20px', border: '1px solid var(--glass-border)', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px' }} onClick={() => setView('profile')}>
-            <User size={20} className="text-secondary" />
-            <span style={{ fontSize: '0.8rem', fontWeight: 600 }}>Profil</span>
-         </button>
-      </div>
     </div>
   );
 
@@ -1793,8 +1780,18 @@ export default function App() {
             history={store.history}
             payerHistory={store.payerHistory}
             currentUser={currentUser}
-            filter={historyFilter}
-            setFilter={setHistoryFilter}
+            onSelectSession={(s) => {
+              setSelectedSession(s);
+              setView('history-detail');
+            }}
+          />
+        )}
+        {view === 'history-detail' && (
+          <HistoryDetailView
+            session={selectedSession}
+            currentUser={currentUser}
+            api={api}
+            onBack={() => setView('history')}
           />
         )}
         {view === 'profile' && (

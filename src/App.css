@@ -440,17 +440,13 @@ input:focus, select:focus { outline: none; background: var(--bg-secondary); bord
 .debt-dashboard-card { background: var(--text-primary); color: var(--bg-primary); padding: 1.5rem; border-radius: 8px; border: 2px solid var(--text-primary); text-align: center; }
 .debt-stat h2 { font-size: 2.5rem; font-family: var(--font-heading); margin-top: 0.25rem; }
 
-.history-card-new { margin-bottom: 2rem; cursor: pointer; transition: transform 0.2s; border-bottom: 3px solid var(--text-primary); position: relative; padding-bottom: 1.5rem; }
-.history-card-new:hover { transform: translateY(-2px); }
-.history-card-new.has-debt { border-bottom-color: #DC2626; }
+/* history-card-new removed */
 
 .history-card-header { display: flex; justify-content: space-between; align-items: flex-start; gap: 0.5rem; }
 
 .badge-status-group { display: flex; flex-direction: column; align-items: flex-end; gap: 0.25rem; }
 
-.badge-status-new { font-family: var(--font-heading); font-size: 0.7rem; font-weight: 900; padding: 2px 8px; border: 2px solid var(--text-primary); border-radius: 4px; text-transform: uppercase; }
-.badge-status-new.lunas { background: #059669; color: white; border-color: #059669; }
-.badge-status-new.hutang { background: #DC2626; color: white; border-color: #DC2626; }
+/* badge-status-new removed */
 
 .history-card-details { margin-top: 1.5rem; padding-top: 1.5rem; border-top: 2px dashed var(--text-primary); cursor: default; }
 
@@ -487,7 +483,7 @@ input:focus, select:focus { outline: none; background: var(--bg-secondary); bord
 .debt-instruction-box { background: #fee2e2; border: 3px solid #dc2626; color: #991b1b; padding: 1.25rem; border-radius: 8px; font-weight: 800; text-align: center; box-shadow: 4px 4px 0 #dc2626; font-size: 0.9rem; }
 .debt-instruction-box strong { font-size: 1.1rem; text-decoration: underline; }
 
-.expand-hint { display: flex; align-items: center; justify-content: center; gap: 0.5rem; padding-top: 1rem; margin-top: 1rem; font-size: 0.8rem; font-weight: 800; text-transform: uppercase; border: 2px solid var(--text-primary); background: var(--bg-secondary); border-radius: 4px; }
+/* expand-hint removed */
 
 /* --- PHOTO UPLOAD STYLES --- */
 .upload-box-new {
