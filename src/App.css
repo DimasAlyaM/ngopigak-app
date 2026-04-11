@@ -310,7 +310,7 @@ input:focus, select:focus { outline: none; background: var(--bg-secondary); bord
 .payer-count { font-size: 0.85rem; min-width: 70px; }
 .payer-bar { flex: 1; height: 10px; border: 1px solid var(--text-primary); background: transparent; overflow: hidden; }
 .payer-fill { height: 100%; background: var(--text-primary); transition: width 0.5s ease; }
-.history-list { display: flex; flex-direction: column; gap: 1rem; border: 2px solid var(--text-primary); padding: 10px; background: var(--bg-secondary); }
+.history-list { display: flex; flex-direction: column; gap: 1rem; border: none; padding: 0; background: transparent; }
 .history-card { padding: 1rem 1.25rem; border: 2px solid var(--text-primary); background: var(--bg-primary); }
 .history-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.75rem; border-bottom: 2px dotted var(--text-primary); padding-bottom: 0.5rem; font-family: var(--font-heading); text-transform: uppercase; }
 .history-date { font-size: 0.85rem; font-weight: 700; }
