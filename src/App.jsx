@@ -198,7 +198,7 @@ function OrderDetailView({ order, currentUser, api, onBack }) {
   return (
     <div className="order-detail-view fade-in" style={{ padding: '1rem' }}>
       <div className="view-header" style={{ marginBottom: '2rem', display: 'flex', alignItems: 'center', gap: '12px' }}>
-        <button onClick={onBack} className="btn-circle" style={{ background: 'var(--surface)' }}><ArrowLeft size={20} /></button>
+        <button onClick={onBack} className="btn-circle" style={{ background: 'var(--surface)' }}><ChevronLeft size={20} /></button>
         <h2 className="text-gradient">Detail Pesanan</h2>
       </div>
 
