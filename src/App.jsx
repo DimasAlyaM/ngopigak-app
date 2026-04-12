@@ -862,7 +862,8 @@ function HistoryView({ history, payerHistory, currentUser, onSelectSession }) {
 function HistoryDetailView({ session, onBack, currentUser, api }) {
   if (!session) return null;
 
-  const totalSession = session.orders.reduce((sum, o) => sum + (o.item?.price || 0), 0);
+  const orders = Array.isArray(session?.orders) ? session.orders : [];
+  const totalSession = orders.reduce((sum, o) => sum + (o.item?.price || 0), 0);
 
   return (
     <div className="history-detail-view fade-in" style={{ padding: '1rem' }}>
@@ -1578,7 +1579,7 @@ export default function App() {
                    }
                 }}
              >
-                {sessionDone ? 'Lihat Detail' : 'Join Sesi'}
+                {sessionDone ? 'Lihat Detail' : (session.status === 'open' ? 'Join Sesi' : 'Lihat Sesi')}
              </button>
           </div>
         </div>
@@ -1872,7 +1873,9 @@ export default function App() {
               <div style={{ background: 'var(--bg-primary)', padding: '2rem', borderRadius: '30px', border: '2px solid var(--accent-primary)' }}>
                 <UserAvatar username={session.payer} size={80} />
                 <h3 style={{ fontSize: '1.5rem', marginTop: '1rem' }}>{session.payer}</h3>
-                <p className="text-secondary" style={{ fontSize: '0.85rem' }}>Sudah bayar {(store.payerHistory || {})[session.payer] || 0} kali</p>
+                <p className="text-secondary" style={{ fontSize: '0.85rem' }}>
+                   Sudah bayar {session.payer && store.payerHistory ? (store.payerHistory[session.payer]?.pay || 0) : 0} kali
+                </p>
               </div>
             </div>
 
@@ -1897,7 +1900,7 @@ export default function App() {
             ) : (
               <div style={{ opacity: 0.8 }}>
                 <div className="spinner" style={{ margin: '0 auto 1.5rem' }}></div>
-                <p className="text-secondary">Menunggu <strong>{session.payer}</strong> mengisi info pembayaran...</p>
+                <p className="text-secondary">Menunggu <strong>{session.payer || 'Pembayar'}</strong> mengisi info pembayaran...</p>
               </div>
             )}
           </div>

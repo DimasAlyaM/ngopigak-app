@@ -254,6 +254,7 @@ export const api = {
     if (updates.debtors !== undefined) payload.debtors = updates.debtors;
     
     await supabase.from('sessions').update(payload).eq('id', sessionId);
+    await fetchFullState();
   },
 
   incrementRoleCount: async (username, role = 'pay') => {
@@ -284,6 +285,7 @@ export const api = {
       marked_by_payer: markedByPayer ? true : false,
       paid_at: new Date().toISOString()
     }).eq('id', orderId);
+    await fetchFullState();
   },
 
   updateOrder: async (orderId, updates) => {
