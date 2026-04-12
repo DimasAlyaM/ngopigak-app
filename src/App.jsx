@@ -99,7 +99,7 @@ function NotificationView({ notifications, username, onAction }) {
           [...myNotifs].reverse().map(n => (
             <div 
               key={n.id} 
-              className={`notif-card ${n.read ? 'read' : 'unread'}`} 
+              className={`notif-card ${n.readBy?.includes(username) ? 'read' : 'unread'}`} 
               onClick={() => onAction && onAction(n)}
               style={{ cursor: 'pointer' }}
             >
@@ -107,7 +107,7 @@ function NotificationView({ notifications, username, onAction }) {
                 {notifIcon(n.type)}
               </div>
               <div className="notif-content">
-                <p className="notif-title">{n.message}</p>
+                <p className="notif-title">{n.message || 'Pesan notifikasi'}</p>
                 <p className="notif-time">{formatDate(n.createdAt)}</p>
               </div>
             </div>
@@ -175,10 +175,12 @@ function OrderDetailView({ order, currentUser, api, onBack }) {
   };
 
   const handleConfirmPay = async () => {
+    const prevPaid = localIsPaid;
+    setLocalIsPaid(true); // Optimistic
     try {
       if (order.sessionId === 'active') {
         const s = loadStore();
-        const activeOrder = s.session.orders.find(o => o.username === currentUser);
+        const activeOrder = s.session?.orders?.find(o => (o.username || '').toLowerCase() === (currentUser || '').toLowerCase());
         if (activeOrder) {
           await api.updateOrder(activeOrder.id, { isPaid: true, markedByPayer: false });
           api.notify(s.session.id, s.session.payer, 'payment', `${currentUser} telah membayar & upload bukti.`);
@@ -186,9 +188,9 @@ function OrderDetailView({ order, currentUser, api, onBack }) {
       } else {
         await api.updateHistoricalOrder(order.sessionId, currentUser, { isPaid: true });
       }
-      setLocalIsPaid(true);
       alert("Konfirmasi pembayaran terkirim!");
     } catch (err) {
+      setLocalIsPaid(prevPaid); // Rollback
       alert("Gagal konfirmasi: " + err.message);
     }
   };
@@ -202,10 +204,10 @@ function OrderDetailView({ order, currentUser, api, onBack }) {
 
       <div className="glass-panel" style={{ padding: '2rem', textAlign: 'center', marginBottom: '1.5rem', borderRadius: '32px' }}>
         <div style={{ fontSize: '3.5rem', marginBottom: '1rem', background: 'var(--surface)', width: '100px', height: '100px', borderRadius: '32px', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto' }}>
-          {order.item.emoji || '☕'}
+          {order.item?.emoji || '☕'}
         </div>
-        <h3 style={{ fontSize: '1.4rem', marginBottom: '8px' }}>{order.item.name}</h3>
-        <p className="text-accent" style={{ fontSize: '1.6rem', fontWeight: 800, marginBottom: '2rem' }}>{formatRp(order.item.price)}</p>
+        <h3 style={{ fontSize: '1.4rem', marginBottom: '8px' }}>{order.item?.name || 'Item'}</h3>
+        <p className="text-accent" style={{ fontSize: '1.6rem', fontWeight: 800, marginBottom: '2rem' }}>{formatRp(order.item?.price)}</p>
 
         <div style={{ background: 'var(--bg-primary)', borderRadius: '24px', padding: '8px' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', padding: '12px', borderBottom: '1px solid var(--glass-border)', fontSize: '0.9rem' }}>
@@ -505,8 +507,8 @@ function AdminView({ menu, users, history, activeSession, onSaveMenu, onResetPin
                   {users.map(u => {
                     let debt = 0;
                     history.forEach(session => {
-                      if (session.debtors?.includes(u.username)) {
-                        const order = session.orders.find(o => o.username === u.username);
+                      if (session?.debtors?.some(d => (d || '').toLowerCase() === (u.username || '').toLowerCase())) {
+                        const order = session.orders?.find(o => (o.username || '').toLowerCase() === (u.username || '').toLowerCase());
                         debt += order?.item?.price || 0;
                       }
                     });
@@ -590,7 +592,7 @@ function AdminView({ menu, users, history, activeSession, onSaveMenu, onResetPin
                   <p style={{ textAlign: 'center', opacity: 0.5 }}>Belum ada histori.</p>
                 ) : (
                   [...history].reverse().map(h => {
-                    const total = h.orders.reduce((sum, o) => sum + o.item.price, 0);
+                    const total = h.orders?.reduce((sum, o) => sum + (o.item?.price || 0), 0) || 0;
                     const isExpanded = expandedHistoryId === h.id;
 
                     return (
@@ -794,8 +796,9 @@ function HistoryView({ history, payerHistory, currentUser, onSelectSession }) {
             </div>
           ) : (
             [...displayedHistory].reverse().map(s => {
-              const isDbt = s.debtors?.some(d => (d || '').toLowerCase() === (currentUser || '').toLowerCase());
-              const totalAmount = s.orders.reduce((sum, o) => sum + (o.item?.price || 0), 0);
+              const userLower = (currentUser || '').toLowerCase();
+              const isDbt = s.debtors?.some(d => (d || '').toLowerCase() === userLower);
+              const totalAmount = s.orders?.reduce((sum, o) => sum + (o.item?.price || 0), 0) || 0;
 
               return (
                 <div key={s.id} className="history-card-wrapper" style={{ marginBottom: '12px' }}>

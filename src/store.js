@@ -85,7 +85,7 @@ async function fetchFullState() {
 
     // Rebuild Users from dedicated table
     memoryStore.users = (users || []).map(u => ({
-      username: u.username,
+      username: u.username.toLowerCase(),
       pin: u.pin
     }));
 
@@ -94,9 +94,10 @@ async function fetchFullState() {
     memoryStore.adminPin = adminPinRow ? adminPinRow.value : null;
     
     // Also track names for quick-selection (extract from history if needed)
-    const userSet = new Set((payers || []).map(p => p.username));
-    (orders || []).forEach(o => userSet.add(o.username));
-    (users || []).forEach(u => userSet.add(u.username));
+    const userSet = new Set();
+    (payers || []).forEach(p => userSet.add(p.username.toLowerCase()));
+    (orders || []).forEach(o => userSet.add(o.username.toLowerCase()));
+    (users || []).forEach(u => userSet.add(u.username.toLowerCase()));
 
     // If session is 'open' and older than 2 hours, force-close it
     const SESSION_TIMEOUT_MS = 2 * 60 * 60 * 1000;
@@ -204,31 +205,38 @@ async function fetchFullState() {
 
 export const api = {
   createSession: async (startedBy) => {
-    const id = Date.now().toString();
-    const { error } = await supabase.from('sessions').insert({
-      id,
-      status: 'open',
-      started_by: startedBy,
-    });
-    if (error) {
-      console.error("Failed to create session:", error);
-      alert("Error membuat sesi: " + error.message);
+    try {
+      const id = Date.now().toString();
+      const { error } = await supabase.from('sessions').insert({
+        id,
+        status: 'open',
+        started_by: startedBy.toLowerCase(),
+      });
+      if (error) throw error;
+      fetchFullState();
+    } catch (err) {
+      console.error("Failed to create session:", err);
+      alert("Error membuat sesi: " + err.message);
     }
-    // Optimistic
-    fetchFullState();
   },
 
   addOrder: async (sessionId, username, menuItem) => {
-    // Upsert equivalent: Delete old order by this user in this session, then insert
-    await supabase.from('orders').delete().match({ session_id: sessionId, username });
-    await supabase.from('orders').insert({
-      session_id: sessionId,
-      username,
-      coffee_id: menuItem.id,
-      coffee_name: menuItem.name,
-      coffee_price: menuItem.price
-    });
-    fetchFullState();
+    try {
+      const user = username.toLowerCase();
+      // Upsert equivalent: Delete old order by this user in this session, then insert
+      await supabase.from('orders').delete().match({ session_id: sessionId, username: user });
+      await supabase.from('orders').insert({
+        session_id: sessionId,
+        username: user,
+        coffee_id: menuItem.id,
+        coffee_name: menuItem.name,
+        coffee_price: menuItem.price
+      });
+      fetchFullState();
+    } catch (err) {
+      console.error("Failed to add order:", err);
+      alert("Error menambah pesanan: " + err.message);
+    }
   },
 
   updateSession: async (sessionId, updates) => {
@@ -248,19 +256,25 @@ export const api = {
   },
 
   incrementRoleCount: async (username, role = 'pay') => {
-    const column = role === 'pay' ? 'pay_count' : 'companion_count';
-    const { data: current } = await supabase.from('payer_history').select('*').eq('username', username).single();
-    
-    const updates = { username };
-    if (role === 'pay') {
-      updates.pay_count = current ? (current.pay_count || 0) + 1 : 1;
-      if (current) updates.companion_count = current.companion_count || 0;
-    } else {
-      updates.companion_count = current ? (current.companion_count || 0) + 1 : 1;
-      if (current) updates.pay_count = current.pay_count || 0;
-    }
+    try {
+      const user = username.toLowerCase();
+      const column = role === 'pay' ? 'pay_count' : 'companion_count';
+      const { data: current } = await supabase.from('payer_history').select('*').eq('username', user).single();
+      
+      const updates = { username: user };
+      if (role === 'pay') {
+        updates.pay_count = current ? (current.pay_count || 0) + 1 : 1;
+        if (current) updates.companion_count = current.companion_count || 0;
+      } else {
+        updates.companion_count = current ? (current.companion_count || 0) + 1 : 1;
+        if (current) updates.pay_count = current.pay_count || 0;
+      }
 
-    await supabase.from('payer_history').upsert(updates);
+      const { error } = await supabase.from('payer_history').upsert(updates);
+      if (error) throw error;
+    } catch (err) {
+      console.error("Failed to increment role count:", err);
+    }
   },
 
   markOrderPaid: async (orderId, markedByPayer) => {
@@ -284,12 +298,16 @@ export const api = {
   },
 
   notify: async (sessionId, targetUser, type, message) => {
-    await supabase.from('notifications').insert({
-      session_id: sessionId,
-      target_user: targetUser,
-      type,
-      message
-    });
+    try {
+      await supabase.from('notifications').insert({
+        session_id: sessionId,
+        target_user: targetUser.toLowerCase(),
+        type,
+        message
+      });
+    } catch (err) {
+      console.error("Failed to send notification:", err);
+    }
   },
 
   markNotifRead: async (notifId, username) => {
@@ -327,11 +345,13 @@ export const api = {
   // Auth & Profile
   login: async (username, pin) => {
     try {
-      let existing = memoryStore.users.find(u => u.username.toLowerCase() === username.toLowerCase());
+      const user = username.trim().toLowerCase();
+      let existing = memoryStore.users.find(u => u.username === user);
       
       if (!existing) {
-        const { data, error } = await supabase.from('users').select('*').eq('username', username).single();
+        const { data, error } = await supabase.from('users').select('*').eq('username', user).single();
         if (error && error.code === 'PGRST116') {
+          // No user found
         } else if (error) {
           console.error("Login Check Error:", error);
           if (error.message.includes("Could not find the table")) {
@@ -341,13 +361,13 @@ export const api = {
         }
         
         if (data) {
-          existing = { username: data.username, pin: data.pin };
+          existing = { username: data.username.toLowerCase(), pin: data.pin };
           memoryStore.users.push(existing);
         }
       }
 
       if (!existing) {
-        const { error: insErr } = await supabase.from('users').insert({ username, pin });
+        const { error: insErr } = await supabase.from('users').insert({ username: user, pin });
         if (insErr) {
            console.error("Registration Error:", insErr);
            return { success: false, message: "Gagal registrasi: " + insErr.message };
