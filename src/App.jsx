@@ -634,13 +634,13 @@ function HistoryView({ history, payerHistory, currentUser, onSelectSession }) {
                       </div>
                       <div>
                         <p style={{ fontSize: '1rem', fontWeight: 700 }}>{formatDate(s.startedAt).split(',')[0]}</p>
-                        <p className="text-secondary" style={{ fontSize: '0.8rem' }}>
+                        <p className="text-secondary" style={{ fontSize: '0.75rem' }}>
                           {s.orders.length} Peserta &bull; {s.payer}{s.companion ? ` & ${s.companion}` : ''}
                         </p>
                       </div>
                     </div>
                     <div style={{ textAlign: 'right' }}>
-                      <p style={{ fontWeight: 800, fontSize: '1.1rem' }}>{formatRp(totalAmount)}</p>
+                      <p style={{ fontWeight: 800, fontSize: '1rem' }}>{formatRp(totalAmount)}</p>
                       <span style={{ fontSize: '0.65rem', fontWeight: 800, color: isDbt ? '#ef4444' : '#4ade80' }}>
                         {isDbt ? 'HUTANG' : 'LUNAS'}
                       </span>
@@ -1290,9 +1290,9 @@ export default function App() {
           <div className="nav-icon"><Home size={20} /></div>
           <span>Home</span>
         </div>
-        <div className={`nav-item ${view === 'orders' ? 'active' : ''}`} onClick={() => setView('orders')}>
-          <div className="nav-icon"><Clock size={20} /></div>
-          <span>Pesanan</span>
+        <div className={`nav-item ${view === 'history' ? 'active' : ''}`} onClick={() => goToHistory()}>
+          <div className="nav-icon"><History size={20} /></div>
+          <span>History</span>
         </div>
         <div className={`nav-item ${view === 'notifications' ? 'active' : ''}`} onClick={() => { setView('notifications'); markNotifsRead(); }}>
           <div className="nav-icon nav-badge-container">
@@ -1301,9 +1301,9 @@ export default function App() {
           </div>
           <span>Notif</span>
         </div>
-        <div className={`nav-item ${view === 'history' ? 'active' : ''}`} onClick={() => goToHistory()}>
-          <div className="nav-icon"><History size={20} /></div>
-          <span>History</span>
+        <div className={`nav-item ${view === 'orders' ? 'active' : ''}`} onClick={() => setView('orders')}>
+          <div className="nav-icon"><Clock size={20} /></div>
+          <span>My Order</span>
         </div>
         <div className={`nav-item ${view === 'profile' ? 'active' : ''}`} onClick={() => setView('profile')}>
           <div className="nav-icon"><User size={20} /></div>
@@ -1407,7 +1407,7 @@ export default function App() {
     return (
       <div className="orders-view fade-in" style={{ padding: '1rem' }}>
         <div className="view-header" style={{ marginBottom: '1.5rem' }}>
-          <h2 className="text-gradient">Pesanan Kamu</h2>
+          <h2 className="text-gradient">My Order</h2>
           <p className="text-secondary" style={{ fontSize: '0.9rem' }}>Daftar kopi yang pernah kamu pesan.</p>
         </div>
 
