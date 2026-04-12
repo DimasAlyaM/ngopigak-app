@@ -866,7 +866,7 @@ function HistoryView({ history, payerHistory, currentUser, onSelectSession }) {
                     <div>
                       <p style={{ fontSize: '1rem', fontWeight: 700, margin: 0 }}>{formatDate(s.startedAt).split(',')[0]}</p>
                       <p className="text-secondary" style={{ fontSize: '0.75rem', margin: 0 }}>
-                        {s.orders.length} Peserta &bull; {s.payer}{s.companion ? ` & ${s.companion}` : ''}
+                        {s.orders.length} Peserta • {s.payer}{s.companion ? ` & ${s.companion}` : ''}
                       </p>
                     </div>
                   </div>
@@ -1508,7 +1508,7 @@ export default function App() {
             </form>
 
             <div className="login-footer">
-              Dimsam &bull; 2026
+              Dimsam • 2026
             </div>
           </div>
         </div>
@@ -1570,7 +1570,7 @@ export default function App() {
         <div className="live-dashboard glass-panel fade-in">
           <div className="live-indicator">
             <div className="pulsing-dot"></div>
-            {sessionDone ? 'SESI BERAKHIR' : `LIVE SESI &bull; ${session.status === 'open' ? formatTime(timeLeft) : 'Payment Ready'}`}
+            {sessionDone ? 'SESI BERAKHIR' : `LIVE SESI • ${session.status === 'open' ? formatTime(timeLeft) : 'Payment Ready'}`}
           </div>
           
           <h3 style={{ fontSize: '1.2rem', marginBottom: '1.5rem' }}>{sessionDone ? 'Ringkasan Sesi Hari Ini ☕' : 'Ditunggu kopinya! ☕'}</h3>
@@ -1729,7 +1729,7 @@ export default function App() {
                   <div>
                     <h4 style={{ fontSize: '1rem', fontWeight: 700, margin: 0 }}>{o.item.name}</h4>
                     <p className="text-secondary" style={{ fontSize: '0.75rem', margin: 0 }}>
-                      {formatDate(o.sessionDate).split(',')[0]} &bull; {o.isLive ? 'Sesi Aktif' : `Dibayar oleh ${o.payer}`}
+                      {formatDate(o.sessionDate).split(',')[0]} • {o.isLive ? 'Sesi Aktif' : `Dibayar oleh ${o.payer}`}
                     </p>
                   </div>
                 </div>
