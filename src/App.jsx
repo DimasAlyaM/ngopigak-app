@@ -80,10 +80,9 @@ function ConfirmDialog({ title, message, onConfirm, onCancel, confirmText = 'Ya,
 }
 
 // ─── NOTIFICATION VIEW ────────────────────────────────────────────────────────
-function NotificationView({ notifications, username }) {
+function NotificationView({ notifications, username, onAction }) {
   const myNotifs = notifications.filter(n => n.to === username || n.to === 'all');
-  const unreadCount = myNotifs.filter(n => !n.read).length;
-
+  
   return (
     <div className="notif-view fade-in">
       <div className="view-header">
@@ -98,7 +97,12 @@ function NotificationView({ notifications, username }) {
           </div>
         ) : (
           [...myNotifs].reverse().map(n => (
-            <div key={n.id} className={`notif-card ${n.read ? 'read' : 'unread'}`}>
+            <div 
+              key={n.id} 
+              className={`notif-card ${n.read ? 'read' : 'unread'}`} 
+              onClick={() => onAction && onAction(n)}
+              style={{ cursor: 'pointer' }}
+            >
               <div className="notif-icon-circle">
                 {notifIcon(n.type)}
               </div>
@@ -1116,6 +1120,18 @@ export default function App() {
     }
   };
 
+  const handleNotifAction = (n) => {
+    if (['payment', 'bought', 'reminder', 'info'].includes(n.type)) {
+      setView('live-session');
+    } else if (['done', 'debt'].includes(n.type)) {
+      setView('history');
+    }
+    // Generic fallback: if it mentions 'sesi', go to live session
+    if (n.message.toLowerCase().includes('sesi')) {
+      setView('live-session');
+    }
+  };
+
   const markPaidByPayer = async (username) => {
     const s = loadStore();
     if (!s.session) return;
@@ -1364,7 +1380,7 @@ export default function App() {
         <div className="live-dashboard glass-panel fade-in">
           <div className="live-indicator">
             <div className="pulsing-dot"></div>
-            LIVE SESI
+            LIVE SESI &bull; {session.status === 'open' ? formatTime(timeLeft) : 'Payment Ready'}
           </div>
           
           <h3 style={{ fontSize: '1.2rem', marginBottom: '1.5rem' }}>Ditunggu kopinya! ☕</h3>
@@ -1577,7 +1593,25 @@ export default function App() {
       return (
         <div className="session-open-view fade-in" style={{ padding: '1rem' }}>
           <div className="glass-panel" style={{ marginBottom: '1.5rem', position: 'relative' }}>
-            <div className={`timer-chip ${timeLeft < 60 ? 'urgent' : ''}`} style={{ position: 'absolute', top: '16px', right: '16px', background: 'var(--bg-primary)', padding: '6px 12px', borderRadius: '12px', fontWeight: 800 }}>
+            <div 
+               className={`timer-chip ${timeLeft < 60 ? 'urgent' : ''}`} 
+               style={{ 
+                  position: 'absolute', 
+                  top: '16px', 
+                  right: '16px', 
+                  background: 'var(--bg-primary)', 
+                  padding: '6px 14px', 
+                  borderRadius: '12px', 
+                  fontWeight: 900,
+                  color: 'white',
+                  border: '1px solid rgba(255,255,255,0.1)',
+                  boxShadow: '0 4px 12px rgba(0,0,0,0.2)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '6px'
+               }}
+            >
+              <Clock size={14} />
               {formatTime(timeLeft)}
             </div>
             <h3 style={{ marginBottom: '0.5rem' }}>Sesi Terbuka</h3>
@@ -1930,6 +1964,7 @@ export default function App() {
           <NotificationView
             notifications={store.session?.notifications || []}
             username={currentUser}
+            onAction={handleNotifAction}
           />
         )}
         {view === 'admin' && (
