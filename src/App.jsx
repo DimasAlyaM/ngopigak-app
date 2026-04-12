@@ -66,13 +66,18 @@ function StatusBadge({ isPaid }) {
 // ─── DIALOG COMPONENT ─────────────────────────────────────────────────────────
 function ConfirmDialog({ title, message, onConfirm, onCancel, confirmText = 'Ya, Lanjutkan', danger = false }) {
   return (
-    <div className="dialog-overlay" onClick={onCancel}>
-      <div className="dialog-box glass-panel" onClick={e => e.stopPropagation()}>
-        <h3 className="dialog-title">{title}</h3>
-        <p className="dialog-message text-secondary">{message}</p>
-        <div className="dialog-actions">
-          <button className="btn-secondary" onClick={onCancel}>Batal</button>
-          <button className={danger ? 'btn-danger' : 'btn-primary'} onClick={onConfirm}>{confirmText}</button>
+    <div className="bottom-sheet-overlay" onClick={onCancel}>
+      <div className="bottom-sheet-container fade-in-up" onClick={e => e.stopPropagation()}>
+        <div className="bottom-sheet-handle"></div>
+        <div className="bottom-sheet-content">
+          <h3 className="bottom-sheet-title">{title}</h3>
+          <p className="bottom-sheet-message text-secondary">{message}</p>
+          <div className="bottom-sheet-actions">
+            <button className="btn-secondary-pill" onClick={onCancel}>Batal</button>
+            <button className={danger ? 'btn-danger-pill' : 'btn-primary-pill'} onClick={onConfirm}>
+              {confirmText}
+            </button>
+          </div>
         </div>
       </div>
     </div>
@@ -432,7 +437,7 @@ function AdminPinGate({ serverPin, onSuccess, onClose }) {
 }
 
 // ─── ADMIN PANEL (MENU & USERS) ──────────────────────────────────────────────
-function AdminView({ menu, users, history, activeSession, onSaveMenu, onResetPin, onForceClose, onDeleteActiveSession, onDeleteHistory, onUpdateHistoricalOrder, onDeleteAllNotifs, onSaveAdminPin }) {
+function AdminView({ menu, users, history, activeSession, onSaveMenu, onResetPin, onForceClose, onDeleteActiveSession, onDeleteHistory, onUpdateHistoricalOrder, onDeleteAllNotifs, onSaveAdminPin, setDialog }) {
   const [tab, setTab] = useState('menu');
   const [items, setItems] = useState(menu.map(m => ({ ...m })));
   const [newName, setNewName] = useState('');
@@ -534,9 +539,11 @@ function AdminView({ menu, users, history, activeSession, onSaveMenu, onResetPin
                           </div>
                         </div>
                         <button className="btn-secondary" style={{ padding: '6px 12px', fontSize: '0.75rem', borderRadius: '10px' }} onClick={() => {
-                          if (confirm(`Reset PIN untuk ${u.username}? PIN baru akan menjadi '1234'.`)) {
-                            onResetPin(u.username);
-                          }
+                          setDialog({
+                            title: 'Reset PIN?',
+                            message: `PIN untuk ${u.username} akan diubah menjadi '1234'.`,
+                            onConfirm: () => { onResetPin(u.username); setDialog(null); }
+                          });
                         }}>Reset PIN</button>
                       </div>
                     );
@@ -571,16 +578,24 @@ function AdminView({ menu, users, history, activeSession, onSaveMenu, onResetPin
                     </div>
 
                     <div style={{ marginTop: '2rem', display: 'flex', flexDirection: 'column', gap: '10px' }}>
-                      <button className="btn-primary-pill" style={{ background: '#ef4444' }} onClick={() => {
-                        if (confirm("Tutup paksa sesi ini? Peserta yang belum bayar akan tercatat berhutang.")) {
-                          onForceClose();
-                        }
+                      <button className="btn-danger-pill" onClick={() => {
+                        setDialog({
+                          title: 'Tutup Paksa?',
+                          message: 'Hutang peserta akan dicatat. Sesi akan dipindahkan ke histori.',
+                          onConfirm: () => { onForceClose(); setDialog(null); },
+                          danger: true,
+                          confirmText: 'Ya, Tutup'
+                        });
                       }}>Tutup Paksa & Simpan Histori</button>
 
                       <button className="btn-logout" style={{ background: 'transparent', border: '1px solid rgba(239, 68, 68, 0.3)', color: '#ef4444', fontSize: '0.8rem' }} onClick={() => {
-                        if (confirm("HAPUS PERMANEN sesi ini? Data pesanan akan hilang total dan tidak masuk histori.")) {
-                          onDeleteActiveSession(activeSession.id);
-                        }
+                        setDialog({
+                          title: 'Hapus Sesi?',
+                          message: 'HAPUS PERMANEN? Data pesanan akan hilang total dan tidak masuk histori.',
+                          onConfirm: () => { onDeleteActiveSession(activeSession.id); setDialog(null); },
+                          danger: true,
+                          confirmText: 'Hapus Total'
+                        });
                       }}>Hapus Total (Tanpa Histori)</button>
                     </div>
                   </div>
@@ -614,9 +629,13 @@ function AdminView({ menu, users, history, activeSession, onSaveMenu, onResetPin
                           </div>
                           <div style={{ display: 'flex', gap: '8px' }}>
                             <button className="btn-icon-danger" style={{ padding: '8px', background: 'rgba(239, 68, 68, 0.1)' }} onClick={() => {
-                              if (confirm("Hapus histori sesi ini secara PERMANEN?")) {
-                                onDeleteHistory(h.id);
-                              }
+                              setDialog({
+                                title: 'Hapus Histori?',
+                                message: 'Hapus histori sesi ini secara PERMANEN?',
+                                onConfirm: () => { onDeleteHistory(h.id); setDialog(null); },
+                                danger: true,
+                                confirmText: 'Ya, Hapus'
+                              });
                             }}><Trash2 size={16} /></button>
                             <button
                               className="btn-icon"
@@ -703,10 +722,17 @@ function AdminView({ menu, users, history, activeSession, onSaveMenu, onResetPin
                   <h5 style={{ margin: '0 0 8px 0', fontSize: '0.9rem', color: '#f87171' }}>Pembersihan Data</h5>
                   <p style={{ fontSize: '0.75rem', opacity: 0.6, marginBottom: '1.25rem' }}>Hapus semua notifikasi lama untuk menjaga kecepatan aplikasi.</p>
                   <button className="btn-logout" style={{ background: 'transparent', border: '1px solid rgba(239, 68, 68, 0.3)', color: '#f87171', fontSize: '0.8rem' }} onClick={() => {
-                    if (confirm("HAPUS SEMUA notifikasi? Tindakan ini tidak bisa dibatalkan.")) {
-                      onDeleteAllNotifs();
-                      alert("Semua notifikasi telah dibersihkan.");
-                    }
+                    setDialog({
+                      title: 'Bersihkan Notif?',
+                      message: 'Hapus semua notifikasi secara permanen?',
+                      onConfirm: () => { 
+                        onDeleteAllNotifs(); 
+                        setDialog(null);
+                        alert("Semua notifikasi telah dibersihkan.");
+                      },
+                      danger: true,
+                      confirmText: 'Ya, Bersihkan'
+                    });
                   }}>Bersihkan Semua Notifikasi</button>
                 </div>
               </div>
@@ -2069,7 +2095,18 @@ export default function App() {
               </div>
             )}
 
-            <button className="btn-primary" style={{ marginTop: '1.5rem', height: '56px', fontSize: '1rem' }} onClick={() => { if (!proofInput && !confirm('Belum ada bukti, kirim status Cash?')) return; submitProof(currentUser); }} disabled={isUploadingActive}>
+            <button className="btn-primary" style={{ marginTop: '1.5rem', height: '56px', fontSize: '1rem' }} onClick={() => { 
+                if (!proofInput) {
+                  setDialog({
+                    title: 'Status Cash?',
+                    message: 'Belum ada bukti foto, kirim status sebagai Cash?',
+                    onConfirm: () => { submitProof(currentUser); setDialog(null); },
+                    confirmText: 'Ya, Cash'
+                  });
+                  return;
+                }
+                submitProof(currentUser); 
+            }} disabled={isUploadingActive}>
               {isUploadingActive ? 'Mengirim...' : 'Konfirmasi Pembayaran'}
             </button>
           </div>
@@ -2198,6 +2235,7 @@ export default function App() {
               onUpdateHistoricalOrder={api.updateHistoricalOrder}
               onDeleteAllNotifs={api.deleteAllNotifications}
               onSaveAdminPin={api.saveAdminPin}
+              setDialog={setDialog}
             />
           )
         )}
