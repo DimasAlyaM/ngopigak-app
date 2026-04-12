@@ -1359,25 +1359,63 @@ export default function App() {
         <h2 style={{ fontSize: '1.8rem' }}>{currentUser}! 👋</h2>
       </div>
 
-      {/* Dynamic Banner Section */}
-      <div className="home-banner glass-panel" style={{
-        background: 'linear-gradient(135deg, var(--accent-primary) 0%, #ffb347 100%)',
-        padding: '1.5rem',
-        borderRadius: '24px',
-        marginBottom: '2rem',
-        color: 'white',
-        boxShadow: '0 10px 30px rgba(230, 145, 56, 0.3)'
-      }}>
-        <h3 style={{ fontSize: '1.2rem', marginBottom: '8px' }}>Siap untuk secangkir kopi?</h3>
-        <p style={{ fontSize: '0.9rem', opacity: 0.9, marginBottom: '1.25rem' }}>Mulai sesi bareng teman-teman sekarang dan bagikan momen seru.</p>
-        <button
-          className="btn-primary"
-          style={{ background: 'white', color: 'var(--accent-primary)', width: 'auto', padding: '10px 24px', fontSize: '0.9rem' }}
-          onClick={() => setView('live-session')}
-        >
-          {session && !sessionDone ? 'Lanjut Ngopi' : 'Mulai Baru'}
-        </button>
-      </div>
+      {/* Dynamic Session Section */}
+      {session && !sessionDone ? (
+        <div className="live-dashboard glass-panel fade-in">
+          <div className="live-indicator">
+            <div className="pulsing-dot"></div>
+            LIVE SESI
+          </div>
+          
+          <h3 style={{ fontSize: '1.2rem', marginBottom: '1.5rem' }}>Ditunggu kopinya! ☕</h3>
+          
+          <div style={{ display: 'flex', alignItems: 'center', gap: '16px', marginBottom: '1.5rem' }}>
+             <div style={{ position: 'relative' }}>
+                <UserAvatar username={session.payer} size={56} />
+                <div style={{ position: 'absolute', bottom: -4, right: -4, background: 'var(--accent-primary)', borderRadius: '50%', width: '20px', height: '20px', display: 'flex', alignItems: 'center', justifyContent: 'center', border: '2px solid var(--bg-primary)' }}>
+                   <Shield size={10} color="white" />
+                </div>
+             </div>
+             <div>
+                <p className="text-secondary" style={{ fontSize: '0.75rem', fontWeight: 700, textTransform: 'uppercase' }}>Payer Utama</p>
+                <p style={{ fontSize: '1.1rem', fontWeight: 800 }}>{session.payer}</p>
+             </div>
+          </div>
+
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'rgba(0,0,0,0.2)', padding: '12px 16px', borderRadius: '16px' }}>
+             <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <Users size={16} className="text-secondary" />
+                <span style={{ fontSize: '0.85rem', fontWeight: 600 }}>{session.orders.length} Peserta</span>
+             </div>
+             <button 
+                className="btn-primary-pill" 
+                style={{ height: '40px', fontSize: '0.85rem', padding: '0 20px' }}
+                onClick={() => setView('live-session')}
+             >
+                Join Sesi
+             </button>
+          </div>
+        </div>
+      ) : (
+        <div className="home-banner glass-panel" style={{
+          background: 'linear-gradient(135deg, var(--accent-primary) 0%, #ffb347 100%)',
+          padding: '1.5rem',
+          borderRadius: '24px',
+          marginBottom: '2rem',
+          color: 'white',
+          boxShadow: '0 10px 30px rgba(230, 145, 56, 0.3)'
+        }}>
+          <h3 style={{ fontSize: '1.2rem', marginBottom: '8px' }}>Siap untuk secangkir kopi?</h3>
+          <p style={{ fontSize: '0.9rem', opacity: 0.9, marginBottom: '1.25rem' }}>Mulai sesi bareng teman-teman sekarang dan bagikan momen seru.</p>
+          <button
+            className="btn-primary"
+            style={{ background: 'white', color: 'var(--accent-primary)', width: 'auto', padding: '10px 24px', fontSize: '0.9rem' }}
+            onClick={startSession}
+          >
+            Mulai Baru
+          </button>
+        </div>
+      )}
 
       <div className="section-title" style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '1rem' }}>
         <div style={{ width: '4px', height: '18px', background: 'var(--accent-primary)', borderRadius: '2px' }}></div>
@@ -1571,7 +1609,7 @@ export default function App() {
                   )}
                 </div>
               </div>
-              <button className="btn-primary" type="submit" style={{ borderRadius: '20px' }}>
+              <button className="btn-primary" type="submit" style={{ borderRadius: '20px', marginTop: '1.25rem' }}>
                 {myOrder ? 'Update Pesanan' : 'Tambah Pesanan'}
               </button>
             </form>
@@ -1920,9 +1958,12 @@ export default function App() {
         )}
       </main>
 
-      {/* FAB: Start Session (Visible on Home when no session active) */}
-      {view === 'home' && (!session || sessionDone) && (
-        <button className="fab" onClick={startSession}>
+      {/* FAB: Start/Join Session (Visible on Home) */}
+      {view === 'home' && (
+        <button 
+          className="fab" 
+          onClick={(!session || sessionDone) ? startSession : () => setView('live-session')}
+        >
           <PlusCircle size={32} />
         </button>
       )}
