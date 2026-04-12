@@ -136,7 +136,7 @@ function notifIcon(type) {
 }
 
 // ─── ORDER DETAIL VIEW ────────────────────────────────────────────────────────
-function OrderDetailView({ order, currentUser, api, onBack }) {
+function OrderDetailView({ order, currentUser, api, onBack, onPaymentConfirm, setDialog }) {
   if (!order) return (
     <div className="glass-panel" style={{ padding: '4rem 2rem', textAlign: 'center' }}>
       <AlertTriangle size={48} className="text-secondary opacity-50 mb-4" />
@@ -197,6 +197,7 @@ function OrderDetailView({ order, currentUser, api, onBack }) {
         if (activeOrder) {
           await api.updateOrder(activeOrder.id, { isPaid: true, markedByPayer: false });
           api.notify(s.session.id, s.session.payer, 'payment', `${currentUser} telah membayar & upload bukti.`);
+          if (onPaymentConfirm) onPaymentConfirm(s, activeOrder.id);
         }
       } else {
         await api.updateHistoricalOrder(order.sessionId, currentUser, { isPaid: true });
@@ -272,14 +273,27 @@ function OrderDetailView({ order, currentUser, api, onBack }) {
               </div>
             </label>
 
-            {localProof && (
-              <div style={{ marginTop: '1.5rem' }}>
+            <div style={{ marginTop: '1.5rem' }}>
+               {localProof && (
                 <div style={{ borderRadius: '20px', overflow: 'hidden', border: '1px solid var(--glass-border)', marginBottom: '1.5rem' }}>
                   <img src={localProof} alt="Bukti" style={{ width: '100%', maxHeight: '250px', objectFit: 'cover' }} />
                 </div>
-                <button className="btn-primary" style={{ width: '100%', height: '56px', borderRadius: '20px' }} onClick={handleConfirmPay}>Konfirmasi Bayar</button>
-              </div>
-            )}
+               )}
+               <button className="btn-primary" style={{ width: '100%', height: '56px', borderRadius: '20px' }} onClick={() => {
+                 if (!localProof) {
+                   setDialog({
+                     title: 'Status Cash?',
+                     message: 'Belum ada bukti foto, kirim status sebagai Cash?',
+                     onConfirm: () => { handleConfirmPay(); setDialog(null); },
+                     confirmText: 'Ya, Cash'
+                   });
+                 } else {
+                   handleConfirmPay();
+                 }
+               }} disabled={isUploading}>
+                 {isUploading ? 'Mengirim...' : 'Konfirmasi Bayar'}
+               </button>
+            </div>
           </div>
         </div>
       )}
@@ -1283,6 +1297,8 @@ export default function App() {
       }
     });
     setDialog(null);
+    // After buying, check if session is now complete (everyone already paid)
+    setTimeout(() => checkSessionComplete(), 500); 
   };
 
   const markMyPayment = async (username) => {
@@ -1292,7 +1308,7 @@ export default function App() {
     if (order && !order.isPaid) {
       await api.markOrderPaid(order.id, false);
       api.notify(s.session.id, s.session.payer, 'payment', `${username} sudah bayar (menunggu verifikasi).`);
-      checkSessionComplete(s, order.id);
+      // checkSessionComplete will be called by Payer when they verify
     }
   };
 
@@ -1344,31 +1360,33 @@ export default function App() {
     if (order && !order.isPaid) {
       await api.markOrderPaid(order.id, true);
       api.notify(s.session.id, username, 'payment', `${s.session.payer} mengonfirmasi pembayaranmu.`);
-      checkSessionComplete(s, order.id);
+      setTimeout(() => checkSessionComplete(), 500);
     }
   };
 
-  async function checkSessionComplete(s, newlyPaidOrderId) {
-    const others = s.session.orders.filter(o => o.username !== s.session.payer);
-    const allOthersPaid = others.every(o => o.isPaid || o.id === newlyPaidOrderId);
-    if (allOthersPaid) {
-      alert('Selamat Ngopi! Semua pembayaran sudah lunas.');
+  async function checkSessionComplete() {
+    const s = loadStore();
+    if (!s.session) return;
+
+    const session = s.session;
+    const others = session.orders.filter(o => o.username !== session.payer);
+    const allOthersPaid = others.every(o => o.isPaid);
+
+    if (allOthersPaid && session.coffeeBought) {
+      alert('Selamat Ngopi! Semua pembayaran sudah lunas & kopi sudah dikonfirmasi.');
       setView('home');
       try {
-        await api.updateSession(s.session.id, { status: 'completed' });
+        await api.updateSession(session.id, { status: 'completed' });
         const historyPayload = {
-          ...s.session,
+          ...session,
           status: 'completed',
-          companion: s.session.companion, // Ensure it's not nullified
-          orders: s.session.orders.map(o => ({
-            ...o,
-            isPaid: o.id === newlyPaidOrderId ? true : o.isPaid
-          }))
+          companion: session.companion,
+          orders: session.orders.map(o => ({ ...o, isPaid: true }))
         };
-        await api.saveHistory(s.session.id, historyPayload);
-        await api.deleteActiveSession(s.session.id);
-        s.session.orders.forEach(o => {
-          api.notify(s.session.id, o.username, 'done', 'Sesi ngopi selesai! Makasih sudah patungan adil.');
+        await api.saveHistory(session.id, historyPayload);
+        await api.deleteActiveSession(session.id);
+        session.orders.forEach(o => {
+          api.notify(session.id, o.username, 'done', 'Sesi ngopi selesai! Makasih sudah patungan adil.');
         });
       } catch (e) {
         console.error("Error closing session history:", e);
@@ -2118,40 +2136,29 @@ export default function App() {
         </div>
 
         {!alreadyPaid && (
-          <div className="payment-actions">
-            <h4 style={{ marginBottom: '1rem', paddingLeft: '4px' }}>Upload Bukti Bayar</h4>
-            <label className="upload-box-new" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', border: '2px dashed var(--glass-border)', padding: '2.5rem', borderRadius: '24px', cursor: 'pointer', background: proofInput ? 'rgba(74, 222, 128, 0.05)' : 'transparent' }}>
-              <input type="file" accept="image/*" className="hidden-file-input" style={{ display: 'none' }} onChange={async (e) => {
-                const file = e.target.files[0]; if (!file) return;
-                setIsUploadingActive(true);
-                try { const url = await api.uploadProof(file); setProofInput(url); } catch { alert('Upload gagal'); }
-                finally { setIsUploadingActive(false); }
-              }} />
-              <div style={{ textAlign: 'center' }}>
-                {isUploadingActive ? <Loader2 size={32} className="animate-spin" /> : proofInput ? <CheckCircle size={32} className="text-green" /> : <Camera size={32} className="text-secondary" />}
-                <p className="text-secondary" style={{ marginTop: '8px', fontSize: '0.85rem', fontWeight: 600 }}>{proofInput ? 'Ganti Foto' : 'Ambil Foto Bukti'}</p>
-              </div>
-            </label>
-
-            {proofInput && (
-              <div className="img-preview" style={{ marginTop: '1rem', borderRadius: '16px', overflow: 'hidden', border: '1px solid var(--glass-border)' }}>
-                <img src={proofInput} alt="Preview" style={{ width: '100%', maxHeight: '200px', objectFit: 'cover' }} />
-              </div>
+          <div className="payment-guide glass-panel-premium" style={{ marginTop: '1.5rem', padding: '2rem', textAlign: 'center', background: 'rgba(255,255,255,0.02)' }}>
+            <div style={{ background: 'var(--surface)', width: '60px', height: '60px', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 1.5rem' }}>
+               <Info size={28} className="text-accent" />
+            </div>
+            
+            {myOrder?.paymentProof ? (
+              <>
+                <h4 style={{ fontSize: '1.1rem', marginBottom: '0.75rem' }}>Bukti Terkirim!</h4>
+                <p className="text-secondary" style={{ fontSize: '0.85rem', lineHeight: '1.6', marginBottom: '1.5rem' }}>
+                  Pembayaranmu sedang diverifikasi oleh <strong>{session.payer}</strong>. Kamu bisa melihat detailnya di menu My Order.
+                </p>
+              </>
+            ) : (
+              <>
+                <h4 style={{ fontSize: '1.1rem', marginBottom: '0.75rem' }}>Cara Bayar</h4>
+                <p className="text-secondary" style={{ fontSize: '0.85rem', lineHeight: '1.6', marginBottom: '1.5rem' }}>
+                  Silakan transfer ke rekening di atas, lalu upload bukti pembayaran melalui menu <strong>My Order</strong> untuk verifikasi.
+                </p>
+              </>
             )}
-
-            <button className="btn-primary" style={{ marginTop: '1.5rem', height: '56px', fontSize: '1rem' }} onClick={() => { 
-                if (!proofInput) {
-                  setDialog({
-                    title: 'Status Cash?',
-                    message: 'Belum ada bukti foto, kirim status sebagai Cash?',
-                    onConfirm: () => { submitProof(currentUser); setDialog(null); },
-                    confirmText: 'Ya, Cash'
-                  });
-                  return;
-                }
-                submitProof(currentUser); 
-            }} disabled={isUploadingActive}>
-              {isUploadingActive ? 'Mengirim...' : 'Konfirmasi Pembayaran'}
+            
+            <button className="btn-primary-pill" style={{ width: '100%' }} onClick={() => setView('orders')}>
+               Buka My Order
             </button>
           </div>
         )}
@@ -2237,6 +2244,8 @@ export default function App() {
             currentUser={currentUser}
             api={api}
             onBack={() => setView('orders')}
+            onPaymentConfirm={checkSessionComplete}
+            setDialog={setDialog}
           />
         )}
         {view === 'profile' && (
