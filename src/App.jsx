@@ -784,69 +784,67 @@ function HistoryView({ history, payerHistory, currentUser, onSelectSession }) {
   const displayedHistory = validHistory;
 
   return (
-    <div className="history-view fade-in">
-      <div className="history-container">
-        <div className="view-header" style={{ marginBottom: '1.5rem' }}>
-          <h2 className="text-gradient"><History size={28} style={{ verticalAlign: 'middle', marginRight: '8px' }} /> Histori Sesi</h2>
-        </div>
+    <div className="history-view fade-in" style={{ padding: '1.5rem' }}>
+      <div className="view-header" style={{ marginBottom: '1.5rem' }}>
+        <h2 className="text-gradient"><History size={28} style={{ verticalAlign: 'middle', marginRight: '8px' }} /> Histori Sesi</h2>
+      </div>
 
-        <div className="history-list">
-          {displayedHistory.length === 0 ? (
-            <div className="empty-state-card">
-              <History size={48} className="text-secondary opacity-20 mb-4" />
-              <p>Belum ada histori sesi.</p>
-            </div>
-          ) : (
-            [...displayedHistory].reverse().map(s => {
-              const userLower = (currentUser || '').toLowerCase();
-              const isDbt = s.debtors?.some(d => (d || '').toLowerCase() === userLower);
-              const totalAmount = s.orders?.reduce((sum, o) => sum + (o.item?.price || 0), 0) || 0;
+      <div className="history-list">
+        {displayedHistory.length === 0 ? (
+          <div className="empty-state-card">
+            <History size={48} className="text-secondary opacity-20 mb-4" />
+            <p>Belum ada histori sesi.</p>
+          </div>
+        ) : (
+          [...displayedHistory].reverse().map(s => {
+            const userLower = (currentUser || '').toLowerCase();
+            const isDbt = s.debtors?.some(d => (d || '').toLowerCase() === userLower);
+            const totalAmount = s.orders?.reduce((sum, o) => sum + (o.item?.price || 0), 0) || 0;
 
-              return (
-                <div key={s.id} className="history-card-wrapper" style={{ marginBottom: '12px' }}>
-                  <div
-                    className="item-card glass-panel"
-                    style={{
+            return (
+              <div key={s.id} className="history-card-wrapper" style={{ marginBottom: '12px' }}>
+                <div
+                  className="item-card glass-panel"
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                    padding: '16px',
+                    borderRadius: '24px',
+                    cursor: 'pointer',
+                    borderLeft: isDbt ? '4px solid #ef4444' : '1px solid var(--glass-border)'
+                  }}
+                  onClick={() => onSelectSession(s)}
+                >
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                    <div style={{ 
+                      background: 'var(--bg-primary)', 
+                      padding: '10px', 
+                      borderRadius: '16px',
+                      width: '44px',
+                      height: '44px',
                       display: 'flex',
                       alignItems: 'center',
-                      justifyContent: 'space-between',
-                      padding: '16px',
-                      borderRadius: '24px',
-                      cursor: 'pointer',
-                      borderLeft: isDbt ? '4px solid #ef4444' : '1px solid var(--glass-border)'
-                    }}
-                    onClick={() => onSelectSession(s)}
-                  >
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                        <div style={{ 
-                        background: 'var(--bg-primary)', 
-                        padding: '10px', 
-                        borderRadius: '16px',
-                        width: '44px',
-                        height: '44px',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center'
-                      }}>
-                        <Coffee size={22} className="text-accent" />
-                      </div>
-                      <div>
-                        <p style={{ fontSize: '1rem', fontWeight: 700, margin: 0 }}>{formatDate(s.startedAt).split(',')[0]}</p>
-                        <p className="text-secondary" style={{ fontSize: '0.75rem', margin: 0 }}>
-                          {s.orders.length} Peserta &bull; {s.payer}{s.companion ? ` & ${s.companion}` : ''}
-                        </p>
-                      </div>
+                      justifyContent: 'center'
+                    }}>
+                      <Coffee size={22} className="text-accent" />
                     </div>
-                    <div style={{ textAlign: 'right' }}>
-                      <p style={{ fontWeight: 800, fontSize: '1rem', marginBottom: '4px' }}>{formatRp(totalAmount)}</p>
-                      <StatusBadge isPaid={!isDbt} />
+                    <div>
+                      <p style={{ fontSize: '1rem', fontWeight: 700, margin: 0 }}>{formatDate(s.startedAt).split(',')[0]}</p>
+                      <p className="text-secondary" style={{ fontSize: '0.75rem', margin: 0 }}>
+                        {s.orders.length} Peserta &bull; {s.payer}{s.companion ? ` & ${s.companion}` : ''}
+                      </p>
                     </div>
                   </div>
+                  <div style={{ textAlign: 'right' }}>
+                    <p style={{ fontWeight: 800, fontSize: '1rem', marginBottom: '4px' }}>{formatRp(totalAmount)}</p>
+                    <StatusBadge isPaid={!isDbt} />
+                  </div>
                 </div>
-              );
-            })
-          )}
-        </div>
+              </div>
+            );
+          })
+        )}
       </div>
     </div>
   );
