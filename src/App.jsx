@@ -46,6 +46,23 @@ function UserAvatar({ username, size = 32 }) {
   );
 }
 
+function StatusBadge({ isPaid }) {
+  return (
+    <span style={{
+      fontSize: '0.6rem',
+      fontWeight: 800,
+      padding: '4px 10px',
+      borderRadius: '8px',
+      background: isPaid ? 'rgba(74, 222, 128, 0.1)' : 'rgba(239, 68, 68, 0.1)',
+      color: isPaid ? '#4ade80' : '#ef4444',
+      display: 'inline-block',
+      letterSpacing: '0.05em'
+    }}>
+      {isPaid ? 'LUNAS' : 'HUTANG'}
+    </span>
+  );
+}
+
 // ─── DIALOG COMPONENT ─────────────────────────────────────────────────────────
 function ConfirmDialog({ title, message, onConfirm, onCancel, confirmText = 'Ya, Lanjutkan', danger = false }) {
   return (
@@ -625,25 +642,40 @@ function HistoryView({ history, payerHistory, currentUser, onSelectSession }) {
                 <div key={s.id} className="history-card-wrapper" style={{ marginBottom: '12px' }}>
                   <div
                     className="item-card glass-panel"
-                    style={{ padding: '16px', borderRadius: '24px', cursor: 'pointer', borderLeft: isDbt ? '4px solid #ef4444' : '1px solid var(--glass-border)' }}
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'space-between',
+                      padding: '16px',
+                      borderRadius: '24px',
+                      cursor: 'pointer',
+                      borderLeft: isDbt ? '4px solid #ef4444' : '1px solid var(--glass-border)'
+                    }}
                     onClick={() => onSelectSession(s)}
                   >
                     <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                      <div style={{ background: 'var(--bg-primary)', padding: '10px', borderRadius: '16px' }}>
-                        <Coffee size={24} className="text-accent" />
+                      <div style={{ 
+                        background: 'var(--bg-primary)', 
+                        padding: '10px', 
+                        borderRadius: '16px',
+                        width: '44px',
+                        height: '44px',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center'
+                      }}>
+                        <Coffee size={22} className="text-accent" />
                       </div>
                       <div>
-                        <p style={{ fontSize: '1rem', fontWeight: 700 }}>{formatDate(s.startedAt).split(',')[0]}</p>
-                        <p className="text-secondary" style={{ fontSize: '0.75rem' }}>
+                        <p style={{ fontSize: '1rem', fontWeight: 700, margin: 0 }}>{formatDate(s.startedAt).split(',')[0]}</p>
+                        <p className="text-secondary" style={{ fontSize: '0.75rem', margin: 0 }}>
                           {s.orders.length} Peserta &bull; {s.payer}{s.companion ? ` & ${s.companion}` : ''}
                         </p>
                       </div>
                     </div>
                     <div style={{ textAlign: 'right' }}>
-                      <p style={{ fontWeight: 800, fontSize: '1rem' }}>{formatRp(totalAmount)}</p>
-                      <span style={{ fontSize: '0.65rem', fontWeight: 800, color: isDbt ? '#ef4444' : '#4ade80' }}>
-                        {isDbt ? 'HUTANG' : 'LUNAS'}
-                      </span>
+                      <p style={{ fontWeight: 800, fontSize: '1rem', marginBottom: '4px' }}>{formatRp(totalAmount)}</p>
+                      <StatusBadge isPaid={!isDbt} />
                     </div>
                   </div>
                 </div>
@@ -1419,30 +1451,37 @@ export default function App() {
             </div>
           ) : (
             [...allPersonalOrders].reverse().map((o, idx) => (
-              <div key={idx} className="item-card glass-panel" style={{ padding: '16px', borderRadius: '24px' }}>
+              <div key={idx} className="item-card glass-panel" style={{ 
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                padding: '16px', 
+                borderRadius: '24px' 
+              }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                  <div style={{ background: 'var(--bg-primary)', padding: '10px', borderRadius: '16px', fontSize: '1.2rem' }}>
+                  <div style={{ 
+                    background: 'var(--bg-primary)', 
+                    padding: '10px', 
+                    borderRadius: '16px', 
+                    fontSize: '1.2rem',
+                    width: '44px',
+                    height: '44px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center'
+                  }}>
                     {o.item.emoji || '☕'}
                   </div>
                   <div>
                     <h4 style={{ fontSize: '1rem', fontWeight: 700, margin: 0 }}>{o.item.name}</h4>
-                    <p className="text-secondary" style={{ fontSize: '0.75rem' }}>
+                    <p className="text-secondary" style={{ fontSize: '0.75rem', margin: 0 }}>
                       {formatDate(o.sessionDate).split(',')[0]} &bull; {o.isLive ? 'Sesi Aktif' : `Dibayar oleh ${o.payer}`}
                     </p>
                   </div>
                 </div>
                 <div style={{ textAlign: 'right' }}>
                   <p style={{ fontWeight: 800, fontSize: '1rem', marginBottom: '4px' }}>{formatRp(o.item.price)}</p>
-                  <span style={{
-                    fontSize: '0.6rem',
-                    fontWeight: 800,
-                    padding: '4px 8px',
-                    borderRadius: '8px',
-                    background: o.isPaid ? 'rgba(74, 222, 128, 0.1)' : 'rgba(239, 68, 68, 0.1)',
-                    color: o.isPaid ? '#4ade80' : '#ef4444'
-                  }}>
-                    {o.isPaid ? 'LUNAS' : 'HUTANG'}
-                  </span>
+                  <StatusBadge isPaid={o.isPaid} />
                 </div>
               </div>
             ))
