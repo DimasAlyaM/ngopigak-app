@@ -197,8 +197,10 @@ function OrderDetailView({ order, currentUser, api, onBack }) {
 
   return (
     <div className="order-detail-view fade-in" style={{ padding: '1rem' }}>
-      <div className="view-header" style={{ marginBottom: '2rem', display: 'flex', alignItems: 'center', gap: '12px' }}>
-        <button onClick={onBack} className="btn-circle" style={{ background: 'var(--surface)' }}><ChevronLeft size={20} /></button>
+      <div className="view-header" style={{ marginBottom: '2rem', display: 'flex', alignItems: 'center', gap: '16px' }}>
+        <button className="glass-panel" style={{ padding: '8px', borderRadius: '12px', border: '1px solid var(--glass-border)', display: 'flex', alignItems: 'center', justifyContent: 'center' }} onClick={onBack}>
+          <ChevronLeft size={24} />
+        </button>
         <h2 className="text-gradient">Detail Pesanan</h2>
       </div>
 
@@ -1681,7 +1683,9 @@ export default function App() {
                 justifyContent: 'space-between',
                 padding: '16px', 
                 borderRadius: '24px',
-                cursor: 'pointer'
+                cursor: 'pointer',
+                marginBottom: '12px',
+                borderLeft: o.isPaid ? '1px solid var(--glass-border)' : '4px solid #ef4444'
               }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
                   <div style={{ 
