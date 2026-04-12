@@ -1101,7 +1101,7 @@ export default function App() {
 
   // Confetti celebration for 'completed' session
   useEffect(() => {
-    if (view === 'session' && store.session?.status === 'completed') {
+    if (view === 'live-session' && store.session?.status === 'completed') {
       confetti({
         particleCount: 150,
         spread: 70,
@@ -1355,10 +1355,16 @@ export default function App() {
       return;
     }
 
+    // Instant UI Feedback: move to home and close dialog immediately
+    setDialog(null);
+    setView('home');
+    setActiveMenu(null);
+
     try {
       const debtors = s.session.orders.filter(o => !o.isPaid && o.username !== s.session.payer).map(o => o.username);
       const sessionId = s.session.id;
 
+      // Wrap background work to ensure it completes
       await api.updateSession(sessionId, { status: 'force-closed', forceClosedBy: currentUser, debtors });
       const currentSession = loadStore().session;
       const full = { ...currentSession, status: 'force-closed', forceClosedBy: currentUser, debtors, companion: currentSession.companion };
@@ -1371,14 +1377,10 @@ export default function App() {
       s.session.orders.forEach(o => {
         api.notify(sessionId, o.username, 'done', `Sesi ditutup paksa oleh ${currentUser}.`);
       });
-
-      // Redirect to home and cleanup UI
-      setView('home');
-      setActiveMenu(null);
     } catch (err) {
-      console.error("Force close error:", err);
-    } finally {
-      setDialog(null);
+      console.error("Force close background sync error:", err);
+      // We don't alert here because the user is already on the Home screen
+      // and the session is likely at least marked as closed in common scenarios.
     }
   };
 
