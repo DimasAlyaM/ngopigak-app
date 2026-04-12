@@ -630,7 +630,7 @@ function AdminView({ menu, users, history, activeSession, onSaveMenu, onResetPin
                 {history.length === 0 ? (
                   <p style={{ textAlign: 'center', opacity: 0.5 }}>Belum ada histori.</p>
                 ) : (
-                  [...history].reverse().map(h => {
+                  [...history].sort((a, b) => new Date(b.startedAt || 0) - new Date(a.startedAt || 0)).map(h => {
                     const total = h.orders?.reduce((sum, o) => sum + (o.item?.price || 0), 0) || 0;
                     const isExpanded = expandedHistoryId === h.id;
 
@@ -857,7 +857,7 @@ function ProfileView({ username, history, onSave, onLogout, payerHistory }) {
 // ─── HISTORY VIEW ─────────────────────────────────────────────────────────────
 function HistoryView({ history, payerHistory, currentUser, onSelectSession }) {
   const validHistory = (history || []).filter(s => s && Array.isArray(s.orders));
-  const displayedHistory = validHistory;
+  const displayedHistory = [...validHistory].sort((a, b) => new Date(b.startedAt || 0) - new Date(a.startedAt || 0));
 
   return (
     <div className="history-view fade-in" style={{ padding: '1.5rem' }}>
@@ -872,7 +872,7 @@ function HistoryView({ history, payerHistory, currentUser, onSelectSession }) {
             <p>Belum ada histori sesi.</p>
           </div>
         ) : (
-          [...displayedHistory].reverse().map(s => {
+          displayedHistory.map(s => {
             const userLower = (currentUser || '').toLowerCase();
             const isDbt = s.debtors?.some(d => (d || '').toLowerCase() === userLower);
             const totalAmount = s.orders?.reduce((sum, o) => sum + (o.item?.price || 0), 0) || 0;
@@ -1637,17 +1637,34 @@ export default function App() {
           
           <h3 style={{ fontSize: '1.2rem', marginBottom: '1.5rem' }}>{sessionDone ? 'Ringkasan Sesi Hari Ini ☕' : 'Ditunggu kopinya! ☕'}</h3>
           
-          <div style={{ display: 'flex', alignItems: 'center', gap: '16px', marginBottom: '1.5rem' }}>
-             <div style={{ position: 'relative' }}>
-                <UserAvatar username={session.payer} size={56} />
-                <div style={{ position: 'absolute', bottom: -4, right: -4, background: 'var(--accent-primary)', borderRadius: '50%', width: '20px', height: '20px', display: 'flex', alignItems: 'center', justifyContent: 'center', border: '2px solid var(--bg-primary)' }}>
-                   <Shield size={10} color="white" />
-                </div>
-             </div>
-             <div>
-                <p className="text-secondary" style={{ fontSize: '0.75rem', fontWeight: 700, textTransform: 'uppercase' }}>Payer Utama</p>
-                <p style={{ fontSize: '1.1rem', fontWeight: 800 }}>{session.payer}</p>
-             </div>
+          <div style={{ display: 'grid', gridTemplateColumns: session.companion ? '1fr 1fr' : '1fr', gap: '16px', marginBottom: '1.5rem' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+               <div style={{ position: 'relative' }}>
+                  <UserAvatar username={session.payer} size={48} />
+                  <div style={{ position: 'absolute', bottom: -2, right: -2, background: 'var(--accent-primary)', borderRadius: '50%', width: '18px', height: '18px', display: 'flex', alignItems: 'center', justifyContent: 'center', border: '2px solid var(--bg-primary)' }}>
+                     <Shield size={10} color="white" />
+                  </div>
+               </div>
+               <div>
+                  <p className="text-secondary" style={{ fontSize: '0.65rem', fontWeight: 700, textTransform: 'uppercase', marginBottom: '2px' }}>Payer</p>
+                  <p style={{ fontSize: '0.95rem', fontWeight: 800 }}>{session.payer}</p>
+               </div>
+            </div>
+            
+            {session.companion && (
+              <div style={{ display: 'flex', alignItems: 'center', gap: '12px', paddingLeft: '12px', borderLeft: '1px solid rgba(255,255,255,0.1)' }}>
+                 <div style={{ position: 'relative' }}>
+                    <UserAvatar username={session.companion} size={48} />
+                    <div style={{ position: 'absolute', bottom: -2, right: -2, background: '#4ade80', borderRadius: '50%', width: '18px', height: '18px', display: 'flex', alignItems: 'center', justifyContent: 'center', border: '2px solid var(--bg-primary)' }}>
+                       <Users size={10} color="white" />
+                    </div>
+                 </div>
+                 <div>
+                    <p className="text-secondary" style={{ fontSize: '0.65rem', fontWeight: 700, textTransform: 'uppercase', marginBottom: '2px' }}>Companion</p>
+                    <p style={{ fontSize: '0.95rem', fontWeight: 800 }}>{session.companion}</p>
+                 </div>
+              </div>
+            )}
           </div>
 
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'rgba(0,0,0,0.2)', padding: '12px 16px', borderRadius: '16px' }}>
@@ -1763,7 +1780,7 @@ export default function App() {
               <p className="text-secondary">Belum ada pesanan.</p>
             </div>
           ) : (
-            [...allPersonalOrders].reverse().map((o, idx) => (
+            [...allPersonalOrders].sort((a, b) => new Date(b.sessionDate || 0) - new Date(a.sessionDate || 0)).map((o, idx) => (
               <div key={idx} className="item-card glass-panel" onClick={() => { setSelectedOrder(o); setView('order-detail'); }} style={{ 
                 display: 'flex',
                 alignItems: 'center',
@@ -1956,15 +1973,35 @@ export default function App() {
           <div className="glass-panel" style={{ textAlign: 'center', padding: '2rem 1.5rem' }}>
             <h2 style={{ marginBottom: '2rem' }}>Relawan Terpilih!</h2>
 
-            <div className="payer-showcase" style={{ position: 'relative', marginBottom: '2.5rem' }}>
-              <div style={{ position: 'absolute', top: '-10px', left: '50%', transform: 'translateX(-50%)', background: 'var(--accent-primary)', padding: '4px 12px', borderRadius: '12px', fontSize: '0.7rem', fontWeight: 800 }}>PEMBAYAR</div>
-              <div style={{ background: 'var(--bg-primary)', padding: '2rem', borderRadius: '30px', border: '2px solid var(--accent-primary)' }}>
-                <UserAvatar username={session.payer} size={80} />
-                <h3 style={{ fontSize: '1.5rem', marginTop: '1rem' }}>{session.payer}</h3>
-                <p className="text-secondary" style={{ fontSize: '0.85rem' }}>
-                   Sudah bayar {session.payer && store.payerHistory ? (store.payerHistory[session.payer]?.pay || 0) : 0} kali
-                </p>
+            <div className={`roles-showcase ${session.companion ? 'dual-roles' : ''}`} style={{ 
+              display: 'grid', 
+              gridTemplateColumns: session.companion ? '1fr 1fr' : '1fr', 
+              gap: '16px',
+              marginBottom: '2.5rem' 
+            }}>
+              <div className="payer-card" style={{ position: 'relative' }}>
+                <div style={{ position: 'absolute', top: '-10px', left: '50%', transform: 'translateX(-50%)', background: 'var(--accent-primary)', padding: '4px 12px', borderRadius: '12px', fontSize: '0.6rem', fontWeight: 800, zIndex: 1, whiteSpace: 'nowrap' }}>PEMBAYAR</div>
+                <div style={{ background: 'var(--bg-primary)', padding: '1.5rem 1rem', borderRadius: '24px', border: '2px solid var(--accent-primary)' }}>
+                  <UserAvatar username={session.payer} size={64} />
+                  <h3 style={{ fontSize: '1.2rem', marginTop: '0.75rem', marginBottom: '4px' }}>{session.payer}</h3>
+                  <p className="text-secondary" style={{ fontSize: '0.7rem' }}>
+                     Payer Utama
+                  </p>
+                </div>
               </div>
+
+              {session.companion && (
+                <div className="companion-card" style={{ position: 'relative' }}>
+                  <div style={{ position: 'absolute', top: '-10px', left: '50%', transform: 'translateX(-50%)', background: '#4ade80', padding: '4px 12px', borderRadius: '12px', fontSize: '0.6rem', fontWeight: 800, zIndex: 1, whiteSpace: 'nowrap' }}>PENDAMPING</div>
+                  <div style={{ background: 'var(--bg-primary)', padding: '1.5rem 1rem', borderRadius: '24px', border: '1px solid rgba(74, 222, 128, 0.3)' }}>
+                    <UserAvatar username={session.companion} size={64} />
+                    <h3 style={{ fontSize: '1.2rem', marginTop: '0.75rem', marginBottom: '4px' }}>{session.companion}</h3>
+                    <p className="text-secondary" style={{ fontSize: '0.7rem' }}>
+                       Pembantu Payer
+                    </p>
+                  </div>
+                </div>
+              )}
             </div>
 
             {isPayer ? (
@@ -2122,7 +2159,10 @@ export default function App() {
 
           <div className="transfer-info glass-panel" style={{ background: 'var(--bg-primary)', padding: '1.25rem', borderRadius: '20px' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '12px' }}>
-              <p className="text-secondary" style={{ fontSize: '0.8rem' }}>Bayar ke {session.payer}:</p>
+              <div>
+                <p className="text-secondary" style={{ fontSize: '0.8rem', margin: 0 }}>Bayar ke {session.payer}:</p>
+                {session.companion && <p className="text-secondary" style={{ fontSize: '0.7rem', margin: 0, opacity: 0.8 }}>Pendamping: {session.companion}</p>}
+              </div>
               <span className="text-accent" style={{ fontSize: '0.7rem', fontWeight: 800 }}>{session.paymentInfo?.method}</span>
             </div>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
@@ -2186,16 +2226,23 @@ export default function App() {
         <h2 style={{ marginBottom: '1rem' }}>Kamu Sedang Menonton</h2>
         <p className="text-secondary" style={{ marginBottom: '2.5rem' }}>Kamu tidak ikut dalam sesi ini. Tunggu sesi berikutnya untuk memesan!</p>
 
-        <div className="status-mini-card" style={{ background: 'var(--bg-primary)', padding: '1.5rem', borderRadius: '20px', textAlign: 'left' }}>
-          <p style={{ fontSize: '0.8rem', marginBottom: '8px' }} className="text-secondary">Payer Hari Ini:</p>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-            {session.payer ? (
-              <>
-                <UserAvatar username={session.payer} size={32} />
-                <strong style={{ fontSize: '1.1rem' }}>{session.payer}</strong>
-              </>
-            ) : (
-              <span className="text-secondary">Mengetsa...</span>
+        <div className="status-mini-card" style={{ background: 'var(--bg-primary)', padding: '1.25rem', borderRadius: '20px', textAlign: 'left' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: session.companion ? '1fr 1fr' : '1fr', gap: '12px' }}>
+            <div>
+              <p style={{ fontSize: '0.7rem', marginBottom: '6px' }} className="text-secondary uppercase font-bold">Payer Utama</p>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <UserAvatar username={session.payer} size={24} />
+                <strong style={{ fontSize: '0.9rem' }}>{session.payer || '...'}</strong>
+              </div>
+            </div>
+            {session.companion && (
+              <div style={{ paddingLeft: '12px', borderLeft: '1px solid rgba(255,255,255,0.1)' }}>
+                <p style={{ fontSize: '0.7rem', marginBottom: '6px' }} className="text-secondary uppercase font-bold">Pendamping</p>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <UserAvatar username={session.companion} size={24} />
+                  <strong style={{ fontSize: '0.9rem' }}>{session.companion}</strong>
+                </div>
+              </div>
             )}
           </div>
         </div>
