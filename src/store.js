@@ -181,6 +181,7 @@ async function fetchFullState() {
           to: n.target_user,
           type: n.type,
           message: n.message,
+          sessionId: n.session_id,
           readBy: n.is_read_by || [],
           createdAt: n.created_at
         }))

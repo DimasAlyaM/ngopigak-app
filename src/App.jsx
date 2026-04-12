@@ -1241,14 +1241,14 @@ export default function App() {
         setView('live-session');
       } else {
         // Find specific order in history for this user
-        const histSession = s.history.find(h => h.id === n.session_id);
+        const histSession = s.history.find(h => h.id === n.sessionId);
         const myOrder = histSession?.orders.find(o => o.username === currentUser);
         if (myOrder) {
           setSelectedOrder({
             ...myOrder,
             sessionDate: histSession.startedAt,
             payer: histSession.payer,
-            isPaid: !histSession.debtors?.includes(currentUser),
+            isPaid: !(histSession.debtors || []).includes(currentUser.toLowerCase()),
             sessionId: histSession.id
           });
           setView('order-detail');
@@ -1258,14 +1258,14 @@ export default function App() {
       }
     } else if (['done', 'debt'].includes(n.type)) {
       if (n.type === 'debt') {
-        const histSession = s.history.find(h => h.id === n.session_id);
+        const histSession = s.history.find(h => h.id === n.sessionId);
         const myOrder = histSession?.orders.find(o => o.username === currentUser);
         if (myOrder) {
           setSelectedOrder({
             ...myOrder,
             sessionDate: histSession.startedAt,
             payer: histSession.payer,
-            isPaid: !histSession.debtors?.includes(currentUser),
+            isPaid: !(histSession.debtors || []).includes(currentUser.toLowerCase()),
             sessionId: histSession.id
           });
           setView('order-detail');
@@ -1276,7 +1276,7 @@ export default function App() {
     }
     
     // Generic fallback: if it mentions 'sesi', go to live session if active
-    if (n.message.toLowerCase().includes('sesi')) {
+    if (n.message && n.message.toLowerCase().includes('sesi')) {
       if (session && !sessionDone) setView('live-session');
       else setView('history');
     }
@@ -1756,7 +1756,7 @@ export default function App() {
               </div>
               <div style={{ display: 'flex', justifyContent: 'space-between' }}>
                 <span className="text-secondary">Peserta</span>
-                <strong style={{ fontSize: '1.1rem' }}>{session.orders.length} orang</strong>
+                <strong style={{ fontSize: '1.1rem' }}>{(session.orders || []).length} orang</strong>
               </div>
             </div>
 
@@ -1810,7 +1810,7 @@ export default function App() {
                   </div>
                   {showMenuResults && (
                     <div className="glass-panel dropdown-results" style={{ position: 'absolute', top: 'calc(100% + 8px)', left: 0, right: 0, zIndex: 100, maxHeight: '250px', overflowY: 'auto', padding: '8px' }}>
-                      {store.menu.filter(m => m.name.toLowerCase().includes(coffeeSearch.toLowerCase())).map(m => (
+                      {(store.menu || []).filter(m => m && m.name.toLowerCase().includes(coffeeSearch.toLowerCase())).map(m => (
                         <div key={m.id} className="dropdown-item" onClick={() => { setSelectedCoffeeId(m.id); setCoffeeSearch(`${m.emoji} ${m.name}`); setShowMenuResults(false); }} style={{ padding: '12px', borderRadius: '12px', cursor: 'pointer', display: 'flex', justifyContent: 'space-between' }}>
                           <span>{m.emoji} {m.name}</span>
                           <span className="text-accent">{formatRp(m.price)}</span>
@@ -1835,10 +1835,10 @@ export default function App() {
                     <UserAvatar username={o.username} size={36} />
                     <div>
                       <p style={{ fontSize: '0.9rem', fontWeight: 700 }}>{o.username}</p>
-                      <p className="text-secondary" style={{ fontSize: '0.8rem' }}>{o.item.emoji} {o.item.name}</p>
+                      <p className="text-secondary" style={{ fontSize: '0.8rem' }}>{o.item?.emoji || '☕'} {o.item?.name || 'Item'}</p>
                     </div>
                   </div>
-                  <strong className="text-accent">{formatRp(o.item.price)}</strong>
+                  <strong className="text-accent">{formatRp(o.item?.price || 0)}</strong>
                 </div>
               ))}
             </div>
@@ -1865,7 +1865,7 @@ export default function App() {
               <div style={{ background: 'var(--bg-primary)', padding: '2rem', borderRadius: '30px', border: '2px solid var(--accent-primary)' }}>
                 <UserAvatar username={session.payer} size={80} />
                 <h3 style={{ fontSize: '1.5rem', marginTop: '1rem' }}>{session.payer}</h3>
-                <p className="text-secondary" style={{ fontSize: '0.85rem' }}>Sudah bayar {store.payerHistory[session.payer] || 0} kali</p>
+                <p className="text-secondary" style={{ fontSize: '0.85rem' }}>Sudah bayar {(store.payerHistory || {})[session.payer] || 0} kali</p>
               </div>
             </div>
 
@@ -1940,11 +1940,11 @@ export default function App() {
                     <p style={{ fontSize: '0.95rem', fontWeight: 700 }}>
                       {o.username} {o.username === session.payer && <span className="text-accent" style={{ fontSize: '0.7rem' }}>(Kamu)</span>}
                     </p>
-                    <p className="text-secondary" style={{ fontSize: '0.8rem' }}>{o.item.emoji} {o.item.name}</p>
+                    <p className="text-secondary" style={{ fontSize: '0.8rem' }}>{o.item?.emoji || '☕'} {o.item?.name || 'Item'}</p>
                   </div>
                 </div>
                 <div style={{ textAlign: 'right' }}>
-                  <p style={{ fontWeight: 800, marginBottom: '6px' }}>{formatRp(o.item.price)}</p>
+                  <p style={{ fontWeight: 800, marginBottom: '6px' }}>{formatRp(o.item?.price || 0)}</p>
                   {o.username !== session.payer && (
                     <button
                       className={`badge ${o.isPaid ? 'badge-glass' : 'badge-amber'}`}
@@ -2007,10 +2007,10 @@ export default function App() {
           </div>
 
           <div style={{ display: 'flex', alignItems: 'center', gap: '20px', marginBottom: '2rem' }}>
-            <div style={{ fontSize: '3rem', background: 'var(--surface)', width: '80px', height: '80px', borderRadius: '24px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>{myOrder?.item.emoji || '☕'}</div>
+            <div style={{ fontSize: '3rem', background: 'var(--surface)', width: '80px', height: '80px', borderRadius: '24px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>{myOrder?.item?.emoji || '☕'}</div>
             <div>
-              <h3 style={{ fontSize: '1.3rem' }}>{myOrder?.item.name}</h3>
-              <p className="text-accent" style={{ fontSize: '1.5rem', fontWeight: 800 }}>{formatRp(myOrder?.item.price)}</p>
+              <h3 style={{ fontSize: '1.3rem' }}>{myOrder?.item?.name || 'Pesanan'}</h3>
+              <p className="text-accent" style={{ fontSize: '1.5rem', fontWeight: 800 }}>{formatRp(myOrder?.item?.price || 0)}</p>
             </div>
           </div>
 
@@ -2083,8 +2083,14 @@ export default function App() {
         <div className="status-mini-card" style={{ background: 'var(--bg-primary)', padding: '1.5rem', borderRadius: '20px', textAlign: 'left' }}>
           <p style={{ fontSize: '0.8rem', marginBottom: '8px' }} className="text-secondary">Payer Hari Ini:</p>
           <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-            <UserAvatar username={session.payer} size={32} />
-            <strong style={{ fontSize: '1.1rem' }}>{session.payer}</strong>
+            {session.payer ? (
+              <>
+                <UserAvatar username={session.payer} size={32} />
+                <strong style={{ fontSize: '1.1rem' }}>{session.payer}</strong>
+              </>
+            ) : (
+              <span className="text-secondary">Mengetsa...</span>
+            )}
           </div>
         </div>
 
