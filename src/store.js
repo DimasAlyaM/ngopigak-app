@@ -102,7 +102,7 @@ async function fetchFullState() {
     // If session is 'open' and older than 2 hours, force-close it
     const SESSION_TIMEOUT_MS = 2 * 60 * 60 * 1000;
     // Only consider sessions that are NOT completed or force-closed
-    const activeCandidates = (sessions || []).filter(s => s.status !== 'completed' && s.status !== 'force-closed');
+    const activeCandidates = (sessions || []).filter(s => ['open', 'active', 'payment-setup'].includes(s.status));
     const rawActive = activeCandidates.sort((a, b) => new Date(b.started_at) - new Date(a.started_at))[0];
     
     if (rawActive && rawActive.started_at) {

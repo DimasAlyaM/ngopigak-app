@@ -132,6 +132,14 @@ function notifIcon(type) {
 
 // ─── ORDER DETAIL VIEW ────────────────────────────────────────────────────────
 function OrderDetailView({ order, currentUser, api, onBack }) {
+  if (!order) return (
+    <div className="glass-panel" style={{ padding: '4rem 2rem', textAlign: 'center' }}>
+      <AlertTriangle size={48} className="text-secondary opacity-50 mb-4" />
+      <p className="text-secondary">Data pesanan tidak ditemukan.</p>
+      <button className="btn-primary mt-4" onClick={onBack}>Kembali</button>
+    </div>
+  );
+  
   const [isUploading, setIsUploading] = useState(false);
   const [localProof, setLocalProof] = useState(order?.paymentProof || '');
   const [localIsPaid, setLocalIsPaid] = useState(order?.isPaid || false);
@@ -1235,51 +1243,43 @@ export default function App() {
 
   const handleNotifAction = (n) => {
     const s = loadStore();
-    
-    if (['payment', 'bought', 'reminder', 'info'].includes(n.type)) {
-      if (session && !sessionDone) {
-        setView('live-session');
+    const targetSessionId = n.sessionId || n.session_id;
+
+    // 1. Check if it's the current session in memory
+    if (s.session && s.session.id === targetSessionId) {
+      setView('live-session');
+      return;
+    }
+
+    // 2. Check in History
+    const histSession = s.history.find(h => h.id === targetSessionId);
+    if (histSession) {
+      const myOrder = histSession.orders?.find(o => (o.username || '').toLowerCase() === currentUser.toLowerCase());
+      if (myOrder) {
+        setSelectedOrder({
+          ...myOrder,
+          sessionDate: histSession.startedAt,
+          payer: histSession.payer,
+          isPaid: !(histSession.debtors || []).some(d => (d || '').toLowerCase() === currentUser.toLowerCase()),
+          sessionId: histSession.id
+        });
+        setView('order-detail');
       } else {
-        // Find specific order in history for this user
-        const histSession = s.history.find(h => h.id === n.sessionId);
-        const myOrder = histSession?.orders.find(o => o.username === currentUser);
-        if (myOrder) {
-          setSelectedOrder({
-            ...myOrder,
-            sessionDate: histSession.startedAt,
-            payer: histSession.payer,
-            isPaid: !(histSession.debtors || []).includes(currentUser.toLowerCase()),
-            sessionId: histSession.id
-          });
-          setView('order-detail');
-        } else {
-          setView('history');
-        }
+        setSelectedSession(histSession);
+        setView('history-detail');
       }
-    } else if (['done', 'debt'].includes(n.type)) {
-      if (n.type === 'debt') {
-        const histSession = s.history.find(h => h.id === n.sessionId);
-        const myOrder = histSession?.orders.find(o => o.username === currentUser);
-        if (myOrder) {
-          setSelectedOrder({
-            ...myOrder,
-            sessionDate: histSession.startedAt,
-            payer: histSession.payer,
-            isPaid: !(histSession.debtors || []).includes(currentUser.toLowerCase()),
-            sessionId: histSession.id
-          });
-          setView('order-detail');
-          return;
-        }
-      }
-      setView('history');
+      return;
     }
-    
-    // Generic fallback: if it mentions 'sesi', go to live session if active
+
+    // 3. Fallback logic
     if (n.message && n.message.toLowerCase().includes('sesi')) {
-      if (session && !sessionDone) setView('live-session');
+      if (s.session && !sessionDone) setView('live-session');
       else setView('history');
+      return;
     }
+
+    // Final fallback
+    setView('history');
   };
 
   const markPaidByPayer = async (username) => {
@@ -1539,7 +1539,7 @@ export default function App() {
       </div>
 
       {/* Dynamic Session Section */}
-      {session ? (
+      {session && (session.status === 'open' || session.status === 'active' || session.status === 'payment-setup') ? (
         <div className="live-dashboard glass-panel fade-in">
           <div className="live-indicator">
             <div className="pulsing-dot"></div>
@@ -1719,6 +1719,13 @@ export default function App() {
   };
 
   // ─── VIEW: SESSION ──────────────────────────────────────────────────────────
+  /**
+   * FORMALIZED ORDER CYCLE:
+   * 1. open: Users adding items, timer running.
+   * 2. payment-setup: Timer expires or admin closes. Payer picked, fills bank info.
+   * 3. active: Payment phase. Users upload proof, Payer verifies.
+   * 4. terminal (completed/force-closed): Archived to history and deleted from active.
+   */
   const renderSession = () => {
     if (!session) return (
       <div className="empty-state fade-in" style={{ padding: '4rem 2rem', textAlign: 'center' }}>
