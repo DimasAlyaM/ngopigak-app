@@ -62,47 +62,54 @@ function ConfirmDialog({ title, message, onConfirm, onCancel, confirmText = 'Ya,
   );
 }
 
-// ─── NOTIFICATION BELL ────────────────────────────────────────────────────────
-function NotifBell({ notifications, username, onMarkRead, isOpen, onToggle }) {
+// ─── NOTIFICATION VIEW ────────────────────────────────────────────────────────
+function NotificationView({ notifications, username }) {
   const myNotifs = notifications.filter(n => n.to === username || n.to === 'all');
-  const unread = myNotifs.filter(n => !n.read).length;
+  const unreadCount = myNotifs.filter(n => !n.read).length;
+
   return (
-    <div className="notif-wrapper">
-      <button className="notif-btn" onClick={() => { onToggle(); if (!isOpen) onMarkRead(); }}>
-        <Bell size={18} />
-        {unread > 0 && <span className="notif-badge">{unread}</span>}
-      </button>
-      {isOpen && (
-        <>
-          <div className="dialog-overlay bg-transparent" onClick={onToggle} style={{ display: window.innerWidth <= 768 ? 'block' : 'none', background: 'transparent' }} />
-          <div className="notif-dropdown glass-panel">
-            <div className="notif-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              Notifikasi
-              <button className="btn-icon" onClick={onToggle} style={{ padding: 0 }}><X size={18} /></button>
-            </div>
-            {myNotifs.length === 0 && <p className="text-secondary text-sm" style={{ padding: '1rem' }}>Belum ada notifikasi.</p>}
-            {[...myNotifs].reverse().slice(0, 10).map(n => (
-              <div key={n.id} className={`notif-item ${n.read ? 'read' : 'unread'}`}>
-                <span className="notif-type">{notifIcon(n.type)}</span>
-                <div>
-                  <p className="notif-msg">{n.message}</p>
-                  <p className="text-secondary" style={{ fontSize: '0.75rem' }}>{formatDate(n.createdAt)}</p>
-                </div>
-              </div>
-            ))}
+    <div className="notif-view fade-in">
+      <div className="view-header">
+        <h2 className="text-gradient">Notifikasi</h2>
+      </div>
+
+      <div className="notif-list">
+        {myNotifs.length === 0 ? (
+          <div className="empty-state" style={{ marginTop: '4rem' }}>
+            <Bell size={48} style={{ opacity: 0.2, marginBottom: '1rem' }} />
+            <p className="text-secondary">Belum ada notifikasi baru untukmu.</p>
           </div>
-        </>
-      )}
+        ) : (
+          [...myNotifs].reverse().map(n => (
+            <div key={n.id} className={`notif-card ${n.read ? 'read' : 'unread'}`}>
+              <div className="notif-icon-circle">
+                {notifIcon(n.type)}
+              </div>
+              <div className="notif-content">
+                <p className="notif-title">{n.message}</p>
+                <p className="notif-time">{formatDate(n.createdAt)}</p>
+              </div>
+            </div>
+          ))
+        )}
+      </div>
     </div>
   );
 }
+
 function notifIcon(type) {
-  const icons = { info: <Info size={16} />, payment: <CreditCard size={16} />, bought: <Coffee size={16} />, reminder: <Clock size={16} />, done: <CheckCircle size={16} />, debt: <AlertTriangle size={16} /> };
-  return icons[type] || <Bell size={16} />;
+  const icons = {
+    info: <Info size={18} />,
+    payment: <CreditCard size={18} />,
+    bought: <Coffee size={18} />,
+    reminder: <Clock size={18} />,
+    done: <CheckCircle size={18} />,
+    debt: <AlertTriangle size={18} />
+  };
+  return icons[type] || <Bell size={18} />;
 }
 
-
-// ─── STEPPER COMPONENT (for Penitip) ─────────────────────────────────────────
+// ─── STEPPER COMPONENT ─────────────────────────────────────────────────────────
 function Stepper({ steps, currentStep }) {
   return (
     <div className="stepper">
@@ -118,7 +125,6 @@ function Stepper({ steps, currentStep }) {
 }
 
 // ─── ADMIN PIN GATE ──────────────────────────────────────────────────────────
-
 function AdminPinGate({ serverPin, onSuccess, onClose }) {
   const isFirstTime = !serverPin;
 
@@ -134,67 +140,101 @@ function AdminPinGate({ serverPin, onSuccess, onClose }) {
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    if (pin.length < 4) { setError('PIN minimal 4 digit.'); triggerShake(); return; }
+    if (pin.length < 4) {
+      setError('PIN minimal 4 digit.');
+      triggerShake();
+      return;
+    }
     if (isFirstTime) {
-      if (pin !== confirmPin) { setError('PIN tidak cocok, coba lagi.'); triggerShake(); setPin(''); setConfirmPin(''); return; }
+      if (pin !== confirmPin) {
+        setError('PIN tidak cocok, coba lagi.');
+        triggerShake();
+        setPin('');
+        setConfirmPin('');
+        return;
+      }
       api.saveAdminPin(pin);
       onSuccess();
     } else {
-      if (pin !== serverPin) { setError('PIN salah!'); triggerShake(); setPin(''); return; }
+      if (pin !== serverPin) {
+        setError('PIN salah!');
+        triggerShake();
+        setPin('');
+        return;
+      }
       onSuccess();
     }
   };
 
   return (
-    <div className="dialog-overlay" onClick={onClose}>
-      <div className={`dialog-box glass-panel pin-gate ${shake ? 'shake' : ''}`} onClick={e => e.stopPropagation()}>
-        <div className="pin-icon">{isFirstTime ? <Lock size={48} /> : <Unlock size={48} />}</div>
-        <h3 className="dialog-title">{isFirstTime ? 'Buat PIN Admin' : 'Masukkan PIN Admin'}</h3>
-        <p className="dialog-message text-secondary">
+    <div className="pin-view-container fade-in">
+      <div className={`pin-view-card ${shake ? 'shake' : ''}`}>
+        <div className="pin-view-icon">
+          {isFirstTime ? <Lock size={32} /> : <Shield size={32} />}
+        </div>
+
+        <h2 style={{ marginBottom: '1rem', fontSize: '1.5rem', fontWeight: 800 }}>
+          {isFirstTime ? 'Buat PIN Admin' : 'Masukkan PIN Admin'}
+        </h2>
+
+        <p className="text-secondary" style={{ marginBottom: '2rem', fontSize: '0.9rem', lineHeight: 1.5 }}>
           {isFirstTime
-            ? 'Buat PIN untuk melindungi perubahan menu kopi. Simpan PIN ini baik-baik!'
-            : 'Manajemen menu hanya untuk admin. Masukkan PIN untuk melanjutkan.'}
+            ? 'Buat PIN untuk melindungi manajemen menu & user. Simpan PIN ini baik-baik!'
+            : 'Manajemen ini hanya untuk admin. Masukkan PIN untuk melanjutkan.'}
         </p>
+
         <form onSubmit={handleSubmit} className="modern-form">
-          <div className="form-group">
-            <label>{isFirstTime ? 'Buat PIN (min. 4 digit)' : 'PIN Admin'}</label>
+          <div className="form-group" style={{ marginBottom: '1.5rem' }}>
+            <label style={{ fontSize: '0.7rem', color: 'var(--text-secondary)' }}>
+              {isFirstTime ? 'BUAT PIN KEAMANAN' : 'PIN KEAMANAN'}
+            </label>
             <input
-              id="admin-pin-input"
               type="password"
               inputMode="numeric"
               value={pin}
-              onChange={e => { setPin(e.target.value); setError(''); }}
-              placeholder="****"
-              maxLength={8}
               autoFocus
+              onChange={e => {
+                const val = e.target.value.replace(/\D/g, '');
+                setPin(val);
+                if (error) setError('');
+              }}
+              placeholder="••••"
+              style={{ textAlign: 'center', fontSize: '1.5rem', letterSpacing: '0.5rem' }}
+              maxLength={8}
               required
             />
           </div>
+
           {isFirstTime && (
-            <div className="form-group">
-              <label>Konfirmasi PIN</label>
+            <div className="form-group" style={{ marginBottom: '1.5rem' }}>
+              <label style={{ fontSize: '0.7rem', color: 'var(--text-secondary)' }}>KONFIRMASI PIN</label>
               <input
-                id="admin-pin-confirm"
                 type="password"
                 inputMode="numeric"
                 value={confirmPin}
-                onChange={e => { setConfirmPin(e.target.value); setError(''); }}
-                placeholder="****"
+                onChange={e => setConfirmPin(e.target.value.replace(/\D/g, ''))}
+                placeholder="••••"
+                style={{ textAlign: 'center', fontSize: '1.5rem', letterSpacing: '0.5rem' }}
                 maxLength={8}
                 required
               />
             </div>
           )}
-          {error && <p className="pin-error">{error}</p>}
-          <div className="dialog-actions">
-            <button type="button" className="btn-secondary" onClick={onClose}>Batal</button>
-            <button id="admin-pin-submit" type="submit" className="btn-primary" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-              {isFirstTime ? <><CheckCircle size={18} /> Simpan PIN</> : <><Unlock size={18} /> Masuk</>}
+
+          {error && <p className="text-red mb-4 font-bold animate-pulse" style={{ fontSize: '0.85rem' }}>{error}</p>}
+
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+            <button type="submit" className="btn-primary-pill" style={{ height: '56px' }}>
+              {isFirstTime ? 'Simpan PIN' : 'Masuk Control Center'}
+            </button>
+            <button type="button" className="btn-logout" style={{ background: 'transparent' }} onClick={onClose}>
+              Kembali ke Beranda
             </button>
           </div>
         </form>
+
         {!isFirstTime && (
-          <p className="pin-reset-hint text-secondary text-sm">
+          <p className="text-secondary mt-8" style={{ fontSize: '0.75rem' }}>
             Lupa PIN? Hubungi admin tim kamu.
           </p>
         )}
@@ -259,9 +299,9 @@ function AdminView({ menu, users, history, activeSession, onSaveMenu, onResetPin
                     </div>
                   ))}
                 </div>
-                
+
                 <div style={{ height: '1px', background: 'rgba(255,255,255,0.1)', margin: '1.5rem 0' }} />
-                
+
                 <h4 style={{ marginBottom: '1rem', fontSize: '0.9rem', fontWeight: 700, opacity: 0.7 }}>+ Tambah Menu Baru</h4>
                 <div className="admin-list-item" style={{ background: 'rgba(var(--accent-primary-rgb), 0.05)', borderColor: 'rgba(var(--accent-primary-rgb), 0.1)' }}>
                   <div style={{ display: 'flex', gap: '8px', flex: 1 }}>
@@ -328,7 +368,7 @@ function AdminView({ menu, users, history, activeSession, onSaveMenu, onResetPin
                       <span className="admin-stat-badge" style={{ background: 'rgba(230, 145, 56, 0.2)', color: 'var(--accent-primary)' }}>RUNNING</span>
                       <span style={{ opacity: 0.6, fontSize: '0.75rem' }}>{formatDate(activeSession.startedAt)}</span>
                     </div>
-                    
+
                     <div className="stat-row" style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px', fontSize: '0.9rem' }}>
                       <span style={{ opacity: 0.7 }}>Pembuat:</span>
                       <span style={{ fontWeight: 700 }}>{activeSession.startedBy}</span>
@@ -371,7 +411,7 @@ function AdminView({ menu, users, history, activeSession, onSaveMenu, onResetPin
               <div className="admin-card">
                 <h4 style={{ marginBottom: '1.5rem', fontSize: '1rem', fontWeight: 800 }}>Manajemen Histori</h4>
                 {history.length === 0 ? (
-                   <p style={{ textAlign: 'center', opacity: 0.5 }}>Belum ada histori.</p>
+                  <p style={{ textAlign: 'center', opacity: 0.5 }}>Belum ada histori.</p>
                 ) : (
                   [...history].reverse().map(h => {
                     const total = h.orders.reduce((sum, o) => sum + o.item.price, 0);
@@ -385,18 +425,18 @@ function AdminView({ menu, users, history, activeSession, onSaveMenu, onResetPin
                             <p style={{ fontSize: '0.75rem', opacity: 0.6, margin: 0 }}>Payer: {h.payer} • {formatRp(total)}</p>
                           </div>
                           <div style={{ display: 'flex', gap: '8px' }}>
-                             <button className="btn-icon-danger" style={{ padding: '8px', background: 'rgba(239, 68, 68, 0.1)' }} onClick={() => {
-                               if (confirm("Hapus histori sesi ini secara PERMANEN?")) {
-                                 onDeleteHistory(h.id);
-                               }
-                             }}><Trash2 size={16} /></button>
-                             <button 
-                                className="btn-icon" 
-                                style={{ padding: '8px', background: isExpanded ? 'rgba(255,255,255,0.1)' : 'transparent' }}
-                                onClick={() => setExpandedHistoryId(isExpanded ? null : h.id)}
-                             >
-                               <ChevronDown size={16} style={{ transform: isExpanded ? 'rotate(180deg)' : 'none', transition: 'transform 0.3s' }} />
-                             </button>
+                            <button className="btn-icon-danger" style={{ padding: '8px', background: 'rgba(239, 68, 68, 0.1)' }} onClick={() => {
+                              if (confirm("Hapus histori sesi ini secara PERMANEN?")) {
+                                onDeleteHistory(h.id);
+                              }
+                            }}><Trash2 size={16} /></button>
+                            <button
+                              className="btn-icon"
+                              style={{ padding: '8px', background: isExpanded ? 'rgba(255,255,255,0.1)' : 'transparent' }}
+                              onClick={() => setExpandedHistoryId(isExpanded ? null : h.id)}
+                            >
+                              <ChevronDown size={16} style={{ transform: isExpanded ? 'rotate(180deg)' : 'none', transition: 'transform 0.3s' }} />
+                            </button>
                           </div>
                         </div>
 
@@ -416,8 +456,8 @@ function AdminView({ menu, users, history, activeSession, onSaveMenu, onResetPin
                                     </div>
                                     <button
                                       className="admin-stat-badge"
-                                      style={{ 
-                                        border: 'none', 
+                                      style={{
+                                        border: 'none',
                                         cursor: 'pointer',
                                         background: isPaid ? 'rgba(74, 222, 128, 0.2)' : 'rgba(239, 68, 68, 0.2)',
                                         color: isPaid ? '#4ade80' : '#f87171'
@@ -510,10 +550,10 @@ function ProfileView({ username, history, onSave, onLogout }) {
         <div className="view-header">
           <h2 className="text-gradient">Profil Saya</h2>
         </div>
-        
+
         <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', marginBottom: '2.5rem' }}>
           <div className="avatar-wrapper">
-             <UserAvatar username={username} size={96} />
+            <UserAvatar username={username} size={96} />
           </div>
           <p className="text-secondary text-sm mt-4 text-center">Avatar dihasilkan otomatis dari namamu.</p>
         </div>
@@ -531,22 +571,22 @@ function ProfileView({ username, history, onSave, onLogout }) {
         <div className="modern-form">
           <div className="form-group mb-8">
             <label>NAMA TAMPILAN</label>
-            <input 
-              type="text" 
-              value={name} 
-              onChange={e => setName(e.target.value)} 
+            <input
+              type="text"
+              value={name}
+              onChange={e => setName(e.target.value)}
               placeholder="Ketik nama baru..."
               className="premium-input"
             />
           </div>
-          
+
           <div className="flex-col gap-3">
             <button className="btn-primary-pill" onClick={() => onSave(username, name)}>
               Simpan Perubahan
             </button>
-            
+
             <div style={{ height: '1px', background: 'var(--glass-border)', margin: '1.5rem 0' }} />
-            
+
             <button className="btn-logout" onClick={onLogout}>
               <LogOut size={18} style={{ marginRight: '8px' }} />
               Log Out dari Akun
@@ -583,8 +623,8 @@ function HistoryView({ history, payerHistory, currentUser, onSelectSession }) {
 
               return (
                 <div key={s.id} className="history-card-wrapper" style={{ marginBottom: '12px' }}>
-                  <div 
-                    className="item-card glass-panel" 
+                  <div
+                    className="item-card glass-panel"
                     style={{ padding: '16px', borderRadius: '24px', cursor: 'pointer', borderLeft: isDbt ? '4px solid #ef4444' : '1px solid var(--glass-border)' }}
                     onClick={() => onSelectSession(s)}
                   >
@@ -628,10 +668,10 @@ function HistoryDetailView({ session, onBack, currentUser, api }) {
   return (
     <div className="history-detail-view fade-in" style={{ padding: '1rem' }}>
       <div className="detail-header" style={{ display: 'flex', alignItems: 'center', gap: '16px', marginBottom: '1.5rem' }}>
-         <button className="glass-panel" style={{ padding: '8px', borderRadius: '12px', border: '1px solid var(--glass-border)', display: 'flex', alignItems: 'center', justifyContent: 'center' }} onClick={onBack}>
-            <ChevronLeft size={24} />
-         </button>
-         <h2 className="text-gradient">Detail Sesi</h2>
+        <button className="glass-panel" style={{ padding: '8px', borderRadius: '12px', border: '1px solid var(--glass-border)', display: 'flex', alignItems: 'center', justifyContent: 'center' }} onClick={onBack}>
+          <ChevronLeft size={24} />
+        </button>
+        <h2 className="text-gradient">Detail Sesi</h2>
       </div>
 
       <div className="glass-panel" style={{ padding: '24px', borderRadius: '32px', marginBottom: '2rem', background: 'rgba(255,255,255,0.02)' }}>
@@ -647,19 +687,19 @@ function HistoryDetailView({ session, onBack, currentUser, api }) {
         </div>
 
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', background: 'var(--bg-primary)', padding: '1rem', borderRadius: '20px' }}>
-           <div>
-             <span className="text-secondary" style={{ fontSize: '0.7rem', fontWeight: 700 }}>PEMBAYAR UTAMA</span>
-             <p style={{ fontWeight: 800 }}>{session.payer}</p>
-           </div>
-           <div>
-             <span className="text-secondary" style={{ fontSize: '0.7rem', fontWeight: 700 }}>PENDAMPING</span>
-             <p style={{ fontWeight: 800 }}>{session.companion || '-'}</p>
-           </div>
+          <div>
+            <span className="text-secondary" style={{ fontSize: '0.7rem', fontWeight: 700 }}>PEMBAYAR UTAMA</span>
+            <p style={{ fontWeight: 800 }}>{session.payer}</p>
+          </div>
+          <div>
+            <span className="text-secondary" style={{ fontSize: '0.7rem', fontWeight: 700 }}>PENDAMPING</span>
+            <p style={{ fontWeight: 800 }}>{session.companion || '-'}</p>
+          </div>
         </div>
       </div>
 
       <div style={{ marginBottom: '1rem', paddingLeft: '4px' }}>
-         <h4 style={{ fontSize: '1.1rem', fontWeight: 800 }}>Daftar Pesanan ({session.orders.length})</h4>
+        <h4 style={{ fontSize: '1.1rem', fontWeight: 800 }}>Daftar Pesanan ({session.orders.length})</h4>
       </div>
 
       <div className="card-stack" style={{ marginBottom: '2rem' }}>
@@ -667,34 +707,34 @@ function HistoryDetailView({ session, onBack, currentUser, api }) {
           const orderDebt = session.debtors?.some(d => (d || '').toLowerCase() === (o.username || '').toLowerCase());
           return (
             <div key={idx} className="item-card glass-panel" style={{ padding: '12px 16px', borderRadius: '24px' }}>
-               <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                  <UserAvatar username={o.username} size={36} />
-                  <div>
-                    <p style={{ fontSize: '0.9rem', fontWeight: 700 }}>{o.username}</p>
-                    <p className="text-secondary" style={{ fontSize: '0.8rem' }}>{o.item.name}</p>
-                  </div>
-               </div>
-               <div style={{ textAlign: 'right' }}>
-                  <p style={{ fontWeight: 700, fontSize: '0.9rem' }}>{formatRp(o.item.price)}</p>
-                  <span style={{ fontSize: '0.65rem', fontWeight: 800, color: orderDebt ? '#ef4444' : '#4ade80' }}>
-                    {orderDebt ? 'HUTANG' : 'LUNAS'}
-                  </span>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                <UserAvatar username={o.username} size={36} />
+                <div>
+                  <p style={{ fontSize: '0.9rem', fontWeight: 700 }}>{o.username}</p>
+                  <p className="text-secondary" style={{ fontSize: '0.8rem' }}>{o.item.name}</p>
+                </div>
+              </div>
+              <div style={{ textAlign: 'right' }}>
+                <p style={{ fontWeight: 700, fontSize: '0.9rem' }}>{formatRp(o.item.price)}</p>
+                <span style={{ fontSize: '0.65rem', fontWeight: 800, color: orderDebt ? '#ef4444' : '#4ade80' }}>
+                  {orderDebt ? 'HUTANG' : 'LUNAS'}
+                </span>
 
-                  {(currentUser || '').toLowerCase() === (session.payer || '').toLowerCase() && orderDebt && (
-                    <button
-                      className="btn-mini btn-green shadow-sm mt-1"
-                      style={{ fontSize: '0.6rem', padding: '2px 8px', borderRadius: '4px', marginLeft: '8px' }}
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        if (confirm(`Konfirmasi pembayaran dari ${o.username}?`)) {
-                          api.updateHistoricalOrder(session.id, o.username, { isPaid: true, markedByPayer: true });
-                        }
-                      }}
-                    >
-                      Konfirmasi
-                    </button>
-                  )}
-               </div>
+                {(currentUser || '').toLowerCase() === (session.payer || '').toLowerCase() && orderDebt && (
+                  <button
+                    className="btn-mini btn-green shadow-sm mt-1"
+                    style={{ fontSize: '0.6rem', padding: '2px 8px', borderRadius: '4px', marginLeft: '8px' }}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      if (confirm(`Konfirmasi pembayaran dari ${o.username}?`)) {
+                        api.updateHistoricalOrder(session.id, o.username, { isPaid: true, markedByPayer: true });
+                      }
+                    }}
+                  >
+                    Konfirmasi
+                  </button>
+                )}
+              </div>
             </div>
           );
         })}
@@ -703,7 +743,7 @@ function HistoryDetailView({ session, onBack, currentUser, api }) {
       {isDbt && mOrder && (
         <div className="glass-panel" style={{ padding: '1.5rem', borderRadius: '24px', border: '1px solid rgba(239, 68, 68, 0.2)', background: 'rgba(239, 68, 68, 0.05)' }}>
           <p style={{ fontSize: '0.9rem', marginBottom: '1rem' }}>⚠️ Kamu berhutang **{formatRp(mOrder.item.price)}** kepada **{session.payer}**.</p>
-          
+
           {!mOrder.paymentProof && (
             <label className="btn-primary" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', cursor: 'pointer', opacity: uploadingId === session.id ? 0.7 : 1 }}>
               <input
@@ -733,8 +773,8 @@ function HistoryDetailView({ session, onBack, currentUser, api }) {
           {mOrder.paymentProof && (
             <div className="proof-area" style={{ marginTop: '1rem' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
-                 <span className="text-green" style={{ fontSize: '0.75rem', fontWeight: 800 }}>BUKTI TERUNGGAH</span>
-                 <button className="btn-mini btn-green" onClick={() => api.updateHistoricalOrder(session.id, currentUser, { isPaid: true })}>KONFIRMASI BAYAR</button>
+                <span className="text-green" style={{ fontSize: '0.75rem', fontWeight: 800 }}>BUKTI TERUNGGAH</span>
+                <button className="btn-mini btn-green" onClick={() => api.updateHistoricalOrder(session.id, currentUser, { isPaid: true })}>KONFIRMASI BAYAR</button>
               </div>
               <a href={mOrder.paymentProof} target="_blank" rel="noreferrer" style={{ display: 'block', borderRadius: '16px', overflow: 'hidden' }}>
                 <img src={mOrder.paymentProof} alt="Bukti" style={{ width: '100%', display: 'block' }} />
@@ -1003,7 +1043,7 @@ export default function App() {
     if (!s.session) return;
     const order = s.session.orders.find(o => o.username === username);
     if (!order) return;
-    
+
     await api.updateOrder(order.id, { paymentProof: proofInput });
     api.notify(s.session.id, s.session.payer, 'payment', `${username} telah mengirimkan bukti pembayaran.`);
     alert('Bukti pembayaran terkirim!');
@@ -1194,10 +1234,10 @@ export default function App() {
               <div className="login-logo"><Coffee size={40} /></div>
               <h1 className="text-gradient">NgopiGak</h1>
             </div>
-            
+
             <h2 className="login-title">Selamat Datang</h2>
             <p className="text-secondary">Silakan masuk untuk mulai ngopi bareng rekan tim kamu.</p>
-            
+
             <form onSubmit={login} className="modern-form">
               <div className="form-group">
                 <label>Nama Pengguna</label>
@@ -1228,7 +1268,7 @@ export default function App() {
                 Masuk Sekarang
               </button>
             </form>
-            
+
             <div className="login-footer">
               Dimsam &bull; 2026
             </div>
@@ -1239,32 +1279,45 @@ export default function App() {
   }
 
   // ─── BOTTOM NAVIGATION COMPONENT ───────────────────────────────────────────
-  const BottomNav = () => (
-    <nav className="bottom-nav">
-      <div className={`nav-item ${view === 'home' ? 'active' : ''}`} onClick={() => setView('home')}>
-        <div className="nav-icon"><Home size={20} /></div>
-        <span>Home</span>
-      </div>
-      <div className={`nav-item ${view === 'orders' ? 'active' : ''}`} onClick={() => setView('orders')}>
-        <div className="nav-icon"><Clock size={20} /></div>
-        <span>Pesanan</span>
-      </div>
-      <div className={`nav-item ${view === 'history' ? 'active' : ''}`} onClick={() => goToHistory()}>
-        <div className="nav-icon"><History size={20} /></div>
-        <span>History</span>
-      </div>
-      <div className={`nav-item ${view === 'profile' ? 'active' : ''}`} onClick={() => setView('profile')}>
-        <div className="nav-icon"><User size={20} /></div>
-        <span>Profile</span>
-      </div>
-      {currentUser.toLowerCase() === 'admin' && (
-        <div className={`nav-item ${view === 'admin' ? 'active' : ''}`} onClick={() => setView('admin')}>
-          <div className="nav-icon"><Shield size={20} /></div>
-          <span>Admin</span>
+  const BottomNav = () => {
+    const s = loadStore();
+    const myNotifs = (s.session?.notifications || []).filter(n => n.to === currentUser || n.to === 'all');
+    const unread = myNotifs.filter(n => !n.read).length;
+
+    return (
+      <nav className="bottom-nav">
+        <div className={`nav-item ${view === 'home' ? 'active' : ''}`} onClick={() => setView('home')}>
+          <div className="nav-icon"><Home size={20} /></div>
+          <span>Home</span>
         </div>
-      )}
-    </nav>
-  );
+        <div className={`nav-item ${view === 'orders' ? 'active' : ''}`} onClick={() => setView('orders')}>
+          <div className="nav-icon"><Clock size={20} /></div>
+          <span>Pesanan</span>
+        </div>
+        <div className={`nav-item ${view === 'notifications' ? 'active' : ''}`} onClick={() => { setView('notifications'); markNotifsRead(); }}>
+          <div className="nav-icon nav-badge-container">
+            <Bell size={20} />
+            {unread > 0 && <span className="nav-badge">{unread}</span>}
+          </div>
+          <span>Notif</span>
+        </div>
+        <div className={`nav-item ${view === 'history' ? 'active' : ''}`} onClick={() => goToHistory()}>
+          <div className="nav-icon"><History size={20} /></div>
+          <span>History</span>
+        </div>
+        <div className={`nav-item ${view === 'profile' ? 'active' : ''}`} onClick={() => setView('profile')}>
+          <div className="nav-icon"><User size={20} /></div>
+          <span>Profile</span>
+        </div>
+        {currentUser.toLowerCase() === 'admin' && (
+          <div className={`nav-item ${view === 'admin' ? 'active' : ''}`} onClick={() => setView('admin')}>
+            <div className="nav-icon"><Shield size={20} /></div>
+            <span>Admin</span>
+          </div>
+        )}
+      </nav>
+    );
+  };
 
   // ─── VIEW: HOME ─────────────────────────────────────────────────────────────
   const renderHome = () => (
@@ -1273,43 +1326,43 @@ export default function App() {
         <p className="text-secondary" style={{ fontSize: '0.9rem', fontWeight: 500 }}>Selamat Pagi,</p>
         <h2 style={{ fontSize: '1.8rem' }}>{currentUser}! 👋</h2>
       </div>
-      
+
       {/* Dynamic Banner Section */}
-      <div className="home-banner glass-panel" style={{ 
-        background: 'linear-gradient(135deg, var(--accent-primary) 0%, #ffb347 100%)', 
-        padding: '1.5rem', 
-        borderRadius: '24px', 
+      <div className="home-banner glass-panel" style={{
+        background: 'linear-gradient(135deg, var(--accent-primary) 0%, #ffb347 100%)',
+        padding: '1.5rem',
+        borderRadius: '24px',
         marginBottom: '2rem',
         color: 'white',
         boxShadow: '0 10px 30px rgba(230, 145, 56, 0.3)'
       }}>
         <h3 style={{ fontSize: '1.2rem', marginBottom: '8px' }}>Siap untuk secangkir kopi?</h3>
         <p style={{ fontSize: '0.9rem', opacity: 0.9, marginBottom: '1.25rem' }}>Mulai sesi bareng teman-teman sekarang dan bagikan momen seru.</p>
-        <button 
-           className="btn-primary" 
-           style={{ background: 'white', color: 'var(--accent-primary)', width: 'auto', padding: '10px 24px', fontSize: '0.9rem' }}
-           onClick={() => setView('live-session')}
+        <button
+          className="btn-primary"
+          style={{ background: 'white', color: 'var(--accent-primary)', width: 'auto', padding: '10px 24px', fontSize: '0.9rem' }}
+          onClick={() => setView('live-session')}
         >
           {session && !sessionDone ? 'Lanjut Ngopi' : 'Mulai Baru'}
         </button>
       </div>
 
       <div className="section-title" style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '1rem' }}>
-         <div style={{ width: '4px', height: '18px', background: 'var(--accent-primary)', borderRadius: '2px' }}></div>
-         <h4 style={{ fontSize: '1.1rem', fontWeight: 800 }}>Statistik Kamu</h4>
+        <div style={{ width: '4px', height: '18px', background: 'var(--accent-primary)', borderRadius: '2px' }}></div>
+        <h4 style={{ fontSize: '1.1rem', fontWeight: 800 }}>Statistik Kamu</h4>
       </div>
 
       <div className="status-grid" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', marginBottom: '2rem' }}>
         <div className="glass-panel stat-card" style={{ padding: '1.25rem', borderRadius: '24px' }}>
           <div style={{ background: 'rgba(230, 145, 56, 0.1)', width: '36px', height: '36px', borderRadius: '10px', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '12px' }}>
-             <Clock size={14} className="text-accent" />
+            <Clock size={14} className="text-accent" />
           </div>
           <span className="text-secondary" style={{ fontSize: '0.75rem', fontWeight: 600 }}>Total Sesi</span>
           <p style={{ fontSize: '1.5rem', fontWeight: 800 }}>{store.history.length}</p>
         </div>
         <div className="glass-panel stat-card" style={{ padding: '1.25rem', borderRadius: '24px' }}>
           <div style={{ background: 'rgba(230, 145, 56, 0.1)', width: '36px', height: '36px', borderRadius: '10px', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '12px' }}>
-             <Coffee size={14} className="text-accent" />
+            <Coffee size={14} className="text-accent" />
           </div>
           <span className="text-secondary" style={{ fontSize: '0.75rem', fontWeight: 600 }}>Kopi Dipesan</span>
           <p style={{ fontSize: '1.5rem', fontWeight: 800 }}>{store.history.filter(s => s.orders.some(o => o.username === currentUser)).length}</p>
@@ -1321,7 +1374,7 @@ export default function App() {
   const renderMyOrders = () => {
     // Collect all orders for currentUser across history and active session
     const allPersonalOrders = [];
-    
+
     // Past orders from history
     store.history.forEach(s => {
       const myOrder = s.orders.find(o => o.username === currentUser);
@@ -1341,12 +1394,12 @@ export default function App() {
       const myActiveOrder = session.orders.find(o => o.username === currentUser);
       if (myActiveOrder) {
         allPersonalOrders.push({
-           ...myActiveOrder,
-           sessionDate: session.startedAt,
-           payer: session.payer,
-           isPaid: myActiveOrder.isPaid || false,
-           sessionId: 'active',
-           isLive: true
+          ...myActiveOrder,
+          sessionDate: session.startedAt,
+          payer: session.payer,
+          isPaid: myActiveOrder.isPaid || false,
+          sessionId: 'active',
+          isLive: true
         });
       }
     }
@@ -1380,10 +1433,10 @@ export default function App() {
                 </div>
                 <div style={{ textAlign: 'right' }}>
                   <p style={{ fontWeight: 800, fontSize: '1rem', marginBottom: '4px' }}>{formatRp(o.item.price)}</p>
-                  <span style={{ 
-                    fontSize: '0.6rem', 
-                    fontWeight: 800, 
-                    padding: '4px 8px', 
+                  <span style={{
+                    fontSize: '0.6rem',
+                    fontWeight: 800,
+                    padding: '4px 8px',
                     borderRadius: '8px',
                     background: o.isPaid ? 'rgba(74, 222, 128, 0.1)' : 'rgba(239, 68, 68, 0.1)',
                     color: o.isPaid ? '#4ade80' : '#ef4444'
@@ -1518,7 +1571,7 @@ export default function App() {
         <div className="payment-setup fade-in" style={{ padding: '1.5rem' }}>
           <div className="glass-panel" style={{ textAlign: 'center', padding: '2rem 1.5rem' }}>
             <h2 style={{ marginBottom: '2rem' }}>Relawan Terpilih!</h2>
-            
+
             <div className="payer-showcase" style={{ position: 'relative', marginBottom: '2.5rem' }}>
               <div style={{ position: 'absolute', top: '-10px', left: '50%', transform: 'translateX(-50%)', background: 'var(--accent-primary)', padding: '4px 12px', borderRadius: '12px', fontSize: '0.7rem', fontWeight: 800 }}>PEMBAYAR</div>
               <div style={{ background: 'var(--bg-primary)', padding: '2rem', borderRadius: '30px', border: '2px solid var(--accent-primary)' }}>
@@ -1604,8 +1657,8 @@ export default function App() {
                 <div style={{ textAlign: 'right' }}>
                   <p style={{ fontWeight: 800, marginBottom: '6px' }}>{formatRp(o.item.price)}</p>
                   {o.username !== session.payer && (
-                    <button 
-                      className={`badge ${o.isPaid ? 'badge-glass' : 'badge-amber'}`} 
+                    <button
+                      className={`badge ${o.isPaid ? 'badge-glass' : 'badge-amber'}`}
                       style={{ border: 'none', cursor: 'pointer' }}
                       onClick={() => !o.isPaid && markPaidByPayer(o.username)}
                     >
@@ -1655,7 +1708,7 @@ export default function App() {
   const renderPenitipPage = () => {
     const alreadyPaid = myOrder?.isPaid;
     const step = getStepIndex();
-    
+
     return (
       <div className="penitip-view fade-in" style={{ padding: '1rem' }}>
         <div className="glass-panel" style={{ marginBottom: '1.5rem' }}>
@@ -1674,8 +1727,8 @@ export default function App() {
 
           <div className="transfer-info glass-panel" style={{ background: 'var(--bg-primary)', padding: '1.25rem', borderRadius: '20px' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '12px' }}>
-               <p className="text-secondary" style={{ fontSize: '0.8rem' }}>Bayar ke {session.payer}:</p>
-               <span className="text-accent" style={{ fontSize: '0.7rem', fontWeight: 800 }}>{session.paymentInfo?.method}</span>
+              <p className="text-secondary" style={{ fontSize: '0.8rem' }}>Bayar ke {session.payer}:</p>
+              <span className="text-accent" style={{ fontSize: '0.7rem', fontWeight: 800 }}>{session.paymentInfo?.method}</span>
             </div>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
               <div>
@@ -1691,25 +1744,25 @@ export default function App() {
           <div className="payment-actions">
             <h4 style={{ marginBottom: '1rem', paddingLeft: '4px' }}>Upload Bukti Bayar</h4>
             <label className="upload-box-new" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', border: '2px dashed var(--glass-border)', padding: '2.5rem', borderRadius: '24px', cursor: 'pointer', background: proofInput ? 'rgba(74, 222, 128, 0.05)' : 'transparent' }}>
-               <input type="file" accept="image/*" className="hidden-file-input" style={{ display: 'none' }} onChange={async (e) => {
-                 const file = e.target.files[0]; if(!file) return;
-                 setIsUploadingActive(true);
-                 try { const url = await api.uploadProof(file); setProofInput(url); } catch { alert('Upload gagal'); }
-                 finally { setIsUploadingActive(false); }
-               }} />
-               <div style={{ textAlign: 'center' }}>
-                 {isUploadingActive ? <Loader2 size={32} className="animate-spin" /> : proofInput ? <CheckCircle size={32} className="text-green" /> : <Camera size={32} className="text-secondary" />}
-                 <p className="text-secondary" style={{ marginTop: '8px', fontSize: '0.85rem', fontWeight: 600 }}>{proofInput ? 'Ganti Foto' : 'Ambil Foto Bukti'}</p>
-               </div>
+              <input type="file" accept="image/*" className="hidden-file-input" style={{ display: 'none' }} onChange={async (e) => {
+                const file = e.target.files[0]; if (!file) return;
+                setIsUploadingActive(true);
+                try { const url = await api.uploadProof(file); setProofInput(url); } catch { alert('Upload gagal'); }
+                finally { setIsUploadingActive(false); }
+              }} />
+              <div style={{ textAlign: 'center' }}>
+                {isUploadingActive ? <Loader2 size={32} className="animate-spin" /> : proofInput ? <CheckCircle size={32} className="text-green" /> : <Camera size={32} className="text-secondary" />}
+                <p className="text-secondary" style={{ marginTop: '8px', fontSize: '0.85rem', fontWeight: 600 }}>{proofInput ? 'Ganti Foto' : 'Ambil Foto Bukti'}</p>
+              </div>
             </label>
-            
+
             {proofInput && (
               <div className="img-preview" style={{ marginTop: '1rem', borderRadius: '16px', overflow: 'hidden', border: '1px solid var(--glass-border)' }}>
                 <img src={proofInput} alt="Preview" style={{ width: '100%', maxHeight: '200px', objectFit: 'cover' }} />
               </div>
             )}
 
-            <button className="btn-primary" style={{ marginTop: '1.5rem', height: '56px', fontSize: '1rem' }} onClick={() => { if(!proofInput && !confirm('Belum ada bukti, kirim status Cash?')) return; submitProof(currentUser); }} disabled={isUploadingActive}>
+            <button className="btn-primary" style={{ marginTop: '1.5rem', height: '56px', fontSize: '1rem' }} onClick={() => { if (!proofInput && !confirm('Belum ada bukti, kirim status Cash?')) return; submitProof(currentUser); }} disabled={isUploadingActive}>
               {isUploadingActive ? 'Mengirim...' : 'Konfirmasi Pembayaran'}
             </button>
           </div>
@@ -1737,7 +1790,7 @@ export default function App() {
         </div>
         <h2 style={{ marginBottom: '1rem' }}>Kamu Sedang Menonton</h2>
         <p className="text-secondary" style={{ marginBottom: '2.5rem' }}>Kamu tidak ikut dalam sesi ini. Tunggu sesi berikutnya untuk memesan!</p>
-        
+
         <div className="status-mini-card" style={{ background: 'var(--bg-primary)', padding: '1.5rem', borderRadius: '20px', textAlign: 'left' }}>
           <p style={{ fontSize: '0.8rem', marginBottom: '8px' }} className="text-secondary">Payer Hari Ini:</p>
           <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
@@ -1745,7 +1798,7 @@ export default function App() {
             <strong style={{ fontSize: '1.1rem' }}>{session.payer}</strong>
           </div>
         </div>
-        
+
         <button className="btn-secondary" style={{ marginTop: '2.5rem', width: '100%' }} onClick={() => setView('home')}>Kembali ke Home</button>
       </div>
     </div>
@@ -1757,13 +1810,7 @@ export default function App() {
       <header className="mobile-header">
         <h1 className="text-gradient">NgopiGak</h1>
         <div className="header-actions">
-          <NotifBell
-            notifications={session?.notifications || []}
-            username={currentUser}
-            onMarkRead={markNotifsRead}
-            isOpen={activeMenu === 'notif'}
-            onToggle={() => setActiveMenu(prev => prev === 'notif' ? null : 'notif')}
-          />
+          {/* Notifications moved to navbar */}
         </div>
       </header>
 
@@ -1800,6 +1847,12 @@ export default function App() {
               setCurrentUser('');
               setView('home');
             }}
+          />
+        )}
+        {view === 'notifications' && (
+          <NotificationView
+            notifications={store.session?.notifications || []}
+            username={currentUser}
           />
         )}
         {view === 'admin' && (
@@ -1848,7 +1901,7 @@ export default function App() {
           danger={dialog.danger}
         />
       )}
-      
+
     </div>
   );
 }
