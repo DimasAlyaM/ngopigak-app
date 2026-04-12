@@ -1350,22 +1350,36 @@ export default function App() {
 
   const forceClose = async () => {
     const s = loadStore();
-    if (!s.session) return;
-    const debtors = s.session.orders.filter(o => !o.isPaid && o.username !== s.session.payer).map(o => o.username);
-
-    await api.updateSession(s.session.id, { status: 'force-closed', forceClosedBy: currentUser, debtors });
-    const currentSession = loadStore().session;
-    const full = { ...currentSession, status: 'force-closed', forceClosedBy: currentUser, debtors, companion: currentSession.companion };
-    await api.saveHistory(s.session.id, full);
-    await api.deleteActiveSession(s.session.id);
-
-    if (debtors.length > 0) {
-      debtors.forEach(d => api.notify(s.session.id, d, 'debt', `Sesi ditutup paksa. Hutangmu dicatat.`));
+    if (!s.session) {
+      setDialog(null);
+      return;
     }
-    s.session.orders.forEach(o => {
-      api.notify(s.session.id, o.username, 'done', `Sesi ditutup paksa oleh ${currentUser}.`);
-    });
-    setDialog(null);
+
+    try {
+      const debtors = s.session.orders.filter(o => !o.isPaid && o.username !== s.session.payer).map(o => o.username);
+      const sessionId = s.session.id;
+
+      await api.updateSession(sessionId, { status: 'force-closed', forceClosedBy: currentUser, debtors });
+      const currentSession = loadStore().session;
+      const full = { ...currentSession, status: 'force-closed', forceClosedBy: currentUser, debtors, companion: currentSession.companion };
+      await api.saveHistory(sessionId, full);
+      await api.deleteActiveSession(sessionId);
+
+      if (debtors.length > 0) {
+        debtors.forEach(d => api.notify(sessionId, d, 'debt', `Sesi ditutup paksa. Hutangmu dicatat.`));
+      }
+      s.session.orders.forEach(o => {
+        api.notify(sessionId, o.username, 'done', `Sesi ditutup paksa oleh ${currentUser}.`);
+      });
+
+      // Redirect to home and cleanup UI
+      setView('home');
+      setActiveMenu(null);
+    } catch (err) {
+      console.error("Force close error:", err);
+    } finally {
+      setDialog(null);
+    }
   };
 
   const finishViewSession = () => {
