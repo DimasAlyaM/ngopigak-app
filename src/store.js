@@ -130,7 +130,7 @@ async function fetchFullState() {
              orders: sessionOrders.map(o => ({
                username: o.username,
                isPaid: o.is_paid,
-               item: { name: o.coffee_name, price: o.coffee_price }
+               item: { id: o.coffee_id, name: o.coffee_name, price: o.coffee_price, emoji: o.coffee_emoji || '☕' }
              }))
           };
           await supabase.from('historic_sessions').insert({ id: rawActive.id, data: fullSession });

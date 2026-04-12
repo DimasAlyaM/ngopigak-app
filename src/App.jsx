@@ -1414,9 +1414,9 @@ export default function App() {
     return 0;
   };
 
-  const totalAmount = session?.orders?.reduce((sum, o) => sum + o.item.price, 0) || 0;
-  const paidAmount = session?.orders?.filter(o => o.isPaid).reduce((sum, o) => sum + o.item.price, 0) || 0;
-  const unpaidCount = session?.orders?.filter(o => !o.isPaid && o.username !== session.payer).length || 0;
+  const totalAmount = session?.orders?.reduce((sum, o) => sum + (o.item?.price || 0), 0) || 0;
+  const paidAmount = session?.orders?.filter(o => o.isPaid).reduce((sum, o) => sum + (o.item?.price || 0), 0) || 0;
+  const unpaidCount = session?.orders?.filter(o => !o.isPaid && (o.username || '').toLowerCase() !== (session.payer || '').toLowerCase()).length || 0;
   const sessionDone = session?.status === 'completed' || session?.status === 'force-closed';
 
   if (renderError) {
@@ -1911,6 +1911,14 @@ export default function App() {
       if (myRole === 'penitip') return renderPenitipPage();
       return renderGuestPage();
     }
+    
+    // Safety fallback for unknown status
+    return (
+      <div className="empty-state" style={{ padding: '4rem 2rem', textAlign: 'center' }}>
+        <Loader2 size={40} className="animate-spin text-secondary mb-4" />
+        <p className="text-secondary">Menyamaikan data...</p>
+      </div>
+    );
   };
 
   // ─── PAYER PAGE ─────────────────────────────────────────────────────────────
