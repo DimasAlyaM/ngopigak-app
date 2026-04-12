@@ -271,6 +271,18 @@ export const api = {
     }).eq('id', orderId);
   },
 
+  updateOrder: async (orderId, updates) => {
+    // Map cammelCase to snake_case if necessary
+    const payload = {};
+    if (updates.isPaid !== undefined) payload.is_paid = updates.isPaid;
+    if (updates.paymentProof !== undefined) payload.payment_proof = updates.paymentProof;
+    if (updates.markedByPayer !== undefined) payload.marked_by_payer = updates.markedByPayer;
+    if (updates.paidAt !== undefined) payload.paid_at = updates.paidAt;
+    
+    await supabase.from('orders').update(payload).eq('id', orderId);
+    fetchFullState();
+  },
+
   notify: async (sessionId, targetUser, type, message) => {
     await supabase.from('notifications').insert({
       session_id: sessionId,

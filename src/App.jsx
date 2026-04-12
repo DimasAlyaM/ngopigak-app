@@ -130,7 +130,162 @@ function notifIcon(type) {
   return icons[type] || <Bell size={18} />;
 }
 
-// ─── STEPPER COMPONENT ─────────────────────────────────────────────────────────
+// ─── ORDER DETAIL VIEW ────────────────────────────────────────────────────────
+function OrderDetailView({ order, currentUser, api, onBack }) {
+  const [isUploading, setIsUploading] = useState(false);
+  const [localProof, setLocalProof] = useState(order?.paymentProof || '');
+  const [localIsPaid, setLocalIsPaid] = useState(order?.isPaid || false);
+  const [sessionInfo, setSessionInfo] = useState(null);
+
+  useEffect(() => {
+    if (!order) return;
+    const s = loadStore();
+    let sess = null;
+    if (order.sessionId === 'active') {
+      sess = s.session;
+    } else {
+      sess = s.history.find(h => h.id === order.sessionId);
+    }
+    setSessionInfo(sess);
+  }, [order]);
+
+  if (!order) return null;
+
+  const handleUpload = async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    setIsUploading(true);
+    try {
+      const url = await api.uploadProof(file);
+      if (order.sessionId === 'active') {
+        const s = loadStore();
+        const activeOrder = s.session.orders.find(o => o.username === currentUser);
+        if (activeOrder) {
+          await api.updateOrder(activeOrder.id, { paymentProof: url });
+        }
+      } else {
+        await api.updateHistoricalOrder(order.sessionId, currentUser, { paymentProof: url });
+      }
+      setLocalProof(url);
+    } catch (err) {
+      alert("Gagal upload: " + err.message);
+    } finally {
+      setIsUploading(false);
+    }
+  };
+
+  const handleConfirmPay = async () => {
+    try {
+      if (order.sessionId === 'active') {
+        const s = loadStore();
+        const activeOrder = s.session.orders.find(o => o.username === currentUser);
+        if (activeOrder) {
+          await api.updateOrder(activeOrder.id, { isPaid: true, markedByPayer: false });
+          api.notify(s.session.id, s.session.payer, 'payment', `${currentUser} telah membayar & upload bukti.`);
+        }
+      } else {
+        await api.updateHistoricalOrder(order.sessionId, currentUser, { isPaid: true });
+      }
+      setLocalIsPaid(true);
+      alert("Konfirmasi pembayaran terkirim!");
+    } catch (err) {
+      alert("Gagal konfirmasi: " + err.message);
+    }
+  };
+
+  return (
+    <div className="order-detail-view fade-in" style={{ padding: '1rem' }}>
+      <div className="view-header" style={{ marginBottom: '2rem', display: 'flex', alignItems: 'center', gap: '12px' }}>
+        <button onClick={onBack} className="btn-circle" style={{ background: 'var(--surface)' }}><ArrowLeft size={20} /></button>
+        <h2 className="text-gradient">Detail Pesanan</h2>
+      </div>
+
+      <div className="glass-panel" style={{ padding: '2rem', textAlign: 'center', marginBottom: '1.5rem', borderRadius: '32px' }}>
+        <div style={{ fontSize: '3.5rem', marginBottom: '1rem', background: 'var(--surface)', width: '100px', height: '100px', borderRadius: '32px', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto' }}>
+          {order.item.emoji || '☕'}
+        </div>
+        <h3 style={{ fontSize: '1.4rem', marginBottom: '8px' }}>{order.item.name}</h3>
+        <p className="text-accent" style={{ fontSize: '1.6rem', fontWeight: 800, marginBottom: '2rem' }}>{formatRp(order.item.price)}</p>
+
+        <div style={{ background: 'var(--bg-primary)', borderRadius: '24px', padding: '8px' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', padding: '12px', borderBottom: '1px solid var(--glass-border)', fontSize: '0.9rem' }}>
+            <span className="text-secondary">Waktu Sesi</span>
+            <strong>{formatDate(order.sessionDate).split(',')[0]}</strong>
+          </div>
+          <div style={{ display: 'flex', justifyContent: 'space-between', padding: '12px', borderBottom: '1px solid var(--glass-border)', fontSize: '0.9rem' }}>
+            <span className="text-secondary">Payer</span>
+            <strong>{order.payer}</strong>
+          </div>
+          <div style={{ display: 'flex', justifyContent: 'space-between', padding: '12px', fontSize: '0.9rem' }}>
+            <span className="text-secondary">Status</span>
+            <StatusBadge isPaid={localIsPaid} />
+          </div>
+        </div>
+      </div>
+
+      {!localIsPaid && (
+        <div className="payment-management fade-in">
+          {sessionInfo?.paymentInfo ? (
+            <div className="glass-panel" style={{ padding: '1.5rem', marginBottom: '1.5rem', border: '1px solid var(--accent-primary)', background: 'rgba(230, 145, 56, 0.05)' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '1rem' }}>
+                <h4 style={{ margin: 0 }}>Info Transfer</h4>
+                <span className="badge badge-amber">{sessionInfo.paymentInfo.method}</span>
+              </div>
+              <div style={{ background: 'var(--bg-primary)', padding: '1rem', borderRadius: '16px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <div>
+                  <p style={{ fontWeight: 800, fontSize: '1.1rem', margin: 0 }}>{sessionInfo.paymentInfo.accountNo}</p>
+                  <p className="text-secondary" style={{ fontSize: '0.8rem', margin: 0 }}>{sessionInfo.paymentInfo.bankName || 'Digital Wallet'}</p>
+                </div>
+                <button className="btn-secondary" style={{ width: 'auto', padding: '6px 12px', fontSize: '0.7rem' }} onClick={() => { navigator.clipboard.writeText(sessionInfo.paymentInfo.accountNo); alert('Disalin!'); }}>Salin</button>
+              </div>
+            </div>
+          ) : (
+            <div className="glass-panel" style={{ padding: '1.5rem', marginBottom: '1.5rem', textAlign: 'center' }}>
+              <p className="text-secondary" style={{ fontSize: '0.85rem' }}>Menunggu info pembayaran dari <strong>{order.payer}</strong>...</p>
+            </div>
+          )}
+
+          <h4 style={{ marginBottom: '1rem', paddingLeft: '4px' }}>Upload Bukti Bayar</h4>
+          <div className="glass-panel" style={{ padding: '1.5rem', borderRadius: '32px' }}>
+            <label className="upload-box-new" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'var(--surface)', border: '2px dashed var(--glass-border)', borderRadius: '24px', padding: '2rem', cursor: 'pointer', transition: 'all 0.3s ease' }}>
+              <input type="file" accept="image/*" style={{ display: 'none' }} onChange={handleUpload} disabled={isUploading} />
+              <div style={{ textAlign: 'center' }}>
+                {isUploading ? <Loader2 size={32} className="animate-spin text-accent" /> : localProof ? <CheckCircle size={32} className="text-green" /> : <Camera size={32} className="text-secondary" />}
+                <p style={{ marginTop: '8px', fontSize: '0.8rem', fontWeight: 600 }}>{localProof ? 'Ganti Foto' : 'Pilih Foto'}</p>
+              </div>
+            </label>
+
+            {localProof && (
+              <div style={{ marginTop: '1.5rem' }}>
+                <div style={{ borderRadius: '20px', overflow: 'hidden', border: '1px solid var(--glass-border)', marginBottom: '1.5rem' }}>
+                  <img src={localProof} alt="Bukti" style={{ width: '100%', maxHeight: '250px', objectFit: 'cover' }} />
+                </div>
+                <button className="btn-primary" style={{ width: '100%', height: '56px', borderRadius: '20px' }} onClick={handleConfirmPay}>Konfirmasi Bayar</button>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
+      {localIsPaid && (
+        <div className="glass-panel fade-in" style={{ padding: '2.5rem 1.5rem', background: 'rgba(74, 222, 128, 0.05)', border: '1px solid rgba(74, 222, 128, 0.2)', textAlign: 'center', borderRadius: '32px' }}>
+          <div style={{ background: '#4ade80', width: '64px', height: '64px', borderRadius: '32px', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 1.5rem', color: 'white' }}>
+            <CheckCircle size={32} />
+          </div>
+          <h3 style={{ marginBottom: '0.5rem' }}>Pesanan Sudah Lunas</h3>
+          <p className="text-secondary" style={{ fontSize: '0.9rem' }}>Terima kasih sudah bayar tepat waktu! Kamu keren.</p>
+          {localProof && (
+            <div style={{ marginTop: '2rem', opacity: 0.6 }}>
+               <p className="text-secondary" style={{ fontSize: '0.7rem', marginBottom: '8px' }}>Bukti terupload:</p>
+               <img src={localProof} alt="Proof" style={{ width: '80px', height: '80px', objectFit: 'cover', borderRadius: '12px' }} />
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
 function Stepper({ steps, currentStep }) {
   return (
     <div className="stepper">
@@ -658,7 +813,7 @@ function HistoryView({ history, payerHistory, currentUser, onSelectSession }) {
                     onClick={() => onSelectSession(s)}
                   >
                     <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                      <div style={{ 
+                        <div style={{ 
                         background: 'var(--bg-primary)', 
                         padding: '10px', 
                         borderRadius: '16px',
@@ -694,12 +849,9 @@ function HistoryView({ history, payerHistory, currentUser, onSelectSession }) {
 
 // ─── HISTORY DETAIL VIEW ──────────────────────────────────────────────────────
 function HistoryDetailView({ session, onBack, currentUser, api }) {
-  const [uploadingId, setUploadingId] = useState(null);
   if (!session) return null;
 
-  const isDbt = session.debtors?.some(d => (d || '').toLowerCase() === (currentUser || '').toLowerCase());
-  const mOrder = session.orders.find(o => (o.username || '').toLowerCase() === (currentUser || '').toLowerCase());
-  const totalSession = session.orders.reduce((sum, o) => sum + o.item.price, 0);
+  const totalSession = session.orders.reduce((sum, o) => sum + (o.item?.price || 0), 0);
 
   return (
     <div className="history-detail-view fade-in" style={{ padding: '1rem' }}>
@@ -742,7 +894,21 @@ function HistoryDetailView({ session, onBack, currentUser, api }) {
         {session.orders.map((o, idx) => {
           const orderDebt = session.debtors?.some(d => (d || '').toLowerCase() === (o.username || '').toLowerCase());
           return (
-            <div key={idx} className="item-card glass-panel" style={{ padding: '12px 16px', borderRadius: '24px' }}>
+            <div 
+              key={idx} 
+              className="item-card glass-panel" 
+              style={{ padding: '12px 16px', borderRadius: '24px', cursor: 'pointer' }}
+              onClick={() => {
+                setSelectedOrder({
+                  ...o,
+                  sessionDate: session.startedAt,
+                  payer: session.payer,
+                  isPaid: !orderDebt,
+                  sessionId: session.id
+                });
+                setView('order-detail');
+              }}
+            >
               <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
                 <UserAvatar username={o.username} size={36} />
                 <div>
@@ -752,77 +918,20 @@ function HistoryDetailView({ session, onBack, currentUser, api }) {
               </div>
               <div style={{ textAlign: 'right' }}>
                 <p style={{ fontWeight: 700, fontSize: '0.9rem' }}>{formatRp(o.item.price)}</p>
-                <span style={{ fontSize: '0.65rem', fontWeight: 800, color: orderDebt ? '#ef4444' : '#4ade80' }}>
-                  {orderDebt ? 'HUTANG' : 'LUNAS'}
-                </span>
-
-                {(currentUser || '').toLowerCase() === (session.payer || '').toLowerCase() && orderDebt && (
-                  <button
-                    className="btn-mini btn-green shadow-sm mt-1"
-                    style={{ fontSize: '0.6rem', padding: '2px 8px', borderRadius: '4px', marginLeft: '8px' }}
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      if (confirm(`Konfirmasi pembayaran dari ${o.username}?`)) {
-                        api.updateHistoricalOrder(session.id, o.username, { isPaid: true, markedByPayer: true });
-                      }
-                    }}
-                  >
-                    Konfirmasi
-                  </button>
-                )}
+                <div style={{ display: 'flex', alignItems: 'center', gap: '6px', justifyContent: 'flex-end' }}>
+                   {o.paymentProof && <Camera size={12} className="text-secondary" />}
+                   <span style={{ fontSize: '0.65rem', fontWeight: 800, color: orderDebt ? '#ef4444' : '#4ade80' }}>
+                     {orderDebt ? 'HUTANG' : 'LUNAS'}
+                   </span>
+                </div>
               </div>
             </div>
           );
         })}
       </div>
-
-      {isDbt && mOrder && (
-        <div className="glass-panel" style={{ padding: '1.5rem', borderRadius: '24px', border: '1px solid rgba(239, 68, 68, 0.2)', background: 'rgba(239, 68, 68, 0.05)' }}>
-          <p style={{ fontSize: '0.9rem', marginBottom: '1rem' }}>⚠️ Kamu berhutang **{formatRp(mOrder.item.price)}** kepada **{session.payer}**.</p>
-
-          {!mOrder.paymentProof && (
-            <label className="btn-primary" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', cursor: 'pointer', opacity: uploadingId === session.id ? 0.7 : 1 }}>
-              <input
-                type="file"
-                accept="image/*"
-                className="hidden-file-input"
-                style={{ display: 'none' }}
-                disabled={!!uploadingId}
-                onChange={async (e) => {
-                  const file = e.target.files[0];
-                  if (!file) return;
-                  setUploadingId(session.id);
-                  try {
-                    const url = await api.uploadProof(file);
-                    await api.updateHistoricalOrder(session.id, currentUser, { paymentProof: url });
-                  } catch (err) {
-                    console.error("Upload failed:", err);
-                  } finally {
-                    setUploadingId(null);
-                  }
-                }}
-              />
-              {uploadingId === session.id ? <Loader2 className="animate-spin" size={20} /> : <><Camera size={20} /> <span>Upload Bukti</span></>}
-            </label>
-          )}
-
-          {mOrder.paymentProof && (
-            <div className="proof-area" style={{ marginTop: '1rem' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
-                <span className="text-green" style={{ fontSize: '0.75rem', fontWeight: 800 }}>BUKTI TERUNGGAH</span>
-                <button className="btn-mini btn-green" onClick={() => api.updateHistoricalOrder(session.id, currentUser, { isPaid: true })}>KONFIRMASI BAYAR</button>
-              </div>
-              <a href={mOrder.paymentProof} target="_blank" rel="noreferrer" style={{ display: 'block', borderRadius: '16px', overflow: 'hidden' }}>
-                <img src={mOrder.paymentProof} alt="Bukti" style={{ width: '100%', display: 'block' }} />
-              </a>
-            </div>
-          )}
-        </div>
-      )}
     </div>
   );
 }
-
 
 // ─── MAIN APP ─────────────────────────────────────────────────────────────────
 export default function App() {
@@ -832,6 +941,7 @@ export default function App() {
   const [pinInput, setPinInput] = useState('');
   const [view, setView] = useState('home'); // home | orders | live-session | history | history-detail | profile
   const [selectedSession, setSelectedSession] = useState(null);
+  const [selectedOrder, setSelectedOrder] = useState(null); // Used for Detail Order view
   const [historyFilter, setHistoryFilter] = useState('all'); // all | my-debt
   const [expandedSession, setExpandedSession] = useState(null);
   const [activeMenu, setActiveMenu] = useState(null); // 'notif' | 'profile' | null
@@ -1121,14 +1231,51 @@ export default function App() {
   };
 
   const handleNotifAction = (n) => {
+    const s = loadStore();
+    
     if (['payment', 'bought', 'reminder', 'info'].includes(n.type)) {
-      setView('live-session');
+      if (session && !sessionDone) {
+        setView('live-session');
+      } else {
+        // Find specific order in history for this user
+        const histSession = s.history.find(h => h.id === n.session_id);
+        const myOrder = histSession?.orders.find(o => o.username === currentUser);
+        if (myOrder) {
+          setSelectedOrder({
+            ...myOrder,
+            sessionDate: histSession.startedAt,
+            payer: histSession.payer,
+            isPaid: !histSession.debtors?.includes(currentUser),
+            sessionId: histSession.id
+          });
+          setView('order-detail');
+        } else {
+          setView('history');
+        }
+      }
     } else if (['done', 'debt'].includes(n.type)) {
+      if (n.type === 'debt') {
+        const histSession = s.history.find(h => h.id === n.session_id);
+        const myOrder = histSession?.orders.find(o => o.username === currentUser);
+        if (myOrder) {
+          setSelectedOrder({
+            ...myOrder,
+            sessionDate: histSession.startedAt,
+            payer: histSession.payer,
+            isPaid: !histSession.debtors?.includes(currentUser),
+            sessionId: histSession.id
+          });
+          setView('order-detail');
+          return;
+        }
+      }
       setView('history');
     }
-    // Generic fallback: if it mentions 'sesi', go to live session
+    
+    // Generic fallback: if it mentions 'sesi', go to live session if active
     if (n.message.toLowerCase().includes('sesi')) {
-      setView('live-session');
+      if (session && !sessionDone) setView('live-session');
+      else setView('history');
     }
   };
 
@@ -1198,10 +1345,23 @@ export default function App() {
   const markNotifsRead = async () => {
     const s = loadStore();
     if (!s.session) return;
-    for (const n of s.session.notifications) {
+    
+    // Optimistically update memory so badge clears instantly
+    let changed = false;
+    const updatedNotifs = s.session.notifications.map(n => {
       if ((n.to === currentUser || n.to === 'all') && !n.readBy?.includes(currentUser)) {
-        await api.markNotifRead(n.id, currentUser);
+        changed = true;
+        api.markNotifRead(n.id, currentUser).catch(err => console.error("Notif sync fail:", err));
+        return { ...n, readBy: [...(n.readBy || []), currentUser] };
       }
+      return n;
+    });
+
+    if (changed) {
+      setStore({
+        ...s,
+        session: { ...s.session, notifications: updatedNotifs }
+      });
     }
   };
 
@@ -1330,7 +1490,7 @@ export default function App() {
   const BottomNav = () => {
     const s = loadStore();
     const myNotifs = (s.session?.notifications || []).filter(n => n.to === currentUser || n.to === 'all');
-    const unread = myNotifs.filter(n => !n.read).length;
+    const unread = myNotifs.filter(n => !n.readBy?.includes(currentUser)).length;
 
     return (
       <nav className="bottom-nav">
@@ -1376,14 +1536,14 @@ export default function App() {
       </div>
 
       {/* Dynamic Session Section */}
-      {session && !sessionDone ? (
+      {session ? (
         <div className="live-dashboard glass-panel fade-in">
           <div className="live-indicator">
             <div className="pulsing-dot"></div>
-            LIVE SESI &bull; {session.status === 'open' ? formatTime(timeLeft) : 'Payment Ready'}
+            {sessionDone ? 'SESI BERAKHIR' : `LIVE SESI &bull; ${session.status === 'open' ? formatTime(timeLeft) : 'Payment Ready'}`}
           </div>
           
-          <h3 style={{ fontSize: '1.2rem', marginBottom: '1.5rem' }}>Ditunggu kopinya! ☕</h3>
+          <h3 style={{ fontSize: '1.2rem', marginBottom: '1.5rem' }}>{sessionDone ? 'Ringkasan Sesi Hari Ini ☕' : 'Ditunggu kopinya! ☕'}</h3>
           
           <div style={{ display: 'flex', alignItems: 'center', gap: '16px', marginBottom: '1.5rem' }}>
              <div style={{ position: 'relative' }}>
@@ -1401,14 +1561,21 @@ export default function App() {
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'rgba(0,0,0,0.2)', padding: '12px 16px', borderRadius: '16px' }}>
              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                 <Users size={16} className="text-secondary" />
-                <span style={{ fontSize: '0.85rem', fontWeight: 600 }}>{session.orders.length} Peserta</span>
+                <span style={{ fontSize: '0.85rem', fontWeight: 600 }}>{session.orders?.length || 0} Peserta</span>
              </div>
              <button 
                 className="btn-primary-pill" 
                 style={{ height: '40px', fontSize: '0.85rem', padding: '0 20px' }}
-                onClick={() => setView('live-session')}
+                onClick={() => {
+                   if (sessionDone) {
+                      setSelectedSession(session);
+                      setView('history-detail');
+                   } else {
+                      setView('live-session');
+                   }
+                }}
              >
-                Join Sesi
+                {sessionDone ? 'Lihat Detail' : 'Join Sesi'}
              </button>
           </div>
         </div>
@@ -1505,12 +1672,13 @@ export default function App() {
             </div>
           ) : (
             [...allPersonalOrders].reverse().map((o, idx) => (
-              <div key={idx} className="item-card glass-panel" style={{ 
+              <div key={idx} className="item-card glass-panel" onClick={() => { setSelectedOrder(o); setView('order-detail'); }} style={{ 
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'space-between',
                 padding: '16px', 
-                borderRadius: '24px' 
+                borderRadius: '24px',
+                cursor: 'pointer'
               }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
                   <div style={{ 
@@ -1560,7 +1728,11 @@ export default function App() {
 
     if (session.status === 'completed' || session.status === 'force-closed') {
       const isForced = session.status === 'force-closed';
-      const totalSession = session.orders.reduce((sum, o) => sum + o.item.price, 0);
+      const orders = session.orders || [];
+      const totalSession = orders.reduce((sum, o) => {
+        if (!o || !o.item) return sum;
+        return sum + (o.item.price || 0);
+      }, 0);
       return (
         <div className="session-summary fade-in" style={{ padding: '1.5rem' }}>
           <div className="glass-panel" style={{ textAlign: 'center', padding: '2.5rem 1.5rem' }}>
@@ -1650,9 +1822,9 @@ export default function App() {
           </div>
 
           <div className="order-list-section">
-            <h4 style={{ marginBottom: '1rem', paddingLeft: '4px' }}>Daftar Pesanan ({session.orders.length})</h4>
+            <h4 style={{ marginBottom: '1rem', paddingLeft: '4px' }}>Daftar Pesanan ({(session.orders || []).length})</h4>
             <div className="card-stack">
-              {session.orders.map(o => (
+              {(session.orders || []).map(o => (
                 <div key={o.id} className={`item-card glass-panel ${o.username === currentUser ? 'active-border' : ''}`} style={{ padding: '12px 16px', borderRadius: '20px' }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
                     <UserAvatar username={o.username} size={36} />
@@ -1731,7 +1903,8 @@ export default function App() {
 
   // ─── PAYER PAGE ─────────────────────────────────────────────────────────────
   const renderPayerPage = () => {
-    const nonPayer = session.orders.filter(o => o.username !== session.payer);
+    const orders = session.orders || [];
+    const nonPayer = orders.filter(o => o.username !== session.payer);
     const paidCount = nonPayer.filter(o => o.isPaid).length;
 
     return (
@@ -1754,7 +1927,7 @@ export default function App() {
         <div className="order-management">
           <h4 style={{ marginBottom: '1rem', paddingLeft: '4px' }}>Status Peserta</h4>
           <div className="card-stack">
-            {session.orders.map(o => (
+            {(session.orders || []).map(o => (
               <div key={o.id} className="item-card glass-panel" style={{ padding: '16px' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '12px', flex: 1 }}>
                   <UserAvatar username={o.username} size={40} />
@@ -1946,6 +2119,14 @@ export default function App() {
             currentUser={currentUser}
             api={api}
             onBack={() => setView('history')}
+          />
+        )}
+        {view === 'order-detail' && (
+          <OrderDetailView
+            order={selectedOrder}
+            currentUser={currentUser}
+            api={api}
+            onBack={() => setView('orders')}
           />
         )}
         {view === 'profile' && (
