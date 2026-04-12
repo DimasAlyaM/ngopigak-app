@@ -3,7 +3,7 @@ import { loadStore, api, initSupabaseSync, selectRoles } from './store.js';
 import {
   Bell, Info, CreditCard, Coffee, Clock, CheckCircle, AlertTriangle, LogOut, ClipboardList,
   Lock, Unlock, LogIn, History, X, Trash2, PlusCircle, Shield, Users, User, ChevronDown, ChevronLeft,
-  Camera, Upload, Loader2, Home
+  Camera, Upload, Loader2, Home, Edit2
 } from 'lucide-react';
 import confetti from 'canvas-confetti';
 import './App.css';
@@ -746,66 +746,94 @@ function AdminView({ menu, users, history, activeSession, onSaveMenu, onResetPin
 
 // ─── USER PROFILE EDIT MODAL ──────────────────────────────────────────────────
 // ─── USER PROFILE VIEW ────────────────────────────────────────────────────────
-function ProfileView({ username, history, onSave, onLogout }) {
+function ProfileView({ username, history, onSave, onLogout, payerHistory }) {
   const [name, setName] = useState(username);
+  const [isEditing, setIsEditing] = useState(false);
 
+  const usernameLower = (username || '').toLowerCase();
   const validHistory = (history || []).filter(s => s && Array.isArray(s.orders));
-  const mySessions = validHistory.filter(s => s.orders.some(o => (o.username || '').toLowerCase() === (username || '').toLowerCase()));
-  const myDebts = mySessions.filter(s => s.debtors?.some(d => (d || '').toLowerCase() === (username || '').toLowerCase()));
-
+  
+  // Stats
+  const mySessions = validHistory.filter(s => s.orders.some(o => (o.username || '').toLowerCase() === usernameLower));
+  const myDebts = mySessions.filter(s => s.debtors?.some(d => (d || '').toLowerCase() === usernameLower));
+  
   const totalOwed = myDebts.reduce((acc, s) => {
-    const myOrder = s.orders.find(o => (o.username || '').toLowerCase() === (username || '').toLowerCase());
+    const myOrder = s.orders.find(o => (o.username || '').toLowerCase() === usernameLower);
     return acc + (myOrder?.item?.price || 0);
   }, 0);
+
+  const totalCoffee = mySessions.reduce((acc, s) => {
+    const count = s.orders.filter(o => (o.username || '').toLowerCase() === usernameLower).length;
+    return acc + count;
+  }, 0);
+
+  const stats = payerHistory && (payerHistory[username] || payerHistory[usernameLower]) || { pay: 0, companion: 0 };
+
+  const handleSave = () => {
+    onSave(username, name);
+    setIsEditing(false);
+  };
 
   return (
     <div className="profile-view fade-in">
       <div className="profile-container glass-panel-premium" style={{ padding: '2rem' }}>
-        <div className="view-header">
-          <h2 className="text-gradient">Profil Saya</h2>
-        </div>
-
         <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', marginBottom: '2.5rem' }}>
-          <div className="avatar-wrapper">
-            <UserAvatar username={username} size={96} />
-          </div>
-          <p className="text-secondary text-sm mt-4 text-center">Avatar dihasilkan otomatis dari namamu.</p>
-        </div>
-
-        <div className="debt-card-modern mb-8 fade-in">
-          <span className="text-secondary text-xs uppercase font-bold tracking-wider">Total Hutang Saya</span>
-          <div className="flex-between align-end">
-            <h1 className={totalOwed > 0 ? 'text-red' : 'text-green'} style={{ fontSize: '2.5rem', margin: 0 }}>
-              {formatRp(totalOwed)}
-            </h1>
-            {totalOwed > 0 && <span className="text-red text-xs mb-2">Belum Lunas</span>}
-          </div>
-        </div>
-
-        <div className="modern-form">
-          <div className="form-group mb-8">
-            <label>NAMA TAMPILAN</label>
-            <input
-              type="text"
-              value={name}
-              onChange={e => setName(e.target.value)}
-              placeholder="Ketik nama baru..."
-              className="premium-input"
-            />
-          </div>
-
-          <div className="flex-col gap-3">
-            <button className="btn-primary-pill" onClick={() => onSave(username, name)}>
-              Simpan Perubahan
-            </button>
-
-            <div style={{ height: '1px', background: 'var(--glass-border)', margin: '1.5rem 0' }} />
-
-            <button className="btn-logout" onClick={onLogout}>
-              <LogOut size={18} style={{ marginRight: '8px' }} />
-              Log Out dari Akun
+          <div className="avatar-wrapper-large">
+            <UserAvatar username={username} size={110} />
+            <button className="edit-avatar-badge" onClick={() => setIsEditing(!isEditing)}>
+              <Edit2 size={16} />
             </button>
           </div>
+          
+           {!isEditing ? (
+            <div style={{ textAlign: 'center', marginTop: '1.5rem' }}>
+               <h2 style={{ fontSize: '1.8rem', fontWeight: 800, margin: 0 }}>{username}</h2>
+               <p className="text-secondary" style={{ fontSize: '0.9rem', marginTop: '4px' }}>Ngopi Sejak {mySessions.length > 0 ? formatDate(mySessions[mySessions.length - 1].startedAt).split(',')[0] : 'Hari Ini'}</p>
+            </div>
+          ) : (
+            <div className="modern-form" style={{ marginTop: '1.5rem', width: '100%' }}>
+              <div className="form-group">
+                <label>Ubah Nama Tampilan</label>
+                <div style={{ display: 'flex', gap: '10px' }}>
+                  <input
+                    type="text"
+                    value={name}
+                    onChange={e => setName(e.target.value)}
+                    className="premium-input"
+                    style={{ flex: 1 }}
+                    autoFocus
+                  />
+                  <button className="btn-primary-pill" style={{ padding: '0 20px', height: '50px' }} onClick={handleSave}>Simpan</button>
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
+
+        <div className="stats-grid-modern">
+          <div className="stat-box-modern">
+             <span className="stat-label">Hutang</span>
+             <h3 className={totalOwed > 0 ? 'text-red' : 'text-green'}>{formatRp(totalOwed)}</h3>
+          </div>
+          <div className="stat-box-modern">
+             <span className="stat-label">Kopi Dipesan</span>
+             <h3>{totalCoffee} <small style={{ fontSize: '0.8rem', opacity: 0.5 }}>Cup</small></h3>
+          </div>
+          <div className="stat-box-modern">
+             <span className="stat-label">Jadi Payer</span>
+             <h3>{stats.pay} <small style={{ fontSize: '0.8rem', opacity: 0.5 }}>Kali</small></h3>
+          </div>
+          <div className="stat-box-modern">
+             <span className="stat-label">Ikut Sesi</span>
+             <h3>{mySessions.length} <small style={{ fontSize: '0.8rem', opacity: 0.5 }}>Sesi</small></h3>
+          </div>
+        </div>
+
+        <div style={{ marginTop: '3rem' }}>
+          <button className="btn-logout-premium" onClick={onLogout}>
+            <LogOut size={20} />
+            <span>Keluar Akun</span>
+          </button>
         </div>
       </div>
     </div>
@@ -2215,6 +2243,7 @@ export default function App() {
           <ProfileView
             username={currentUser}
             history={store.history}
+            payerHistory={store.payerHistory}
             onSave={onUpdateProfile}
             onLogout={() => {
               localStorage.removeItem('ngopi_current_user');
