@@ -568,26 +568,27 @@ export function selectRoles(participants, payerHistory, lastRoles = null) {
   // we must fall back to the participants
   const finalCandidates = primaryPool.length > 0 ? primaryPool : participants;
 
-  // 1. SELECT PAYER (Based on least pay count)
-  const sortedPayers = [...finalCandidates].sort((a, b) => {
+  // 1. SELECT PAYER (Based on least pay count with random tie-break)
+  // First shuffle to ensure fairness among equal counts
+  const shuffledPayers = [...finalCandidates].sort(() => Math.random() - 0.5);
+  const sortedPayers = shuffledPayers.sort((a, b) => {
     const countA = (payerHistory[a]?.pay || payerHistory[a.toLowerCase()]?.pay || 0);
     const countB = (payerHistory[b]?.pay || payerHistory[b.toLowerCase()]?.pay || 0);
-    if (countA !== countB) return countA - countB;
-    return a.toLowerCase().localeCompare(b.toLowerCase());
+    return countA - countB;
   });
   
   const payer = sortedPayers[0];
   
-  // 2. SELECT COMPANION (Based on least companion count)
+  // 2. SELECT COMPANION (Based on least companion count with random tie-break)
   const companionCandidates = participants.filter(p => p.toLowerCase() !== payer.toLowerCase());
   const primaryCompanionPool = companionCandidates.filter(p => !excludeSet.has(p.toLowerCase()));
   const finalCompanionCandidates = primaryCompanionPool.length > 0 ? primaryCompanionPool : companionCandidates;
 
-  const sortedCompanions = [...finalCompanionCandidates].sort((a, b) => {
+  const shuffledCompanions = [...finalCompanionCandidates].sort(() => Math.random() - 0.5);
+  const sortedCompanions = shuffledCompanions.sort((a, b) => {
     const countA = (payerHistory[a]?.companion || payerHistory[a.toLowerCase()]?.companion || 0);
     const countB = (payerHistory[b]?.companion || payerHistory[b.toLowerCase()]?.companion || 0);
-    if (countA !== countB) return countA - countB;
-    return a.toLowerCase().localeCompare(b.toLowerCase());
+    return countA - countB;
   });
 
   const companion = sortedCompanions.length > 0 ? sortedCompanions[0] : null;

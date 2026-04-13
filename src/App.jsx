@@ -1152,6 +1152,23 @@ export default function App() {
     }
   }, [store.session?.status, view]);
 
+  // AUTO-FINALIZE WATCHER: Triggered whenever session state changes
+  useEffect(() => {
+    if (!session || session.status !== 'active') return;
+    if (currentUser.toLowerCase() !== (session.payer || '').toLowerCase()) return;
+
+    const others = session.orders.filter(o => 
+      o.username.toLowerCase() !== session.payer.toLowerCase() && 
+      o.username.toLowerCase() !== (session.companion || '').toLowerCase()
+    );
+    const allOthersPaid = others.every(o => o.isPaid);
+
+    if (allOthersPaid && session.coffeeBought) {
+      console.log("Watcher: All conditions met. Finalizing session...");
+      checkSessionComplete();
+    }
+  }, [session, currentUser]);
+
   // Current role of the logged-in user
   const session = store.session;
   const myRole = (() => {
@@ -1297,8 +1314,7 @@ export default function App() {
       }
     });
     setDialog(null);
-    // After buying, check if session is now complete (everyone already paid)
-    setTimeout(() => checkSessionComplete(), 500); 
+    // After buying, watcher will check if session is now complete
   };
 
   const markMyPayment = async (username) => {
@@ -1360,7 +1376,8 @@ export default function App() {
     if (order && !order.isPaid) {
       await api.markOrderPaid(order.id, true);
       api.notify(s.session.id, username, 'payment', `${s.session.payer} mengonfirmasi pembayaranmu.`);
-      setTimeout(() => checkSessionComplete(), 500);
+      // No need to call checkSessionComplete, the watcher handles it
+    }
     }
   };
 
@@ -1369,7 +1386,10 @@ export default function App() {
     if (!s.session) return;
 
     const session = s.session;
-    const others = session.orders.filter(o => o.username !== session.payer);
+    const others = session.orders.filter(o => 
+       o.username.toLowerCase() !== (session.payer || '').toLowerCase() &&
+       o.username.toLowerCase() !== (session.companion || '').toLowerCase()
+    );
     const allOthersPaid = others.every(o => o.isPaid);
 
     if (allOthersPaid && session.coffeeBought) {
@@ -1409,6 +1429,12 @@ export default function App() {
     try {
       const debtors = s.session.orders.filter(o => !o.isPaid && o.username !== s.session.payer).map(o => o.username);
       const sessionId = s.session.id;
+
+      // Ensure counts are updated even on force close for fairness
+      await api.incrementRoleCount(s.session.payer, 'pay');
+      if (s.session.companion) {
+        await api.incrementRoleCount(s.session.companion, 'companion');
+      }
 
       // Wrap background work to ensure it completes
       await api.updateSession(sessionId, { status: 'force-closed', forceClosedBy: currentUser, debtors });
