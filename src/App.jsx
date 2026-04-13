@@ -87,7 +87,7 @@ function ConfirmDialog({ title, message, onConfirm, onCancel, confirmText = 'Ya,
 // ─── NOTIFICATION VIEW ────────────────────────────────────────────────────────
 function NotificationView({ notifications, username, onAction }) {
   const myNotifs = notifications.filter(n => n.to === username || n.to === 'all');
-  
+
   return (
     <div className="notif-view fade-in">
       <div className="view-header">
@@ -102,9 +102,9 @@ function NotificationView({ notifications, username, onAction }) {
           </div>
         ) : (
           [...myNotifs].reverse().map(n => (
-            <div 
-              key={n.id} 
-              className={`notif-card ${n.readBy?.includes(username) ? 'read' : 'unread'}`} 
+            <div
+              key={n.id}
+              className={`notif-card ${n.readBy?.includes(username) ? 'read' : 'unread'}`}
               onClick={() => onAction && onAction(n)}
               style={{ cursor: 'pointer' }}
             >
@@ -144,7 +144,7 @@ function OrderDetailView({ order, currentUser, api, onBack, onPaymentConfirm, se
       <button className="btn-primary mt-4" onClick={onBack}>Kembali</button>
     </div>
   );
-  
+
   const [isUploading, setIsUploading] = useState(false);
   const [localProof, setLocalProof] = useState(order?.paymentProof || '');
   const [localIsPaid, setLocalIsPaid] = useState(order?.isPaid || false);
@@ -274,25 +274,25 @@ function OrderDetailView({ order, currentUser, api, onBack, onPaymentConfirm, se
             </label>
 
             <div style={{ marginTop: '1.5rem' }}>
-               {localProof && (
+              {localProof && (
                 <div style={{ borderRadius: '20px', overflow: 'hidden', border: '1px solid var(--glass-border)', marginBottom: '1.5rem' }}>
                   <img src={localProof} alt="Bukti" style={{ width: '100%', maxHeight: '250px', objectFit: 'cover' }} />
                 </div>
-               )}
-               <button className="btn-primary" style={{ width: '100%', height: '56px', borderRadius: '20px' }} onClick={() => {
-                 if (!localProof) {
-                   setDialog({
-                     title: 'Status Cash?',
-                     message: 'Belum ada bukti foto, kirim status sebagai Cash?',
-                     onConfirm: () => { handleConfirmPay(); setDialog(null); },
-                     confirmText: 'Ya, Cash'
-                   });
-                 } else {
-                   handleConfirmPay();
-                 }
-               }} disabled={isUploading}>
-                 {isUploading ? 'Mengirim...' : 'Konfirmasi Bayar'}
-               </button>
+              )}
+              <button className="btn-primary" style={{ width: '100%', height: '56px', borderRadius: '20px' }} onClick={() => {
+                if (!localProof) {
+                  setDialog({
+                    title: 'Status Cash?',
+                    message: 'Belum ada bukti foto, kirim status sebagai Cash?',
+                    onConfirm: () => { handleConfirmPay(); setDialog(null); },
+                    confirmText: 'Ya, Cash'
+                  });
+                } else {
+                  handleConfirmPay();
+                }
+              }} disabled={isUploading}>
+                {isUploading ? 'Mengirim...' : 'Konfirmasi Bayar'}
+              </button>
             </div>
           </div>
         </div>
@@ -307,8 +307,8 @@ function OrderDetailView({ order, currentUser, api, onBack, onPaymentConfirm, se
           <p className="text-secondary" style={{ fontSize: '0.9rem' }}>Terima kasih sudah bayar tepat waktu! Kamu keren.</p>
           {localProof && (
             <div style={{ marginTop: '2rem', opacity: 0.6 }}>
-               <p className="text-secondary" style={{ fontSize: '0.7rem', marginBottom: '8px' }}>Bukti terupload:</p>
-               <img src={localProof} alt="Proof" style={{ width: '80px', height: '80px', objectFit: 'cover', borderRadius: '12px' }} />
+              <p className="text-secondary" style={{ fontSize: '0.7rem', marginBottom: '8px' }}>Bukti terupload:</p>
+              <img src={localProof} alt="Proof" style={{ width: '80px', height: '80px', objectFit: 'cover', borderRadius: '12px' }} />
             </div>
           )}
         </div>
@@ -739,8 +739,8 @@ function AdminView({ menu, users, history, activeSession, onSaveMenu, onResetPin
                     setDialog({
                       title: 'Bersihkan Notif?',
                       message: 'Hapus semua notifikasi secara permanen?',
-                      onConfirm: () => { 
-                        onDeleteAllNotifs(); 
+                      onConfirm: () => {
+                        onDeleteAllNotifs();
                         setDialog(null);
                         alert("Semua notifikasi telah dibersihkan.");
                       },
@@ -766,11 +766,11 @@ function ProfileView({ username, history, onSave, onLogout, payerHistory }) {
 
   const usernameLower = (username || '').toLowerCase();
   const validHistory = (history || []).filter(s => s && Array.isArray(s.orders));
-  
+
   // Stats
   const mySessions = validHistory.filter(s => s.orders.some(o => (o.username || '').toLowerCase() === usernameLower));
   const myDebts = mySessions.filter(s => s.debtors?.some(d => (d || '').toLowerCase() === usernameLower));
-  
+
   const totalOwed = myDebts.reduce((acc, s) => {
     const myOrder = s.orders.find(o => (o.username || '').toLowerCase() === usernameLower);
     return acc + (myOrder?.item?.price || 0);
@@ -798,11 +798,11 @@ function ProfileView({ username, history, onSave, onLogout, payerHistory }) {
               <Edit2 size={16} />
             </button>
           </div>
-          
-           {!isEditing ? (
+
+          {!isEditing ? (
             <div style={{ textAlign: 'center', marginTop: '1.5rem' }}>
-               <h2 style={{ fontSize: '1.8rem', fontWeight: 800, margin: 0 }}>{username}</h2>
-               <p className="text-secondary" style={{ fontSize: '0.9rem', marginTop: '4px' }}>Ngopi Sejak {mySessions.length > 0 ? formatDate(mySessions[mySessions.length - 1].startedAt).split(',')[0] : 'Hari Ini'}</p>
+              <h2 style={{ fontSize: '1.8rem', fontWeight: 800, margin: 0 }}>{username}</h2>
+              <p className="text-secondary" style={{ fontSize: '0.9rem', marginTop: '4px' }}>Ngopi Sejak {mySessions.length > 0 ? formatDate(mySessions[mySessions.length - 1].startedAt).split(',')[0] : 'Hari Ini'}</p>
             </div>
           ) : (
             <div className="modern-form" style={{ marginTop: '1.5rem', width: '100%' }}>
@@ -826,20 +826,20 @@ function ProfileView({ username, history, onSave, onLogout, payerHistory }) {
 
         <div className="stats-grid-modern">
           <div className="stat-box-modern">
-             <span className="stat-label">Hutang</span>
-             <h3 className={totalOwed > 0 ? 'text-red' : 'text-green'}>{formatRp(totalOwed)}</h3>
+            <span className="stat-label">Hutang</span>
+            <h3 className={totalOwed > 0 ? 'text-red' : 'text-green'}>{formatRp(totalOwed)}</h3>
           </div>
           <div className="stat-box-modern">
-             <span className="stat-label">Kopi Dipesan</span>
-             <h3>{totalCoffee} <small style={{ fontSize: '0.8rem', opacity: 0.5 }}>Cup</small></h3>
+            <span className="stat-label">Kopi Dipesan</span>
+            <h3>{totalCoffee} <small style={{ fontSize: '0.8rem', opacity: 0.5 }}>Cup</small></h3>
           </div>
           <div className="stat-box-modern">
-             <span className="stat-label">Jadi Payer</span>
-             <h3>{stats.pay} <small style={{ fontSize: '0.8rem', opacity: 0.5 }}>Kali</small></h3>
+            <span className="stat-label">Jadi Payer</span>
+            <h3>{stats.pay} <small style={{ fontSize: '0.8rem', opacity: 0.5 }}>Kali</small></h3>
           </div>
           <div className="stat-box-modern">
-             <span className="stat-label">Ikut Sesi</span>
-             <h3>{mySessions.length} <small style={{ fontSize: '0.8rem', opacity: 0.5 }}>Sesi</small></h3>
+            <span className="stat-label">Ikut Sesi</span>
+            <h3>{mySessions.length} <small style={{ fontSize: '0.8rem', opacity: 0.5 }}>Sesi</small></h3>
           </div>
         </div>
 
@@ -893,9 +893,9 @@ function HistoryView({ history, payerHistory, currentUser, onSelectSession }) {
                   onClick={() => onSelectSession(s)}
                 >
                   <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                    <div style={{ 
-                      background: 'var(--bg-primary)', 
-                      padding: '10px', 
+                    <div style={{
+                      background: 'var(--bg-primary)',
+                      padding: '10px',
                       borderRadius: '16px',
                       width: '44px',
                       height: '44px',
@@ -974,9 +974,9 @@ function HistoryDetailView({ session, onBack, currentUser, api }) {
         {session.orders.map((o, idx) => {
           const orderDebt = session.debtors?.some(d => (d || '').toLowerCase() === (o.username || '').toLowerCase());
           return (
-            <div 
-              key={idx} 
-              className="item-card glass-panel" 
+            <div
+              key={idx}
+              className="item-card glass-panel"
               style={{ padding: '12px 16px', borderRadius: '24px', cursor: 'pointer' }}
               onClick={() => {
                 setSelectedOrder({
@@ -999,10 +999,10 @@ function HistoryDetailView({ session, onBack, currentUser, api }) {
               <div style={{ textAlign: 'right' }}>
                 <p style={{ fontWeight: 700, fontSize: '0.9rem' }}>{formatRp(o.item.price)}</p>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '6px', justifyContent: 'flex-end' }}>
-                   {o.paymentProof && <Camera size={12} className="text-secondary" />}
-                   <span style={{ fontSize: '0.65rem', fontWeight: 800, color: orderDebt ? '#ef4444' : '#4ade80' }}>
-                     {orderDebt ? 'HUTANG' : 'LUNAS'}
-                   </span>
+                  {o.paymentProof && <Camera size={12} className="text-secondary" />}
+                  <span style={{ fontSize: '0.65rem', fontWeight: 800, color: orderDebt ? '#ef4444' : '#4ade80' }}>
+                    {orderDebt ? 'HUTANG' : 'LUNAS'}
+                  </span>
                 </div>
               </div>
             </div>
@@ -1045,6 +1045,19 @@ export default function App() {
   const [accountNo, setAccountNo] = useState('');
   const [proofInput, setProofInput] = useState(''); // and also for active session
   const [isUploadingActive, setIsUploadingActive] = useState(false);
+
+  // Derived states
+  const session = store.session;
+  const myRole = (() => {
+    if (!session || !currentUser) return null;
+    const cur = currentUser.toLowerCase();
+    if ((session.payer || '').toLowerCase() === cur) return 'payer';
+    if ((session.companion || '').toLowerCase() === cur) return 'companion';
+    if (session?.orders?.some(o => (o.username || '').toLowerCase() === cur)) return 'penitip';
+    return null;
+  })();
+  const myOrder = session?.orders?.find(o => (o.username || '').toLowerCase() === (currentUser || '').toLowerCase());
+  const myNotifs = session?.notifications?.filter(n => n.to === currentUser || n.to === 'all') || [];
 
   // Sync store with localStorage (simulates real-time)
   const refreshStore = useCallback(() => {
@@ -1157,8 +1170,8 @@ export default function App() {
     if (!session || session.status !== 'active') return;
     if (currentUser.toLowerCase() !== (session.payer || '').toLowerCase()) return;
 
-    const others = session.orders.filter(o => 
-      o.username.toLowerCase() !== session.payer.toLowerCase() && 
+    const others = session.orders.filter(o =>
+      o.username.toLowerCase() !== session.payer.toLowerCase() &&
       o.username.toLowerCase() !== (session.companion || '').toLowerCase()
     );
     const allOthersPaid = others.every(o => o.isPaid);
@@ -1169,20 +1182,6 @@ export default function App() {
     }
   }, [session, currentUser]);
 
-  // Current role of the logged-in user
-  const session = store.session;
-  const myRole = (() => {
-    if (!session || !currentUser) return null;
-    const cur = currentUser.toLowerCase();
-    if ((session.payer || '').toLowerCase() === cur) return 'payer';
-    if ((session.companion || '').toLowerCase() === cur) return 'companion';
-    if (session?.orders?.some(o => (o.username || '').toLowerCase() === cur)) return 'penitip';
-    return null;
-  })();
-
-  const myOrder = session?.orders?.find(o => (o.username || '').toLowerCase() === (currentUser || '').toLowerCase());
-  const myNotifs = session?.notifications?.filter(n => n.to === currentUser || n.to === 'all') || [];
-  // const unreadCount = myNotifs.filter(n => !n.read).length;
 
   // ─── ACTIONS ───────────────────────────────────────────────────────────────
 
@@ -1378,1020 +1377,1020 @@ export default function App() {
       api.notify(s.session.id, username, 'payment', `${s.session.payer} mengonfirmasi pembayaranmu.`);
       // No need to call checkSessionComplete, the watcher handles it
     }
-    }
   };
 
   async function checkSessionComplete() {
-    const s = loadStore();
-    if (!s.session) return;
+  const s = loadStore();
+  if (!s.session) return;
 
-    const session = s.session;
-    const others = session.orders.filter(o => 
-       o.username.toLowerCase() !== (session.payer || '').toLowerCase() &&
-       o.username.toLowerCase() !== (session.companion || '').toLowerCase()
-    );
-    const allOthersPaid = others.every(o => o.isPaid);
+  const session = s.session;
+  const others = session.orders.filter(o =>
+    o.username.toLowerCase() !== (session.payer || '').toLowerCase() &&
+    o.username.toLowerCase() !== (session.companion || '').toLowerCase()
+  );
+  const allOthersPaid = others.every(o => o.isPaid);
 
-    if (allOthersPaid && session.coffeeBought) {
-      alert('Selamat Ngopi! Semua pembayaran sudah lunas & kopi sudah dikonfirmasi.');
-      setView('home');
-      try {
-        await api.updateSession(session.id, { status: 'completed' });
-        const historyPayload = {
-          ...session,
-          status: 'completed',
-          companion: session.companion,
-          orders: session.orders.map(o => ({ ...o, isPaid: true }))
-        };
-        await api.saveHistory(session.id, historyPayload);
-        await api.deleteActiveSession(session.id);
-        session.orders.forEach(o => {
-          api.notify(session.id, o.username, 'done', 'Sesi ngopi selesai! Makasih sudah patungan adil.');
-        });
-      } catch (e) {
-        console.error("Error closing session history:", e);
-      }
+  if (allOthersPaid && session.coffeeBought) {
+    alert('Selamat Ngopi! Semua pembayaran sudah lunas & kopi sudah dikonfirmasi.');
+    setView('home');
+    try {
+      await api.updateSession(session.id, { status: 'completed' });
+      const historyPayload = {
+        ...session,
+        status: 'completed',
+        companion: session.companion,
+        orders: session.orders.map(o => ({ ...o, isPaid: true }))
+      };
+      await api.saveHistory(session.id, historyPayload);
+      await api.deleteActiveSession(session.id);
+      session.orders.forEach(o => {
+        api.notify(session.id, o.username, 'done', 'Sesi ngopi selesai! Makasih sudah patungan adil.');
+      });
+    } catch (e) {
+      console.error("Error closing session history:", e);
     }
   }
+}
 
-  const forceClose = async () => {
-    const s = loadStore();
-    if (!s.session) {
-      setDialog(null);
-      return;
-    }
-
-    // Instant UI Feedback: move to home and close dialog immediately
+const forceClose = async () => {
+  const s = loadStore();
+  if (!s.session) {
     setDialog(null);
-    setView('home');
-    setActiveMenu(null);
+    return;
+  }
 
-    try {
-      const debtors = s.session.orders.filter(o => !o.isPaid && o.username !== s.session.payer).map(o => o.username);
-      const sessionId = s.session.id;
+  // Instant UI Feedback: move to home and close dialog immediately
+  setDialog(null);
+  setView('home');
+  setActiveMenu(null);
 
-      // Ensure counts are updated even on force close for fairness
-      await api.incrementRoleCount(s.session.payer, 'pay');
-      if (s.session.companion) {
-        await api.incrementRoleCount(s.session.companion, 'companion');
-      }
+  try {
+    const debtors = s.session.orders.filter(o => !o.isPaid && o.username !== s.session.payer).map(o => o.username);
+    const sessionId = s.session.id;
 
-      // Wrap background work to ensure it completes
-      await api.updateSession(sessionId, { status: 'force-closed', forceClosedBy: currentUser, debtors });
-      const currentSession = loadStore().session;
-      const full = { ...currentSession, status: 'force-closed', forceClosedBy: currentUser, debtors, companion: currentSession.companion };
-      await api.saveHistory(sessionId, full);
-      await api.deleteActiveSession(sessionId);
-
-      if (debtors.length > 0) {
-        debtors.forEach(d => api.notify(sessionId, d, 'debt', `Sesi ditutup paksa. Hutangmu dicatat.`));
-      }
-      s.session.orders.forEach(o => {
-        api.notify(sessionId, o.username, 'done', `Sesi ditutup paksa oleh ${currentUser}.`);
-      });
-    } catch (err) {
-      console.error("Force close background sync error:", err);
-      // We don't alert here because the user is already on the Home screen
-      // and the session is likely at least marked as closed in common scenarios.
+    // Ensure counts are updated even on force close for fairness
+    await api.incrementRoleCount(s.session.payer, 'pay');
+    if (s.session.companion) {
+      await api.incrementRoleCount(s.session.companion, 'companion');
     }
-  };
 
-  const finishViewSession = () => {
-    setView('home');
-  };
+    // Wrap background work to ensure it completes
+    await api.updateSession(sessionId, { status: 'force-closed', forceClosedBy: currentUser, debtors });
+    const currentSession = loadStore().session;
+    const full = { ...currentSession, status: 'force-closed', forceClosedBy: currentUser, debtors, companion: currentSession.companion };
+    await api.saveHistory(sessionId, full);
+    await api.deleteActiveSession(sessionId);
 
-  const markNotifsRead = async () => {
-    const s = loadStore();
-    if (!s.session) return;
-    
-    // Optimistically update memory so badge clears instantly
-    let changed = false;
-    const updatedNotifs = s.session.notifications.map(n => {
-      if ((n.to === currentUser || n.to === 'all') && !n.readBy?.includes(currentUser)) {
-        changed = true;
-        api.markNotifRead(n.id, currentUser).catch(err => console.error("Notif sync fail:", err));
-        return { ...n, readBy: [...(n.readBy || []), currentUser] };
-      }
-      return n;
+    if (debtors.length > 0) {
+      debtors.forEach(d => api.notify(sessionId, d, 'debt', `Sesi ditutup paksa. Hutangmu dicatat.`));
+    }
+    s.session.orders.forEach(o => {
+      api.notify(sessionId, o.username, 'done', `Sesi ditutup paksa oleh ${currentUser}.`);
     });
-
-    if (changed) {
-      setStore({
-        ...s,
-        session: { ...s.session, notifications: updatedNotifs }
-      });
-    }
-  };
-
-  const saveMenu = async (newMenu) => {
-    await api.saveMenu(newMenu);
-  };
-
-  const onResetPin = async (username) => {
-    await api.resetUserPin(username);
-    alert(`PIN untuk ${username} berhasil di-reset menjadi '1234'.`);
-  };
-
-  const onUpdateProfile = async (oldName, newName) => {
-    const trimmed = newName.trim();
-    if (!trimmed || trimmed === oldName) return;
-
-    try {
-      await api.updateProfile(oldName, trimmed);
-      // Update local states immediately
-      setCurrentUser(trimmed);
-      localStorage.setItem('ngopi_current_user', trimmed);
-      setDialog(null); // Close confirmation if any
-      setActiveMenu(null); // Close dropdown menu
-      alert("Profil berhasil diperbarui!");
-    } catch (err) {
-      console.error(err);
-      alert("Gagal memperbarui profil: " + err.message);
-    }
-  };
-
-  const goToHistory = (filter = 'all') => {
-    setHistoryFilter(filter);
-    setView('history');
-    setDialog(null); // Close any other dialogs
-    setActiveMenu(null); // Close dropdowns
-  };
-
-  // ─── RENDER HELPERS ────────────────────────────────────────────────────────
-
-  const stepperSteps = ['Menunggu Pembayar', 'Silakan Bayar', 'Kopi Dibeli', 'Selesai'];
-  const getStepIndex = () => {
-    if (!session) return 0;
-    if (session.status === 'open' || session.status === 'payment-setup') return 0;
-    if (session.status === 'active' && !session.coffeeBought) return 1;
-    if (session.status === 'active' && session.coffeeBought) return 2;
-    if (session.status === 'completed') return 3;
-    return 0;
-  };
-
-  const totalAmount = session?.orders?.reduce((sum, o) => sum + (o.item?.price || 0), 0) || 0;
-  const paidAmount = session?.orders?.filter(o => o.isPaid).reduce((sum, o) => sum + (o.item?.price || 0), 0) || 0;
-  const unpaidCount = session?.orders?.filter(o => !o.isPaid && (o.username || '').toLowerCase() !== (session.payer || '').toLowerCase()).length || 0;
-  const sessionDone = session?.status === 'completed' || session?.status === 'force-closed';
-
-  if (renderError) {
-    return (
-      <div className="empty-state" style={{ padding: '4rem 2rem' }}>
-        <div className="glass-panel" style={{ maxWidth: '500px', margin: '0 auto', padding: '2rem', border: '2px solid var(--red)' }}>
-          <AlertTriangle size={48} className="text-red mb-4" />
-          <h2 className="text-red">Waduh, Sistem Eror!</h2>
-          <p className="text-secondary mt-2 mb-6">Terjadi masalah saat memuat data. Tenang, data ngopi kamu aman kok.</p>
-          <code style={{ display: 'block', background: '#f5f5f5', padding: '1rem', borderRadius: '4px', fontSize: '0.8rem', textAlign: 'left', overflow: 'auto' }}>
-            {renderError}
-          </code>
-          <button className="btn-primary mt-6" style={{ width: '100%' }} onClick={() => window.location.reload()}>Refresh Halaman</button>
-        </div>
-      </div>
-    );
+  } catch (err) {
+    console.error("Force close background sync error:", err);
+    // We don't alert here because the user is already on the Home screen
+    // and the session is likely at least marked as closed in common scenarios.
   }
+};
 
-  // ─── VIEW: LOGIN ────────────────────────────────────────────────────────────
-  if (!currentUser) {
-    return (
-      <div className="app-container login-mode">
-        <div className="login-screen fade-in">
-          <div className="login-card glass-panel">
-            <div className="login-brand">
-              <div className="login-logo"><Coffee size={40} /></div>
-              <h1 className="text-gradient">NgopiGak</h1>
-            </div>
+const finishViewSession = () => {
+  setView('home');
+};
 
-            <h2 className="login-title">Selamat Datang</h2>
-            <p className="text-secondary">Silakan masuk untuk mulai ngopi bareng rekan tim kamu.</p>
+const markNotifsRead = async () => {
+  const s = loadStore();
+  if (!s.session) return;
 
-            <form onSubmit={login} className="modern-form">
-              <div className="form-group">
-                <label>Nama Pengguna</label>
-                <input
-                  id="login-name"
-                  type="text"
-                  value={loginInput}
-                  onChange={e => setLoginInput(e.target.value)}
-                  placeholder="Masukkan nama kamu"
-                  autoFocus
-                  required
-                />
-              </div>
-              <div className="form-group">
-                <label>4 Digit PIN</label>
-                <input
-                  id="login-pin"
-                  type="password"
-                  inputMode="numeric"
-                  maxLength={4}
-                  value={pinInput}
-                  onChange={e => setPinInput(e.target.value.replace(/\D/g, ''))}
-                  placeholder="****"
-                  required
-                />
-              </div>
-              <button id="login-submit" type="submit" className="btn-primary">
-                Masuk Sekarang
-              </button>
-            </form>
+  // Optimistically update memory so badge clears instantly
+  let changed = false;
+  const updatedNotifs = s.session.notifications.map(n => {
+    if ((n.to === currentUser || n.to === 'all') && !n.readBy?.includes(currentUser)) {
+      changed = true;
+      api.markNotifRead(n.id, currentUser).catch(err => console.error("Notif sync fail:", err));
+      return { ...n, readBy: [...(n.readBy || []), currentUser] };
+    }
+    return n;
+  });
 
-            <div className="login-footer">
-              Dimsam • 2026
-            </div>
-          </div>
-        </div>
-      </div>
-    );
+  if (changed) {
+    setStore({
+      ...s,
+      session: { ...s.session, notifications: updatedNotifs }
+    });
   }
+};
 
-  // ─── BOTTOM NAVIGATION COMPONENT ───────────────────────────────────────────
-  const BottomNav = () => {
-    const s = loadStore();
-    const myNotifs = (s.session?.notifications || []).filter(n => n.to === currentUser || n.to === 'all');
-    const unread = myNotifs.filter(n => !n.readBy?.includes(currentUser)).length;
+const saveMenu = async (newMenu) => {
+  await api.saveMenu(newMenu);
+};
 
-    return (
-      <nav className="bottom-nav">
-        <div className={`nav-item ${view === 'home' ? 'active' : ''}`} onClick={() => setView('home')}>
-          <div className="nav-icon"><Home size={20} /></div>
-          <span>Home</span>
-        </div>
-        <div className={`nav-item ${view === 'history' ? 'active' : ''}`} onClick={() => goToHistory()}>
-          <div className="nav-icon"><History size={20} /></div>
-          <span>History</span>
-        </div>
-        <div className={`nav-item ${view === 'notifications' ? 'active' : ''}`} onClick={() => { setView('notifications'); markNotifsRead(); }}>
-          <div className="nav-icon nav-badge-container">
-            <Bell size={20} />
-            {unread > 0 && <span className="nav-badge">{unread}</span>}
-          </div>
-          <span>Notif</span>
-        </div>
-        <div className={`nav-item ${view === 'orders' ? 'active' : ''}`} onClick={() => setView('orders')}>
-          <div className="nav-icon"><Clock size={20} /></div>
-          <span>My Order</span>
-        </div>
-        <div className={`nav-item ${view === 'profile' ? 'active' : ''}`} onClick={() => setView('profile')}>
-          <div className="nav-icon"><User size={20} /></div>
-          <span>Profile</span>
-        </div>
-        {currentUser.toLowerCase() === 'admin' && (
-          <div className={`nav-item ${view === 'admin' ? 'active' : ''}`} onClick={() => setView('admin')}>
-            <div className="nav-icon"><Shield size={20} /></div>
-            <span>Admin</span>
-          </div>
-        )}
-      </nav>
-    );
-  };
+const onResetPin = async (username) => {
+  await api.resetUserPin(username);
+  alert(`PIN untuk ${username} berhasil di-reset menjadi '1234'.`);
+};
 
-  // ─── VIEW: HOME ─────────────────────────────────────────────────────────────
-  const renderHome = () => (
-    <div className="home-view fade-in" style={{ padding: '1rem' }}>
-      <div className="welcome-section" style={{ marginBottom: '2rem' }}>
-        <p className="text-secondary" style={{ fontSize: '0.9rem', fontWeight: 500 }}>Selamat Pagi,</p>
-        <h2 style={{ fontSize: '1.8rem' }}>{currentUser}! 👋</h2>
+const onUpdateProfile = async (oldName, newName) => {
+  const trimmed = newName.trim();
+  if (!trimmed || trimmed === oldName) return;
+
+  try {
+    await api.updateProfile(oldName, trimmed);
+    // Update local states immediately
+    setCurrentUser(trimmed);
+    localStorage.setItem('ngopi_current_user', trimmed);
+    setDialog(null); // Close confirmation if any
+    setActiveMenu(null); // Close dropdown menu
+    alert("Profil berhasil diperbarui!");
+  } catch (err) {
+    console.error(err);
+    alert("Gagal memperbarui profil: " + err.message);
+  }
+};
+
+const goToHistory = (filter = 'all') => {
+  setHistoryFilter(filter);
+  setView('history');
+  setDialog(null); // Close any other dialogs
+  setActiveMenu(null); // Close dropdowns
+};
+
+// ─── RENDER HELPERS ────────────────────────────────────────────────────────
+
+const stepperSteps = ['Menunggu Pembayar', 'Silakan Bayar', 'Kopi Dibeli', 'Selesai'];
+const getStepIndex = () => {
+  if (!session) return 0;
+  if (session.status === 'open' || session.status === 'payment-setup') return 0;
+  if (session.status === 'active' && !session.coffeeBought) return 1;
+  if (session.status === 'active' && session.coffeeBought) return 2;
+  if (session.status === 'completed') return 3;
+  return 0;
+};
+
+const totalAmount = session?.orders?.reduce((sum, o) => sum + (o.item?.price || 0), 0) || 0;
+const paidAmount = session?.orders?.filter(o => o.isPaid).reduce((sum, o) => sum + (o.item?.price || 0), 0) || 0;
+const unpaidCount = session?.orders?.filter(o => !o.isPaid && (o.username || '').toLowerCase() !== (session.payer || '').toLowerCase()).length || 0;
+const sessionDone = session?.status === 'completed' || session?.status === 'force-closed';
+
+if (renderError) {
+  return (
+    <div className="empty-state" style={{ padding: '4rem 2rem' }}>
+      <div className="glass-panel" style={{ maxWidth: '500px', margin: '0 auto', padding: '2rem', border: '2px solid var(--red)' }}>
+        <AlertTriangle size={48} className="text-red mb-4" />
+        <h2 className="text-red">Waduh, Sistem Eror!</h2>
+        <p className="text-secondary mt-2 mb-6">Terjadi masalah saat memuat data. Tenang, data ngopi kamu aman kok.</p>
+        <code style={{ display: 'block', background: '#f5f5f5', padding: '1rem', borderRadius: '4px', fontSize: '0.8rem', textAlign: 'left', overflow: 'auto' }}>
+          {renderError}
+        </code>
+        <button className="btn-primary mt-6" style={{ width: '100%' }} onClick={() => window.location.reload()}>Refresh Halaman</button>
       </div>
+    </div>
+  );
+}
 
-      {/* Dynamic Session Section */}
-      {session && (session.status === 'open' || session.status === 'active' || session.status === 'payment-setup') ? (
-        <div className="live-dashboard glass-panel fade-in">
-          <div className="live-indicator">
-            <div className="pulsing-dot"></div>
-            {sessionDone ? 'SESI BERAKHIR' : `LIVE SESI • ${session.status === 'open' ? formatTime(timeLeft) : 'Payment Ready'}`}
+// ─── VIEW: LOGIN ────────────────────────────────────────────────────────────
+if (!currentUser) {
+  return (
+    <div className="app-container login-mode">
+      <div className="login-screen fade-in">
+        <div className="login-card glass-panel">
+          <div className="login-brand">
+            <div className="login-logo"><Coffee size={40} /></div>
+            <h1 className="text-gradient">NgopiGak</h1>
           </div>
-          
-          <h3 style={{ fontSize: '1.2rem', marginBottom: '1.5rem' }}>{sessionDone ? 'Ringkasan Sesi Hari Ini ☕' : 'Ditunggu kopinya! ☕'}</h3>
-          
-          <div style={{ display: 'grid', gridTemplateColumns: session.companion ? '1fr 1fr' : '1fr', gap: '16px', marginBottom: '1.5rem' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-               <div style={{ position: 'relative' }}>
-                  <UserAvatar username={session.payer} size={48} />
-                  <div style={{ position: 'absolute', bottom: -2, right: -2, background: 'var(--accent-primary)', borderRadius: '50%', width: '18px', height: '18px', display: 'flex', alignItems: 'center', justifyContent: 'center', border: '2px solid var(--bg-primary)' }}>
-                     <Shield size={10} color="white" />
-                  </div>
-               </div>
-               <div>
-                  <p className="text-secondary" style={{ fontSize: '0.65rem', fontWeight: 700, textTransform: 'uppercase', marginBottom: '2px' }}>Payer</p>
-                  <p style={{ fontSize: '0.95rem', fontWeight: 800 }}>{session.payer}</p>
-               </div>
+
+          <h2 className="login-title">Selamat Datang</h2>
+          <p className="text-secondary">Silakan masuk untuk mulai ngopi bareng rekan tim kamu.</p>
+
+          <form onSubmit={login} className="modern-form">
+            <div className="form-group">
+              <label>Nama Pengguna</label>
+              <input
+                id="login-name"
+                type="text"
+                value={loginInput}
+                onChange={e => setLoginInput(e.target.value)}
+                placeholder="Masukkan nama kamu"
+                autoFocus
+                required
+              />
             </div>
-            
-            {session.companion && (
-              <div style={{ display: 'flex', alignItems: 'center', gap: '12px', paddingLeft: '12px', borderLeft: '1px solid rgba(255,255,255,0.1)' }}>
-                 <div style={{ position: 'relative' }}>
-                    <UserAvatar username={session.companion} size={48} />
-                    <div style={{ position: 'absolute', bottom: -2, right: -2, background: '#4ade80', borderRadius: '50%', width: '18px', height: '18px', display: 'flex', alignItems: 'center', justifyContent: 'center', border: '2px solid var(--bg-primary)' }}>
-                       <Users size={10} color="white" />
-                    </div>
-                 </div>
-                 <div>
-                    <p className="text-secondary" style={{ fontSize: '0.65rem', fontWeight: 700, textTransform: 'uppercase', marginBottom: '2px' }}>Companion</p>
-                    <p style={{ fontSize: '0.95rem', fontWeight: 800 }}>{session.companion}</p>
-                 </div>
-              </div>
-            )}
-          </div>
+            <div className="form-group">
+              <label>4 Digit PIN</label>
+              <input
+                id="login-pin"
+                type="password"
+                inputMode="numeric"
+                maxLength={4}
+                value={pinInput}
+                onChange={e => setPinInput(e.target.value.replace(/\D/g, ''))}
+                placeholder="****"
+                required
+              />
+            </div>
+            <button id="login-submit" type="submit" className="btn-primary">
+              Masuk Sekarang
+            </button>
+          </form>
 
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'rgba(0,0,0,0.2)', padding: '12px 16px', borderRadius: '16px' }}>
-             <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <Users size={16} className="text-secondary" />
-                <span style={{ fontSize: '0.85rem', fontWeight: 600 }}>{session.orders?.length || 0} Peserta</span>
-             </div>
-             <button 
-                className="btn-primary-pill" 
-                style={{ height: '40px', fontSize: '0.85rem', padding: '0 20px' }}
-                onClick={() => {
-                   if (sessionDone) {
-                      setSelectedSession(session);
-                      setView('history-detail');
-                   } else {
-                      setView('live-session');
-                   }
-                }}
-             >
-                {sessionDone ? 'Lihat Detail' : (session.status === 'open' ? 'Join Sesi' : 'Lihat Sesi')}
-             </button>
+          <div className="login-footer">
+            Dimsam • 2026
           </div>
-        </div>
-      ) : (
-        <div className="home-banner glass-panel" style={{
-          background: 'linear-gradient(135deg, var(--accent-primary) 0%, #ffb347 100%)',
-          padding: '1.5rem',
-          borderRadius: '24px',
-          marginBottom: '2rem',
-          color: 'white',
-          boxShadow: '0 10px 30px rgba(230, 145, 56, 0.3)'
-        }}>
-          <h3 style={{ fontSize: '1.2rem', marginBottom: '8px' }}>Siap untuk secangkir kopi?</h3>
-          <p style={{ fontSize: '0.9rem', opacity: 0.9, marginBottom: '1.25rem' }}>Mulai sesi bareng teman-teman sekarang dan bagikan momen seru.</p>
-          <button
-            className="btn-primary"
-            style={{ background: 'white', color: 'var(--accent-primary)', width: 'auto', padding: '10px 24px', fontSize: '0.9rem' }}
-            onClick={startSession}
-          >
-            Mulai Baru
-          </button>
-        </div>
-      )}
-
-      <div className="section-title" style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '1rem' }}>
-        <div style={{ width: '4px', height: '18px', background: 'var(--accent-primary)', borderRadius: '2px' }}></div>
-        <h4 style={{ fontSize: '1.1rem', fontWeight: 800 }}>Statistik Kamu</h4>
-      </div>
-
-      <div className="status-grid" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', marginBottom: '2rem' }}>
-        <div className="glass-panel stat-card" style={{ padding: '1.25rem', borderRadius: '24px' }}>
-          <div style={{ background: 'rgba(230, 145, 56, 0.1)', width: '36px', height: '36px', borderRadius: '10px', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '12px' }}>
-            <Clock size={14} className="text-accent" />
-          </div>
-          <span className="text-secondary" style={{ fontSize: '0.75rem', fontWeight: 600 }}>Total Sesi</span>
-          <p style={{ fontSize: '1.5rem', fontWeight: 800 }}>{store.history.length}</p>
-        </div>
-        <div className="glass-panel stat-card" style={{ padding: '1.25rem', borderRadius: '24px' }}>
-          <div style={{ background: 'rgba(230, 145, 56, 0.1)', width: '36px', height: '36px', borderRadius: '10px', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '12px' }}>
-            <Coffee size={14} className="text-accent" />
-          </div>
-          <span className="text-secondary" style={{ fontSize: '0.75rem', fontWeight: 600 }}>Kopi Dipesan</span>
-          <p style={{ fontSize: '1.5rem', fontWeight: 800 }}>{store.history.filter(s => s.orders.some(o => o.username === currentUser)).length}</p>
         </div>
       </div>
     </div>
   );
+}
 
-  const renderMyOrders = () => {
-    // Collect all orders for currentUser across history and active session
-    const allPersonalOrders = [];
+// ─── BOTTOM NAVIGATION COMPONENT ───────────────────────────────────────────
+const BottomNav = () => {
+  const s = loadStore();
+  const myNotifs = (s.session?.notifications || []).filter(n => n.to === currentUser || n.to === 'all');
+  const unread = myNotifs.filter(n => !n.readBy?.includes(currentUser)).length;
 
-    // Past orders from history
-    store.history.forEach(s => {
-      const myOrder = s.orders.find(o => o.username === currentUser);
-      if (myOrder) {
-        allPersonalOrders.push({
-          ...myOrder,
-          sessionDate: s.startedAt,
-          payer: s.payer,
-          isPaid: !s.debtors?.includes(currentUser),
-          sessionId: s.id
-        });
-      }
-    });
+  return (
+    <nav className="bottom-nav">
+      <div className={`nav-item ${view === 'home' ? 'active' : ''}`} onClick={() => setView('home')}>
+        <div className="nav-icon"><Home size={20} /></div>
+        <span>Home</span>
+      </div>
+      <div className={`nav-item ${view === 'history' ? 'active' : ''}`} onClick={() => goToHistory()}>
+        <div className="nav-icon"><History size={20} /></div>
+        <span>History</span>
+      </div>
+      <div className={`nav-item ${view === 'notifications' ? 'active' : ''}`} onClick={() => { setView('notifications'); markNotifsRead(); }}>
+        <div className="nav-icon nav-badge-container">
+          <Bell size={20} />
+          {unread > 0 && <span className="nav-badge">{unread}</span>}
+        </div>
+        <span>Notif</span>
+      </div>
+      <div className={`nav-item ${view === 'orders' ? 'active' : ''}`} onClick={() => setView('orders')}>
+        <div className="nav-icon"><Clock size={20} /></div>
+        <span>My Order</span>
+      </div>
+      <div className={`nav-item ${view === 'profile' ? 'active' : ''}`} onClick={() => setView('profile')}>
+        <div className="nav-icon"><User size={20} /></div>
+        <span>Profile</span>
+      </div>
+      {currentUser.toLowerCase() === 'admin' && (
+        <div className={`nav-item ${view === 'admin' ? 'active' : ''}`} onClick={() => setView('admin')}>
+          <div className="nav-icon"><Shield size={20} /></div>
+          <span>Admin</span>
+        </div>
+      )}
+    </nav>
+  );
+};
 
-    // Active session order if exists
-    if (session && !sessionDone) {
-      const myActiveOrder = session.orders.find(o => o.username === currentUser);
-      if (myActiveOrder) {
-        allPersonalOrders.push({
-          ...myActiveOrder,
-          sessionDate: session.startedAt,
-          payer: session.payer,
-          isPaid: myActiveOrder.isPaid || false,
-          sessionId: 'active',
-          isLive: true
-        });
-      }
-    }
+// ─── VIEW: HOME ─────────────────────────────────────────────────────────────
+const renderHome = () => (
+  <div className="home-view fade-in" style={{ padding: '1rem' }}>
+    <div className="welcome-section" style={{ marginBottom: '2rem' }}>
+      <p className="text-secondary" style={{ fontSize: '0.9rem', fontWeight: 500 }}>Selamat Pagi,</p>
+      <h2 style={{ fontSize: '1.8rem' }}>{currentUser}! 👋</h2>
+    </div>
 
-    return (
-      <div className="orders-view fade-in" style={{ padding: '1rem' }}>
-        <div className="view-header" style={{ marginBottom: '1.5rem' }}>
-          <h2 className="text-gradient">My Order</h2>
-          <p className="text-secondary" style={{ fontSize: '0.9rem' }}>Daftar kopi yang pernah kamu pesan.</p>
+    {/* Dynamic Session Section */}
+    {session && (session.status === 'open' || session.status === 'active' || session.status === 'payment-setup') ? (
+      <div className="live-dashboard glass-panel fade-in">
+        <div className="live-indicator">
+          <div className="pulsing-dot"></div>
+          {sessionDone ? 'SESI BERAKHIR' : `LIVE SESI • ${session.status === 'open' ? formatTime(timeLeft) : 'Payment Ready'}`}
         </div>
 
-        <div className="card-stack">
-          {allPersonalOrders.length === 0 ? (
-            <div className="glass-panel empty-state" style={{ padding: '3rem 1.5rem', textAlign: 'center' }}>
-              <Coffee size={48} className="text-secondary opacity-20 mb-4" />
-              <p className="text-secondary">Belum ada pesanan.</p>
+        <h3 style={{ fontSize: '1.2rem', marginBottom: '1.5rem' }}>{sessionDone ? 'Ringkasan Sesi Hari Ini ☕' : 'Ditunggu kopinya! ☕'}</h3>
+
+        <div style={{ display: 'grid', gridTemplateColumns: session.companion ? '1fr 1fr' : '1fr', gap: '16px', marginBottom: '1.5rem' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+            <div style={{ position: 'relative' }}>
+              <UserAvatar username={session.payer} size={48} />
+              <div style={{ position: 'absolute', bottom: -2, right: -2, background: 'var(--accent-primary)', borderRadius: '50%', width: '18px', height: '18px', display: 'flex', alignItems: 'center', justifyContent: 'center', border: '2px solid var(--bg-primary)' }}>
+                <Shield size={10} color="white" />
+              </div>
             </div>
-          ) : (
-            [...allPersonalOrders].sort((a, b) => new Date(b.sessionDate || 0) - new Date(a.sessionDate || 0)).map((o, idx) => (
-              <div key={idx} className="item-card glass-panel" onClick={() => { setSelectedOrder(o); setView('order-detail'); }} style={{ 
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'space-between',
-                padding: '16px', 
-                borderRadius: '24px',
-                cursor: 'pointer',
-                marginBottom: '12px',
-                borderLeft: o.isPaid ? '1px solid var(--glass-border)' : '4px solid #ef4444'
-              }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                  <div style={{ 
-                    background: 'var(--bg-primary)', 
-                    padding: '10px', 
-                    borderRadius: '16px', 
-                    fontSize: '1.2rem',
-                    width: '44px',
-                    height: '44px',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center'
-                  }}>
-                    {o.item.emoji || '☕'}
-                  </div>
-                  <div>
-                    <h4 style={{ fontSize: '1rem', fontWeight: 700, margin: 0 }}>{o.item.name}</h4>
-                    <p className="text-secondary" style={{ fontSize: '0.75rem', margin: 0 }}>
-                      {formatDate(o.sessionDate).split(',')[0]} • {o.isLive ? 'Sesi Aktif' : `Dibayar oleh ${o.payer}`}
-                    </p>
-                  </div>
-                </div>
-                <div style={{ textAlign: 'right' }}>
-                  <p style={{ fontWeight: 800, fontSize: '1rem', marginBottom: '4px' }}>{formatRp(o.item.price)}</p>
-                  <StatusBadge isPaid={o.isPaid} />
+            <div>
+              <p className="text-secondary" style={{ fontSize: '0.65rem', fontWeight: 700, textTransform: 'uppercase', marginBottom: '2px' }}>Payer</p>
+              <p style={{ fontSize: '0.95rem', fontWeight: 800 }}>{session.payer}</p>
+            </div>
+          </div>
+
+          {session.companion && (
+            <div style={{ display: 'flex', alignItems: 'center', gap: '12px', paddingLeft: '12px', borderLeft: '1px solid rgba(255,255,255,0.1)' }}>
+              <div style={{ position: 'relative' }}>
+                <UserAvatar username={session.companion} size={48} />
+                <div style={{ position: 'absolute', bottom: -2, right: -2, background: '#4ade80', borderRadius: '50%', width: '18px', height: '18px', display: 'flex', alignItems: 'center', justifyContent: 'center', border: '2px solid var(--bg-primary)' }}>
+                  <Users size={10} color="white" />
                 </div>
               </div>
-            ))
+              <div>
+                <p className="text-secondary" style={{ fontSize: '0.65rem', fontWeight: 700, textTransform: 'uppercase', marginBottom: '2px' }}>Companion</p>
+                <p style={{ fontSize: '0.95rem', fontWeight: 800 }}>{session.companion}</p>
+              </div>
+            </div>
           )}
         </div>
-      </div>
-    );
-  };
 
-  // ─── VIEW: SESSION ──────────────────────────────────────────────────────────
-  /**
-   * FORMALIZED ORDER CYCLE:
-   * 1. open: Users adding items, timer running.
-   * 2. payment-setup: Timer expires or admin closes. Payer picked, fills bank info.
-   * 3. active: Payment phase. Users upload proof, Payer verifies.
-   * 4. terminal (completed/force-closed): Archived to history and deleted from active.
-   */
-  const renderSession = () => {
-    if (!session) return (
-      <div className="empty-state fade-in" style={{ padding: '4rem 2rem', textAlign: 'center' }}>
-        <div style={{ background: 'var(--surface)', width: '80px', height: '80px', borderRadius: '40px', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 2rem' }}>
-          <Coffee size={40} className="text-secondary" />
-        </div>
-        <h2 className="text-secondary">Belum ada sesi</h2>
-        <p className="text-secondary" style={{ marginTop: '0.5rem', marginBottom: '2rem' }}>Mulai sesi ngopi sekarang untuk berbagi bareng teman.</p>
-        <button className="btn-primary" onClick={startSession}>Buka Sesi Baru</button>
-      </div>
-    );
-
-    if (session.status === 'completed' || session.status === 'force-closed') {
-      const isForced = session.status === 'force-closed';
-      const orders = session.orders || [];
-      const totalSession = orders.reduce((sum, o) => {
-        if (!o || !o.item) return sum;
-        return sum + (o.item.price || 0);
-      }, 0);
-      return (
-        <div className="session-summary fade-in" style={{ padding: '1.5rem' }}>
-          <div className="glass-panel" style={{ textAlign: 'center', padding: '2.5rem 1.5rem' }}>
-            <div style={{ color: isForced ? 'var(--accent-primary)' : '#4ade80', marginBottom: '1.5rem' }}>
-              {isForced ? <AlertTriangle size={64} /> : <CheckCircle size={64} />}
-            </div>
-            <h2 style={{ marginBottom: '0.5rem' }}>{isForced ? 'Sesi Ditutup' : 'Sesi Selesai!'}</h2>
-            <p className="text-secondary" style={{ marginBottom: '2rem' }}>
-              {isForced ? 'Ditutup sebelum semua bayar.' : 'Semua pesanan sudah lunas.'}
-            </p>
-
-            <div className="stats-list" style={{ background: 'var(--bg-primary)', borderRadius: '20px', padding: '1.5rem', marginBottom: '2rem' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '12px' }}>
-                <span className="text-secondary">Total Putaran</span>
-                <strong style={{ fontSize: '1.1rem' }}>{formatRp(totalSession)}</strong>
-              </div>
-              <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                <span className="text-secondary">Peserta</span>
-                <strong style={{ fontSize: '1.1rem' }}>{(session.orders || []).length} orang</strong>
-              </div>
-            </div>
-
-            <button className="btn-primary" onClick={() => setView('home')}>Kembali ke Home</button>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'rgba(0,0,0,0.2)', padding: '12px 16px', borderRadius: '16px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <Users size={16} className="text-secondary" />
+            <span style={{ fontSize: '0.85rem', fontWeight: 600 }}>{session.orders?.length || 0} Peserta</span>
           </div>
+          <button
+            className="btn-primary-pill"
+            style={{ height: '40px', fontSize: '0.85rem', padding: '0 20px' }}
+            onClick={() => {
+              if (sessionDone) {
+                setSelectedSession(session);
+                setView('history-detail');
+              } else {
+                setView('live-session');
+              }
+            }}
+          >
+            {sessionDone ? 'Lihat Detail' : (session.status === 'open' ? 'Join Sesi' : 'Lihat Sesi')}
+          </button>
         </div>
-      );
-    }
+      </div>
+    ) : (
+      <div className="home-banner glass-panel" style={{
+        background: 'linear-gradient(135deg, var(--accent-primary) 0%, #ffb347 100%)',
+        padding: '1.5rem',
+        borderRadius: '24px',
+        marginBottom: '2rem',
+        color: 'white',
+        boxShadow: '0 10px 30px rgba(230, 145, 56, 0.3)'
+      }}>
+        <h3 style={{ fontSize: '1.2rem', marginBottom: '8px' }}>Siap untuk secangkir kopi?</h3>
+        <p style={{ fontSize: '0.9rem', opacity: 0.9, marginBottom: '1.25rem' }}>Mulai sesi bareng teman-teman sekarang dan bagikan momen seru.</p>
+        <button
+          className="btn-primary"
+          style={{ background: 'white', color: 'var(--accent-primary)', width: 'auto', padding: '10px 24px', fontSize: '0.9rem' }}
+          onClick={startSession}
+        >
+          Mulai Baru
+        </button>
+      </div>
+    )}
 
-    if (session.status === 'open') {
-      return (
-        <div className="session-open-view fade-in" style={{ padding: '1rem' }}>
-          <div className="glass-panel" style={{ marginBottom: '1.5rem', position: 'relative' }}>
-            <div 
-               className={`timer-chip ${timeLeft < 60 ? 'urgent' : ''}`} 
-               style={{ 
-                  position: 'absolute', 
-                  top: '16px', 
-                  right: '16px', 
-                  background: 'var(--bg-primary)', 
-                  padding: '6px 14px', 
-                  borderRadius: '12px', 
-                  fontWeight: 900,
-                  color: 'white',
-                  border: '1px solid rgba(255,255,255,0.1)',
-                  boxShadow: '0 4px 12px rgba(0,0,0,0.2)',
+    <div className="section-title" style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '1rem' }}>
+      <div style={{ width: '4px', height: '18px', background: 'var(--accent-primary)', borderRadius: '2px' }}></div>
+      <h4 style={{ fontSize: '1.1rem', fontWeight: 800 }}>Statistik Kamu</h4>
+    </div>
+
+    <div className="status-grid" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', marginBottom: '2rem' }}>
+      <div className="glass-panel stat-card" style={{ padding: '1.25rem', borderRadius: '24px' }}>
+        <div style={{ background: 'rgba(230, 145, 56, 0.1)', width: '36px', height: '36px', borderRadius: '10px', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '12px' }}>
+          <Clock size={14} className="text-accent" />
+        </div>
+        <span className="text-secondary" style={{ fontSize: '0.75rem', fontWeight: 600 }}>Total Sesi</span>
+        <p style={{ fontSize: '1.5rem', fontWeight: 800 }}>{store.history.length}</p>
+      </div>
+      <div className="glass-panel stat-card" style={{ padding: '1.25rem', borderRadius: '24px' }}>
+        <div style={{ background: 'rgba(230, 145, 56, 0.1)', width: '36px', height: '36px', borderRadius: '10px', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '12px' }}>
+          <Coffee size={14} className="text-accent" />
+        </div>
+        <span className="text-secondary" style={{ fontSize: '0.75rem', fontWeight: 600 }}>Kopi Dipesan</span>
+        <p style={{ fontSize: '1.5rem', fontWeight: 800 }}>{store.history.filter(s => s.orders.some(o => o.username === currentUser)).length}</p>
+      </div>
+    </div>
+  </div>
+);
+
+const renderMyOrders = () => {
+  // Collect all orders for currentUser across history and active session
+  const allPersonalOrders = [];
+
+  // Past orders from history
+  store.history.forEach(s => {
+    const myOrder = s.orders.find(o => o.username === currentUser);
+    if (myOrder) {
+      allPersonalOrders.push({
+        ...myOrder,
+        sessionDate: s.startedAt,
+        payer: s.payer,
+        isPaid: !s.debtors?.includes(currentUser),
+        sessionId: s.id
+      });
+    }
+  });
+
+  // Active session order if exists
+  if (session && !sessionDone) {
+    const myActiveOrder = session.orders.find(o => o.username === currentUser);
+    if (myActiveOrder) {
+      allPersonalOrders.push({
+        ...myActiveOrder,
+        sessionDate: session.startedAt,
+        payer: session.payer,
+        isPaid: myActiveOrder.isPaid || false,
+        sessionId: 'active',
+        isLive: true
+      });
+    }
+  }
+
+  return (
+    <div className="orders-view fade-in" style={{ padding: '1rem' }}>
+      <div className="view-header" style={{ marginBottom: '1.5rem' }}>
+        <h2 className="text-gradient">My Order</h2>
+        <p className="text-secondary" style={{ fontSize: '0.9rem' }}>Daftar kopi yang pernah kamu pesan.</p>
+      </div>
+
+      <div className="card-stack">
+        {allPersonalOrders.length === 0 ? (
+          <div className="glass-panel empty-state" style={{ padding: '3rem 1.5rem', textAlign: 'center' }}>
+            <Coffee size={48} className="text-secondary opacity-20 mb-4" />
+            <p className="text-secondary">Belum ada pesanan.</p>
+          </div>
+        ) : (
+          [...allPersonalOrders].sort((a, b) => new Date(b.sessionDate || 0) - new Date(a.sessionDate || 0)).map((o, idx) => (
+            <div key={idx} className="item-card glass-panel" onClick={() => { setSelectedOrder(o); setView('order-detail'); }} style={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              padding: '16px',
+              borderRadius: '24px',
+              cursor: 'pointer',
+              marginBottom: '12px',
+              borderLeft: o.isPaid ? '1px solid var(--glass-border)' : '4px solid #ef4444'
+            }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                <div style={{
+                  background: 'var(--bg-primary)',
+                  padding: '10px',
+                  borderRadius: '16px',
+                  fontSize: '1.2rem',
+                  width: '44px',
+                  height: '44px',
                   display: 'flex',
                   alignItems: 'center',
-                  gap: '6px'
-               }}
-            >
-              <Clock size={14} />
-              {formatTime(timeLeft)}
-            </div>
-            <h3 style={{ marginBottom: '0.5rem' }}>Sesi Terbuka</h3>
-            <p className="text-secondary" style={{ fontSize: '0.9rem' }}>Pilih kopi kamu sebelum timer habis.</p>
-
-            <form onSubmit={addOrder} style={{ marginTop: '1.5rem' }}>
-              <div className="form-group modern-form">
-                <div className="searchable-dropdown" ref={coffeeDropdownRef} style={{ position: 'relative' }}>
-                  <input
-                    type="text"
-                    placeholder="Cari kopi..."
-                    value={coffeeSearch}
-                    onFocus={() => setShowMenuResults(true)}
-                    onChange={(e) => setCoffeeSearch(e.target.value)}
-                    style={{ borderRadius: '20px', paddingRight: '40px' }}
-                  />
-                  <div style={{ position: 'absolute', right: '16px', top: '50%', transform: 'translateY(-50%)', opacity: 0.5 }}>
-                    <ChevronDown size={20} />
-                  </div>
-                  {showMenuResults && (
-                    <div className="glass-panel dropdown-results" style={{ position: 'absolute', top: 'calc(100% + 8px)', left: 0, right: 0, zIndex: 100, maxHeight: '250px', overflowY: 'auto', padding: '8px' }}>
-                      {(store.menu || []).filter(m => m && m.name.toLowerCase().includes(coffeeSearch.toLowerCase())).map(m => (
-                        <div key={m.id} className="dropdown-item" onClick={() => { setSelectedCoffeeId(m.id); setCoffeeSearch(`${m.emoji} ${m.name}`); setShowMenuResults(false); }} style={{ padding: '12px', borderRadius: '12px', cursor: 'pointer', display: 'flex', justifyContent: 'space-between' }}>
-                          <span>{m.emoji} {m.name}</span>
-                          <span className="text-accent">{formatRp(m.price)}</span>
-                        </div>
-                      ))}
-                    </div>
-                  )}
+                  justifyContent: 'center'
+                }}>
+                  {o.item.emoji || '☕'}
                 </div>
-              </div>
-              <button className="btn-primary" type="submit" style={{ borderRadius: '20px', marginTop: '1.25rem' }}>
-                {myOrder ? 'Update Pesanan' : 'Tambah Pesanan'}
-              </button>
-            </form>
-          </div>
-
-          <div className="order-list-section">
-            <h4 style={{ marginBottom: '1rem', paddingLeft: '4px' }}>Daftar Pesanan ({(session.orders || []).length})</h4>
-            <div className="card-stack">
-              {(session.orders || []).map(o => (
-                <div key={o.id} className={`item-card glass-panel ${o.username === currentUser ? 'active-border' : ''}`} style={{ padding: '12px 16px', borderRadius: '20px' }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                    <UserAvatar username={o.username} size={36} />
-                    <div>
-                      <p style={{ fontSize: '0.9rem', fontWeight: 700 }}>{o.username}</p>
-                      <p className="text-secondary" style={{ fontSize: '0.8rem' }}>{o.item?.emoji || '☕'} {o.item?.name || 'Item'}</p>
-                    </div>
-                  </div>
-                  <strong className="text-accent">{formatRp(o.item?.price || 0)}</strong>
-                </div>
-              ))}
-            </div>
-          </div>
-
-          <div className="admin-actions" style={{ marginTop: '2rem' }}>
-            <button className="btn-secondary" onClick={closeSessionAndSelectRoles} style={{ width: '100%', borderRadius: '20px', borderColor: 'rgba(255,255,255,0.1)' }}>
-              Tutup Sesi Sekarang
-            </button>
-          </div>
-        </div>
-      );
-    }
-
-    if (session.status === 'payment-setup') {
-      const isPayer = session.payer === currentUser;
-      return (
-        <div className="payment-setup fade-in" style={{ padding: '1.5rem' }}>
-          <div className="glass-panel" style={{ textAlign: 'center', padding: '2rem 1.5rem' }}>
-            <h2 style={{ marginBottom: '2rem' }}>Relawan Terpilih!</h2>
-
-            <div className={`roles-showcase ${session.companion ? 'dual-roles' : ''}`} style={{ 
-              display: 'grid', 
-              gridTemplateColumns: session.companion ? '1fr 1fr' : '1fr', 
-              gap: '16px',
-              marginBottom: '2.5rem' 
-            }}>
-              <div className="payer-card" style={{ position: 'relative' }}>
-                <div style={{ position: 'absolute', top: '-10px', left: '50%', transform: 'translateX(-50%)', background: 'var(--accent-primary)', padding: '4px 12px', borderRadius: '12px', fontSize: '0.6rem', fontWeight: 800, zIndex: 1, whiteSpace: 'nowrap' }}>PEMBAYAR</div>
-                <div style={{ background: 'var(--bg-primary)', padding: '1.5rem 1rem', borderRadius: '24px', border: '2px solid var(--accent-primary)' }}>
-                  <UserAvatar username={session.payer} size={64} />
-                  <h3 style={{ fontSize: '1.2rem', marginTop: '0.75rem', marginBottom: '4px' }}>{session.payer}</h3>
-                  <p className="text-secondary" style={{ fontSize: '0.7rem' }}>
-                     Payer Utama
+                <div>
+                  <h4 style={{ fontSize: '1rem', fontWeight: 700, margin: 0 }}>{o.item.name}</h4>
+                  <p className="text-secondary" style={{ fontSize: '0.75rem', margin: 0 }}>
+                    {formatDate(o.sessionDate).split(',')[0]} • {o.isLive ? 'Sesi Aktif' : `Dibayar oleh ${o.payer}`}
                   </p>
                 </div>
               </div>
-
-              {session.companion && (
-                <div className="companion-card" style={{ position: 'relative' }}>
-                  <div style={{ position: 'absolute', top: '-10px', left: '50%', transform: 'translateX(-50%)', background: '#4ade80', padding: '4px 12px', borderRadius: '12px', fontSize: '0.6rem', fontWeight: 800, zIndex: 1, whiteSpace: 'nowrap' }}>PENDAMPING</div>
-                  <div style={{ background: 'var(--bg-primary)', padding: '1.5rem 1rem', borderRadius: '24px', border: '1px solid rgba(74, 222, 128, 0.3)' }}>
-                    <UserAvatar username={session.companion} size={64} />
-                    <h3 style={{ fontSize: '1.2rem', marginTop: '0.75rem', marginBottom: '4px' }}>{session.companion}</h3>
-                    <p className="text-secondary" style={{ fontSize: '0.7rem' }}>
-                       Pembantu Payer
-                    </p>
-                  </div>
-                </div>
-              )}
-            </div>
-
-            {isPayer ? (
-              <form onSubmit={submitPaymentInfo} className="modern-form" style={{ textAlign: 'left' }}>
-                <h4 style={{ marginBottom: '1rem' }}>Lengkapi Info Transfer</h4>
-                <div className="form-group">
-                  <label>Metode</label>
-                  <select value={paymentMethod} onChange={e => setPaymentMethod(e.target.value)} required>
-                    <option value="" disabled>Pilih Metode</option>
-                    <option value="BANK">Bank Transfer</option>
-                    <option value="GOPAY">GoPay / ShopeePay</option>
-                    <option value="DANA">DANA / OVO</option>
-                  </select>
-                </div>
-                {paymentMethod === 'BANK' && (
-                  <div className="form-group"><label>Nama Bank</label><input type="text" value={bankName} onChange={e => setBankName(e.target.value)} placeholder="Misal: BCA" required /></div>
-                )}
-                <div className="form-group"><label>Nomor Akun</label><input type="text" value={accountNo} onChange={e => setAccountNo(e.target.value)} placeholder="No Rekening / No HP" required /></div>
-                <button className="btn-primary" type="submit" style={{ marginTop: '1rem' }}>Konfirmasi & Aktifkan Sesi</button>
-              </form>
-            ) : (
-              <div style={{ opacity: 0.8 }}>
-                <div className="spinner" style={{ margin: '0 auto 1.5rem' }}></div>
-                <p className="text-secondary">Menunggu <strong>{session.payer || 'Pembayar'}</strong> mengisi info pembayaran...</p>
+              <div style={{ textAlign: 'right' }}>
+                <p style={{ fontWeight: 800, fontSize: '1rem', marginBottom: '4px' }}>{formatRp(o.item.price)}</p>
+                <StatusBadge isPaid={o.isPaid} />
               </div>
-            )}
-          </div>
-        </div>
-      );
-    }
+            </div>
+          ))
+        )}
+      </div>
+    </div>
+  );
+};
 
-    if (session.status === 'active' || sessionDone) {
-      if (myRole === 'payer') return renderPayerPage();
-      if (myRole === 'companion') return renderCompanionPage();
-      if (myRole === 'penitip') return renderPenitipPage();
-      return renderGuestPage();
-    }
-    
-    // Safety fallback for unknown status
+// ─── VIEW: SESSION ──────────────────────────────────────────────────────────
+/**
+ * FORMALIZED ORDER CYCLE:
+ * 1. open: Users adding items, timer running.
+ * 2. payment-setup: Timer expires or admin closes. Payer picked, fills bank info.
+ * 3. active: Payment phase. Users upload proof, Payer verifies.
+ * 4. terminal (completed/force-closed): Archived to history and deleted from active.
+ */
+const renderSession = () => {
+  if (!session) return (
+    <div className="empty-state fade-in" style={{ padding: '4rem 2rem', textAlign: 'center' }}>
+      <div style={{ background: 'var(--surface)', width: '80px', height: '80px', borderRadius: '40px', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 2rem' }}>
+        <Coffee size={40} className="text-secondary" />
+      </div>
+      <h2 className="text-secondary">Belum ada sesi</h2>
+      <p className="text-secondary" style={{ marginTop: '0.5rem', marginBottom: '2rem' }}>Mulai sesi ngopi sekarang untuk berbagi bareng teman.</p>
+      <button className="btn-primary" onClick={startSession}>Buka Sesi Baru</button>
+    </div>
+  );
+
+  if (session.status === 'completed' || session.status === 'force-closed') {
+    const isForced = session.status === 'force-closed';
+    const orders = session.orders || [];
+    const totalSession = orders.reduce((sum, o) => {
+      if (!o || !o.item) return sum;
+      return sum + (o.item.price || 0);
+    }, 0);
     return (
-      <div className="empty-state" style={{ padding: '4rem 2rem', textAlign: 'center' }}>
-        <Loader2 size={40} className="animate-spin text-secondary mb-4" />
-        <p className="text-secondary">Menyamaikan data...</p>
+      <div className="session-summary fade-in" style={{ padding: '1.5rem' }}>
+        <div className="glass-panel" style={{ textAlign: 'center', padding: '2.5rem 1.5rem' }}>
+          <div style={{ color: isForced ? 'var(--accent-primary)' : '#4ade80', marginBottom: '1.5rem' }}>
+            {isForced ? <AlertTriangle size={64} /> : <CheckCircle size={64} />}
+          </div>
+          <h2 style={{ marginBottom: '0.5rem' }}>{isForced ? 'Sesi Ditutup' : 'Sesi Selesai!'}</h2>
+          <p className="text-secondary" style={{ marginBottom: '2rem' }}>
+            {isForced ? 'Ditutup sebelum semua bayar.' : 'Semua pesanan sudah lunas.'}
+          </p>
+
+          <div className="stats-list" style={{ background: 'var(--bg-primary)', borderRadius: '20px', padding: '1.5rem', marginBottom: '2rem' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '12px' }}>
+              <span className="text-secondary">Total Putaran</span>
+              <strong style={{ fontSize: '1.1rem' }}>{formatRp(totalSession)}</strong>
+            </div>
+            <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+              <span className="text-secondary">Peserta</span>
+              <strong style={{ fontSize: '1.1rem' }}>{(session.orders || []).length} orang</strong>
+            </div>
+          </div>
+
+          <button className="btn-primary" onClick={() => setView('home')}>Kembali ke Home</button>
+        </div>
       </div>
     );
-  };
+  }
 
-  // ─── PAYER PAGE ─────────────────────────────────────────────────────────────
-  const renderPayerPage = () => {
-    const orders = session.orders || [];
-    const nonPayer = orders.filter(o => o.username !== session.payer);
-    const paidCount = nonPayer.filter(o => o.isPaid).length;
-
+  if (session.status === 'open') {
     return (
-      <div className="payer-view fade-in" style={{ padding: '1rem' }}>
-        <div className="glass-panel" style={{ marginBottom: '1.5rem', background: 'var(--accent-glow)', border: '1px solid var(--accent-primary)' }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
-            <span className="badge badge-amber">Kamu Pembayar</span>
-            <span className="text-secondary" style={{ fontSize: '0.8rem' }}>{paidCount}/{nonPayer.length} Lunas</span>
+      <div className="session-open-view fade-in" style={{ padding: '1rem' }}>
+        <div className="glass-panel" style={{ marginBottom: '1.5rem', position: 'relative' }}>
+          <div
+            className={`timer-chip ${timeLeft < 60 ? 'urgent' : ''}`}
+            style={{
+              position: 'absolute',
+              top: '16px',
+              right: '16px',
+              background: 'var(--bg-primary)',
+              padding: '6px 14px',
+              borderRadius: '12px',
+              fontWeight: 900,
+              color: 'white',
+              border: '1px solid rgba(255,255,255,0.1)',
+              boxShadow: '0 4px 12px rgba(0,0,0,0.2)',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '6px'
+            }}
+          >
+            <Clock size={14} />
+            {formatTime(timeLeft)}
           </div>
-          <h2 style={{ fontSize: '1.5rem', marginBottom: '0.5rem' }}>Total Tagihan</h2>
-          <p style={{ fontSize: '2rem', fontWeight: 800 }}>{formatRp(totalAmount)}</p>
-          <div style={{ marginTop: '1rem', display: 'flex', gap: '8px' }}>
-            <button className="btn-primary" style={{ flex: 1, padding: '10px', fontSize: '0.85rem' }} onClick={confirmBought} disabled={session.coffeeBought}>
-              {session.coffeeBought ? 'Kopi Sudah Dibeli ✅' : 'Kopi Sudah Dibeli'}
+          <h3 style={{ marginBottom: '0.5rem' }}>Sesi Terbuka</h3>
+          <p className="text-secondary" style={{ fontSize: '0.9rem' }}>Pilih kopi kamu sebelum timer habis.</p>
+
+          <form onSubmit={addOrder} style={{ marginTop: '1.5rem' }}>
+            <div className="form-group modern-form">
+              <div className="searchable-dropdown" ref={coffeeDropdownRef} style={{ position: 'relative' }}>
+                <input
+                  type="text"
+                  placeholder="Cari kopi..."
+                  value={coffeeSearch}
+                  onFocus={() => setShowMenuResults(true)}
+                  onChange={(e) => setCoffeeSearch(e.target.value)}
+                  style={{ borderRadius: '20px', paddingRight: '40px' }}
+                />
+                <div style={{ position: 'absolute', right: '16px', top: '50%', transform: 'translateY(-50%)', opacity: 0.5 }}>
+                  <ChevronDown size={20} />
+                </div>
+                {showMenuResults && (
+                  <div className="glass-panel dropdown-results" style={{ position: 'absolute', top: 'calc(100% + 8px)', left: 0, right: 0, zIndex: 100, maxHeight: '250px', overflowY: 'auto', padding: '8px' }}>
+                    {(store.menu || []).filter(m => m && m.name.toLowerCase().includes(coffeeSearch.toLowerCase())).map(m => (
+                      <div key={m.id} className="dropdown-item" onClick={() => { setSelectedCoffeeId(m.id); setCoffeeSearch(`${m.emoji} ${m.name}`); setShowMenuResults(false); }} style={{ padding: '12px', borderRadius: '12px', cursor: 'pointer', display: 'flex', justifyContent: 'space-between' }}>
+                        <span>{m.emoji} {m.name}</span>
+                        <span className="text-accent">{formatRp(m.price)}</span>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </div>
+            <button className="btn-primary" type="submit" style={{ borderRadius: '20px', marginTop: '1.25rem' }}>
+              {myOrder ? 'Update Pesanan' : 'Tambah Pesanan'}
             </button>
-            <button className="btn-secondary" style={{ padding: '10px' }} onClick={remindAll}><Bell size={18} /></button>
-          </div>
+          </form>
         </div>
 
-        <div className="order-management">
-          <h4 style={{ marginBottom: '1rem', paddingLeft: '4px' }}>Status Peserta</h4>
+        <div className="order-list-section">
+          <h4 style={{ marginBottom: '1rem', paddingLeft: '4px' }}>Daftar Pesanan ({(session.orders || []).length})</h4>
           <div className="card-stack">
             {(session.orders || []).map(o => (
-              <div key={o.id} className="item-card glass-panel" style={{ padding: '16px' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '12px', flex: 1 }}>
-                  <UserAvatar username={o.username} size={40} />
+              <div key={o.id} className={`item-card glass-panel ${o.username === currentUser ? 'active-border' : ''}`} style={{ padding: '12px 16px', borderRadius: '20px' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                  <UserAvatar username={o.username} size={36} />
                   <div>
-                    <p style={{ fontSize: '0.95rem', fontWeight: 700 }}>
-                      {o.username} {o.username === session.payer && <span className="text-accent" style={{ fontSize: '0.7rem' }}>(Kamu)</span>}
-                    </p>
+                    <p style={{ fontSize: '0.9rem', fontWeight: 700 }}>{o.username}</p>
                     <p className="text-secondary" style={{ fontSize: '0.8rem' }}>{o.item?.emoji || '☕'} {o.item?.name || 'Item'}</p>
                   </div>
                 </div>
-                <div style={{ textAlign: 'right' }}>
-                  <p style={{ fontWeight: 800, marginBottom: '6px' }}>{formatRp(o.item?.price || 0)}</p>
-                  {o.username !== session.payer && (
-                    <button
-                      className={`badge ${o.isPaid ? 'badge-glass' : 'badge-amber'}`}
-                      style={{ border: 'none', cursor: 'pointer' }}
-                      onClick={() => !o.isPaid && markPaidByPayer(o.username)}
-                    >
-                      {o.isPaid ? 'LUNAS ✅' : 'Tandai Lunas'}
-                    </button>
-                  )}
-                  {o.paymentProof && (
-                    <div style={{ marginTop: '4px' }}>
-                      <a href={o.paymentProof} target="_blank" rel="noreferrer" style={{ fontSize: '0.7rem', color: 'var(--accent-primary)', fontWeight: 600 }}>Lihat Bukti</a>
-                    </div>
-                  )}
-                </div>
+                <strong className="text-accent">{formatRp(o.item?.price || 0)}</strong>
               </div>
             ))}
           </div>
         </div>
 
-        {!sessionDone && (
-          <div style={{ marginTop: '2.5rem', paddingBottom: '2rem' }}>
-            <button className="btn-secondary" style={{ width: '100%', color: '#ef4444', borderColor: 'rgba(239,68,68,0.2)' }} onClick={() => setDialog({ title: 'Tutup Paksa?', message: 'Hutang peserta akan dicatat.', onConfirm: forceClose, danger: true, confirmText: 'Ya, Tutup' })}>
-              Tutup Paksa Sesi
-            </button>
-          </div>
-        )}
+        <div className="admin-actions" style={{ marginTop: '2rem' }}>
+          <button className="btn-secondary" onClick={closeSessionAndSelectRoles} style={{ width: '100%', borderRadius: '20px', borderColor: 'rgba(255,255,255,0.1)' }}>
+            Tutup Sesi Sekarang
+          </button>
+        </div>
       </div>
     );
-  };
+  }
 
-  // ─── COMPANION PAGE ──────────────────────────────────────────────────────────
-  const renderCompanionPage = () => {
+  if (session.status === 'payment-setup') {
+    const isPayer = session.payer === currentUser;
     return (
-      <div className="companion-view fade-in" style={{ padding: '1rem' }}>
-        <div className="glass-panel" style={{ marginBottom: '1.5rem', textAlign: 'center', padding: '2rem' }}>
-          <div style={{ background: 'var(--accent-glow)', width: '64px', height: '64px', borderRadius: '32px', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 1.5rem' }}>
-            <Users size={32} className="text-accent" />
-          </div>
-          <span className="badge badge-amber" style={{ marginBottom: '1rem' }}>Kamu Pendamping</span>
-          <h2 style={{ marginBottom: '1rem', fontSize: '1.5rem' }}>Bantu {session.payer} Ambil Kopi!</h2>
-          <p className="text-secondary" style={{ fontSize: '0.9rem' }}>Tugas kamu adalah menemani pembayar hari ini ke kedai kopi.</p>
-        </div>
-        {renderPenitipPage()}
-      </div>
-    );
-  };
+      <div className="payment-setup fade-in" style={{ padding: '1.5rem' }}>
+        <div className="glass-panel" style={{ textAlign: 'center', padding: '2rem 1.5rem' }}>
+          <h2 style={{ marginBottom: '2rem' }}>Relawan Terpilih!</h2>
 
-  // ─── PENITIP PAGE ────────────────────────────────────────────────────────────
-  const renderPenitipPage = () => {
-    const alreadyPaid = myOrder?.isPaid;
-    const step = getStepIndex();
-
-    return (
-      <div className="penitip-view fade-in" style={{ padding: '1rem' }}>
-        <div className="glass-panel" style={{ marginBottom: '1.5rem' }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
-            <span className="badge badge-glass">Status Pesanan</span>
-            {alreadyPaid ? <span className="text-green" style={{ fontSize: '0.8rem', fontWeight: 800 }}>LUNAS ✅</span> : <span className="text-red" style={{ fontSize: '0.8rem', fontWeight: 800 }}>BELUM BAYAR ⏳</span>}
-          </div>
-
-          <div style={{ display: 'flex', alignItems: 'center', gap: '20px', marginBottom: '2rem' }}>
-            <div style={{ fontSize: '3rem', background: 'var(--surface)', width: '80px', height: '80px', borderRadius: '24px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>{myOrder?.item?.emoji || '☕'}</div>
-            <div>
-              <h3 style={{ fontSize: '1.3rem' }}>{myOrder?.item?.name || 'Pesanan'}</h3>
-              <p className="text-accent" style={{ fontSize: '1.5rem', fontWeight: 800 }}>{formatRp(myOrder?.item?.price || 0)}</p>
-            </div>
-          </div>
-
-          <div className="transfer-info glass-panel" style={{ background: 'var(--bg-primary)', padding: '1.25rem', borderRadius: '20px' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '12px' }}>
-              <div>
-                <p className="text-secondary" style={{ fontSize: '0.8rem', margin: 0 }}>Bayar ke {session.payer}:</p>
-                {session.companion && <p className="text-secondary" style={{ fontSize: '0.7rem', margin: 0, opacity: 0.8 }}>Pendamping: {session.companion}</p>}
-              </div>
-              <span className="text-accent" style={{ fontSize: '0.7rem', fontWeight: 800 }}>{session.paymentInfo?.method}</span>
-            </div>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <div>
-                <p style={{ fontWeight: 800, fontSize: '1.1rem', letterSpacing: '1px' }}>{session.paymentInfo?.accountNo}</p>
-                <p className="text-secondary" style={{ fontSize: '0.8rem' }}>{session.paymentInfo?.bankName || 'Digital Wallet'}</p>
-              </div>
-              <button className="btn-secondary" style={{ padding: '8px 12px', fontSize: '0.75rem', width: 'auto' }} onClick={() => { navigator.clipboard.writeText(session.paymentInfo?.accountNo); alert('Nomor disalin!'); }}>Salin</button>
-            </div>
-          </div>
-        </div>
-
-        {!alreadyPaid && (
-          <div className="payment-guide glass-panel-premium" style={{ marginTop: '1.5rem', padding: '2rem', textAlign: 'center', background: 'rgba(255,255,255,0.02)' }}>
-            <div style={{ background: 'var(--surface)', width: '60px', height: '60px', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 1.5rem' }}>
-               <Info size={28} className="text-accent" />
-            </div>
-            
-            {myOrder?.paymentProof ? (
-              <>
-                <h4 style={{ fontSize: '1.1rem', marginBottom: '0.75rem' }}>Bukti Terkirim!</h4>
-                <p className="text-secondary" style={{ fontSize: '0.85rem', lineHeight: '1.6', marginBottom: '1.5rem' }}>
-                  Pembayaranmu sedang diverifikasi oleh <strong>{session.payer}</strong>. Kamu bisa melihat detailnya di menu My Order.
+          <div className={`roles-showcase ${session.companion ? 'dual-roles' : ''}`} style={{
+            display: 'grid',
+            gridTemplateColumns: session.companion ? '1fr 1fr' : '1fr',
+            gap: '16px',
+            marginBottom: '2.5rem'
+          }}>
+            <div className="payer-card" style={{ position: 'relative' }}>
+              <div style={{ position: 'absolute', top: '-10px', left: '50%', transform: 'translateX(-50%)', background: 'var(--accent-primary)', padding: '4px 12px', borderRadius: '12px', fontSize: '0.6rem', fontWeight: 800, zIndex: 1, whiteSpace: 'nowrap' }}>PEMBAYAR</div>
+              <div style={{ background: 'var(--bg-primary)', padding: '1.5rem 1rem', borderRadius: '24px', border: '2px solid var(--accent-primary)' }}>
+                <UserAvatar username={session.payer} size={64} />
+                <h3 style={{ fontSize: '1.2rem', marginTop: '0.75rem', marginBottom: '4px' }}>{session.payer}</h3>
+                <p className="text-secondary" style={{ fontSize: '0.7rem' }}>
+                  Payer Utama
                 </p>
-              </>
-            ) : (
-              <>
-                <h4 style={{ fontSize: '1.1rem', marginBottom: '0.75rem' }}>Cara Bayar</h4>
-                <p className="text-secondary" style={{ fontSize: '0.85rem', lineHeight: '1.6', marginBottom: '1.5rem' }}>
-                  Silakan transfer ke rekening di atas, lalu upload bukti pembayaran melalui menu <strong>My Order</strong> untuk verifikasi.
-                </p>
-              </>
-            )}
-            
-            <button className="btn-primary-pill" style={{ width: '100%' }} onClick={() => setView('orders')}>
-               Buka My Order
-            </button>
-          </div>
-        )}
-
-        {alreadyPaid && (
-          <div className="success-banner" style={{ marginTop: '1rem', padding: '1.5rem', borderRadius: '20px' }}>
-            <span style={{ fontSize: '1.5rem', marginRight: '1rem' }}>🎉</span>
-            <div>
-              <strong style={{ display: 'block' }}>Pembayaran Berhasil!</strong>
-              <p className="text-secondary" style={{ fontSize: '0.8rem' }}>Tunggu {session.payer} membeli kopinya.</p>
-            </div>
-          </div>
-        )}
-      </div>
-    );
-  };
-
-  // ─── GUEST PAGE ──────────────────────────────────────────────────────────────
-  const renderGuestPage = () => (
-    <div className="guest-view fade-in" style={{ padding: '2rem' }}>
-      <div className="glass-panel" style={{ textAlign: 'center', padding: '3rem 1.5rem' }}>
-        <div style={{ background: 'var(--surface)', width: '80px', height: '80px', borderRadius: '40px', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 2rem' }}>
-          <Coffee size={40} className="text-secondary" />
-        </div>
-        <h2 style={{ marginBottom: '1rem' }}>Kamu Sedang Menonton</h2>
-        <p className="text-secondary" style={{ marginBottom: '2.5rem' }}>Kamu tidak ikut dalam sesi ini. Tunggu sesi berikutnya untuk memesan!</p>
-
-        <div className="status-mini-card" style={{ background: 'var(--bg-primary)', padding: '1.25rem', borderRadius: '20px', textAlign: 'left' }}>
-          <div style={{ display: 'grid', gridTemplateColumns: session.companion ? '1fr 1fr' : '1fr', gap: '12px' }}>
-            <div>
-              <p style={{ fontSize: '0.7rem', marginBottom: '6px' }} className="text-secondary uppercase font-bold">Payer Utama</p>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <UserAvatar username={session.payer} size={24} />
-                <strong style={{ fontSize: '0.9rem' }}>{session.payer || '...'}</strong>
               </div>
             </div>
+
             {session.companion && (
-              <div style={{ paddingLeft: '12px', borderLeft: '1px solid rgba(255,255,255,0.1)' }}>
-                <p style={{ fontSize: '0.7rem', marginBottom: '6px' }} className="text-secondary uppercase font-bold">Pendamping</p>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                  <UserAvatar username={session.companion} size={24} />
-                  <strong style={{ fontSize: '0.9rem' }}>{session.companion}</strong>
+              <div className="companion-card" style={{ position: 'relative' }}>
+                <div style={{ position: 'absolute', top: '-10px', left: '50%', transform: 'translateX(-50%)', background: '#4ade80', padding: '4px 12px', borderRadius: '12px', fontSize: '0.6rem', fontWeight: 800, zIndex: 1, whiteSpace: 'nowrap' }}>PENDAMPING</div>
+                <div style={{ background: 'var(--bg-primary)', padding: '1.5rem 1rem', borderRadius: '24px', border: '1px solid rgba(74, 222, 128, 0.3)' }}>
+                  <UserAvatar username={session.companion} size={64} />
+                  <h3 style={{ fontSize: '1.2rem', marginTop: '0.75rem', marginBottom: '4px' }}>{session.companion}</h3>
+                  <p className="text-secondary" style={{ fontSize: '0.7rem' }}>
+                    Pembantu Payer
+                  </p>
                 </div>
               </div>
             )}
           </div>
-        </div>
 
-        <button className="btn-secondary" style={{ marginTop: '2.5rem', width: '100%' }} onClick={() => setView('home')}>Kembali ke Home</button>
+          {isPayer ? (
+            <form onSubmit={submitPaymentInfo} className="modern-form" style={{ textAlign: 'left' }}>
+              <h4 style={{ marginBottom: '1rem' }}>Lengkapi Info Transfer</h4>
+              <div className="form-group">
+                <label>Metode</label>
+                <select value={paymentMethod} onChange={e => setPaymentMethod(e.target.value)} required>
+                  <option value="" disabled>Pilih Metode</option>
+                  <option value="BANK">Bank Transfer</option>
+                  <option value="GOPAY">GoPay / ShopeePay</option>
+                  <option value="DANA">DANA / OVO</option>
+                </select>
+              </div>
+              {paymentMethod === 'BANK' && (
+                <div className="form-group"><label>Nama Bank</label><input type="text" value={bankName} onChange={e => setBankName(e.target.value)} placeholder="Misal: BCA" required /></div>
+              )}
+              <div className="form-group"><label>Nomor Akun</label><input type="text" value={accountNo} onChange={e => setAccountNo(e.target.value)} placeholder="No Rekening / No HP" required /></div>
+              <button className="btn-primary" type="submit" style={{ marginTop: '1rem' }}>Konfirmasi & Aktifkan Sesi</button>
+            </form>
+          ) : (
+            <div style={{ opacity: 0.8 }}>
+              <div className="spinner" style={{ margin: '0 auto 1.5rem' }}></div>
+              <p className="text-secondary">Menunggu <strong>{session.payer || 'Pembayar'}</strong> mengisi info pembayaran...</p>
+            </div>
+          )}
+        </div>
       </div>
+    );
+  }
+
+  if (session.status === 'active' || sessionDone) {
+    if (myRole === 'payer') return renderPayerPage();
+    if (myRole === 'companion') return renderCompanionPage();
+    if (myRole === 'penitip') return renderPenitipPage();
+    return renderGuestPage();
+  }
+
+  // Safety fallback for unknown status
+  return (
+    <div className="empty-state" style={{ padding: '4rem 2rem', textAlign: 'center' }}>
+      <Loader2 size={40} className="animate-spin text-secondary mb-4" />
+      <p className="text-secondary">Menyamaikan data...</p>
     </div>
   );
+};
 
-  // ─── MAIN RENDER ────────────────────────────────────────────────────────────
+// ─── PAYER PAGE ─────────────────────────────────────────────────────────────
+const renderPayerPage = () => {
+  const orders = session.orders || [];
+  const nonPayer = orders.filter(o => o.username !== session.payer);
+  const paidCount = nonPayer.filter(o => o.isPaid).length;
+
   return (
-    <div className="app-container main-app">
-      <header className="mobile-header">
-        <h1 className="text-gradient">NgopiGak</h1>
-        <div className="header-actions">
-          {/* Notifications moved to navbar */}
+    <div className="payer-view fade-in" style={{ padding: '1rem' }}>
+      <div className="glass-panel" style={{ marginBottom: '1.5rem', background: 'var(--accent-glow)', border: '1px solid var(--accent-primary)' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
+          <span className="badge badge-amber">Kamu Pembayar</span>
+          <span className="text-secondary" style={{ fontSize: '0.8rem' }}>{paidCount}/{nonPayer.length} Lunas</span>
         </div>
-      </header>
+        <h2 style={{ fontSize: '1.5rem', marginBottom: '0.5rem' }}>Total Tagihan</h2>
+        <p style={{ fontSize: '2rem', fontWeight: 800 }}>{formatRp(totalAmount)}</p>
+        <div style={{ marginTop: '1rem', display: 'flex', gap: '8px' }}>
+          <button className="btn-primary" style={{ flex: 1, padding: '10px', fontSize: '0.85rem' }} onClick={confirmBought} disabled={session.coffeeBought}>
+            {session.coffeeBought ? 'Kopi Sudah Dibeli ✅' : 'Kopi Sudah Dibeli'}
+          </button>
+          <button className="btn-secondary" style={{ padding: '10px' }} onClick={remindAll}><Bell size={18} /></button>
+        </div>
+      </div>
 
-      <main className="main-content">
-        {view === 'home' && renderHome()}
-        {view === 'orders' && renderMyOrders()}
-        {view === 'live-session' && renderSession()}
-        {view === 'history' && (
-          <HistoryView
-            history={store.history}
-            payerHistory={store.payerHistory}
-            currentUser={currentUser}
-            onSelectSession={(s) => {
-              setSelectedSession(s);
-              setView('history-detail');
-            }}
-          />
-        )}
-        {view === 'history-detail' && (
-          <HistoryDetailView
-            session={selectedSession}
-            currentUser={currentUser}
-            api={api}
-            onBack={() => setView('history')}
-          />
-        )}
-        {view === 'order-detail' && (
-          <OrderDetailView
-            order={selectedOrder}
-            currentUser={currentUser}
-            api={api}
-            onBack={() => setView('orders')}
-            onPaymentConfirm={checkSessionComplete}
-            setDialog={setDialog}
-          />
-        )}
-        {view === 'profile' && (
-          <ProfileView
-            username={currentUser}
-            history={store.history}
-            payerHistory={store.payerHistory}
-            onSave={onUpdateProfile}
-            onLogout={() => {
-              localStorage.removeItem('ngopi_current_user');
-              setCurrentUser('');
-              setView('home');
-            }}
-          />
-        )}
-        {view === 'notifications' && (
-          <NotificationView
-            notifications={store.session?.notifications || []}
-            username={currentUser}
-            onAction={handleNotifAction}
-          />
-        )}
-        {view === 'admin' && (
-          !isAdminUnlocked ? (
-            <AdminPinGate
-              serverPin={store.adminPin}
-              onSuccess={() => setIsAdminUnlocked(true)}
-              onClose={() => setView('home')}
-            />
+      <div className="order-management">
+        <h4 style={{ marginBottom: '1rem', paddingLeft: '4px' }}>Status Peserta</h4>
+        <div className="card-stack">
+          {(session.orders || []).map(o => (
+            <div key={o.id} className="item-card glass-panel" style={{ padding: '16px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '12px', flex: 1 }}>
+                <UserAvatar username={o.username} size={40} />
+                <div>
+                  <p style={{ fontSize: '0.95rem', fontWeight: 700 }}>
+                    {o.username} {o.username === session.payer && <span className="text-accent" style={{ fontSize: '0.7rem' }}>(Kamu)</span>}
+                  </p>
+                  <p className="text-secondary" style={{ fontSize: '0.8rem' }}>{o.item?.emoji || '☕'} {o.item?.name || 'Item'}</p>
+                </div>
+              </div>
+              <div style={{ textAlign: 'right' }}>
+                <p style={{ fontWeight: 800, marginBottom: '6px' }}>{formatRp(o.item?.price || 0)}</p>
+                {o.username !== session.payer && (
+                  <button
+                    className={`badge ${o.isPaid ? 'badge-glass' : 'badge-amber'}`}
+                    style={{ border: 'none', cursor: 'pointer' }}
+                    onClick={() => !o.isPaid && markPaidByPayer(o.username)}
+                  >
+                    {o.isPaid ? 'LUNAS ✅' : 'Tandai Lunas'}
+                  </button>
+                )}
+                {o.paymentProof && (
+                  <div style={{ marginTop: '4px' }}>
+                    <a href={o.paymentProof} target="_blank" rel="noreferrer" style={{ fontSize: '0.7rem', color: 'var(--accent-primary)', fontWeight: 600 }}>Lihat Bukti</a>
+                  </div>
+                )}
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {!sessionDone && (
+        <div style={{ marginTop: '2.5rem', paddingBottom: '2rem' }}>
+          <button className="btn-secondary" style={{ width: '100%', color: '#ef4444', borderColor: 'rgba(239,68,68,0.2)' }} onClick={() => setDialog({ title: 'Tutup Paksa?', message: 'Hutang peserta akan dicatat.', onConfirm: forceClose, danger: true, confirmText: 'Ya, Tutup' })}>
+            Tutup Paksa Sesi
+          </button>
+        </div>
+      )}
+    </div>
+  );
+};
+
+// ─── COMPANION PAGE ──────────────────────────────────────────────────────────
+const renderCompanionPage = () => {
+  return (
+    <div className="companion-view fade-in" style={{ padding: '1rem' }}>
+      <div className="glass-panel" style={{ marginBottom: '1.5rem', textAlign: 'center', padding: '2rem' }}>
+        <div style={{ background: 'var(--accent-glow)', width: '64px', height: '64px', borderRadius: '32px', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 1.5rem' }}>
+          <Users size={32} className="text-accent" />
+        </div>
+        <span className="badge badge-amber" style={{ marginBottom: '1rem' }}>Kamu Pendamping</span>
+        <h2 style={{ marginBottom: '1rem', fontSize: '1.5rem' }}>Bantu {session.payer} Ambil Kopi!</h2>
+        <p className="text-secondary" style={{ fontSize: '0.9rem' }}>Tugas kamu adalah menemani pembayar hari ini ke kedai kopi.</p>
+      </div>
+      {renderPenitipPage()}
+    </div>
+  );
+};
+
+// ─── PENITIP PAGE ────────────────────────────────────────────────────────────
+const renderPenitipPage = () => {
+  const alreadyPaid = myOrder?.isPaid;
+  const step = getStepIndex();
+
+  return (
+    <div className="penitip-view fade-in" style={{ padding: '1rem' }}>
+      <div className="glass-panel" style={{ marginBottom: '1.5rem' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
+          <span className="badge badge-glass">Status Pesanan</span>
+          {alreadyPaid ? <span className="text-green" style={{ fontSize: '0.8rem', fontWeight: 800 }}>LUNAS ✅</span> : <span className="text-red" style={{ fontSize: '0.8rem', fontWeight: 800 }}>BELUM BAYAR ⏳</span>}
+        </div>
+
+        <div style={{ display: 'flex', alignItems: 'center', gap: '20px', marginBottom: '2rem' }}>
+          <div style={{ fontSize: '3rem', background: 'var(--surface)', width: '80px', height: '80px', borderRadius: '24px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>{myOrder?.item?.emoji || '☕'}</div>
+          <div>
+            <h3 style={{ fontSize: '1.3rem' }}>{myOrder?.item?.name || 'Pesanan'}</h3>
+            <p className="text-accent" style={{ fontSize: '1.5rem', fontWeight: 800 }}>{formatRp(myOrder?.item?.price || 0)}</p>
+          </div>
+        </div>
+
+        <div className="transfer-info glass-panel" style={{ background: 'var(--bg-primary)', padding: '1.25rem', borderRadius: '20px' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '12px' }}>
+            <div>
+              <p className="text-secondary" style={{ fontSize: '0.8rem', margin: 0 }}>Bayar ke {session.payer}:</p>
+              {session.companion && <p className="text-secondary" style={{ fontSize: '0.7rem', margin: 0, opacity: 0.8 }}>Pendamping: {session.companion}</p>}
+            </div>
+            <span className="text-accent" style={{ fontSize: '0.7rem', fontWeight: 800 }}>{session.paymentInfo?.method}</span>
+          </div>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <div>
+              <p style={{ fontWeight: 800, fontSize: '1.1rem', letterSpacing: '1px' }}>{session.paymentInfo?.accountNo}</p>
+              <p className="text-secondary" style={{ fontSize: '0.8rem' }}>{session.paymentInfo?.bankName || 'Digital Wallet'}</p>
+            </div>
+            <button className="btn-secondary" style={{ padding: '8px 12px', fontSize: '0.75rem', width: 'auto' }} onClick={() => { navigator.clipboard.writeText(session.paymentInfo?.accountNo); alert('Nomor disalin!'); }}>Salin</button>
+          </div>
+        </div>
+      </div>
+
+      {!alreadyPaid && (
+        <div className="payment-guide glass-panel-premium" style={{ marginTop: '1.5rem', padding: '2rem', textAlign: 'center', background: 'rgba(255,255,255,0.02)' }}>
+          <div style={{ background: 'var(--surface)', width: '60px', height: '60px', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 1.5rem' }}>
+            <Info size={28} className="text-accent" />
+          </div>
+
+          {myOrder?.paymentProof ? (
+            <>
+              <h4 style={{ fontSize: '1.1rem', marginBottom: '0.75rem' }}>Bukti Terkirim!</h4>
+              <p className="text-secondary" style={{ fontSize: '0.85rem', lineHeight: '1.6', marginBottom: '1.5rem' }}>
+                Pembayaranmu sedang diverifikasi oleh <strong>{session.payer}</strong>. Kamu bisa melihat detailnya di menu My Order.
+              </p>
+            </>
           ) : (
-            <AdminView
-              menu={store.menu}
-              users={store.users}
-              history={store.history}
-              activeSession={store.session}
-              onSaveMenu={saveMenu}
-              onResetPin={onResetPin}
-              onForceClose={forceClose}
-              onDeleteActiveSession={api.deleteActiveSession}
-              onDeleteHistory={api.deleteHistory}
-              onUpdateHistoricalOrder={api.updateHistoricalOrder}
-              onDeleteAllNotifs={api.deleteAllNotifications}
-              onSaveAdminPin={api.saveAdminPin}
-              setDialog={setDialog}
-            />
-          )
-        )}
-      </main>
+            <>
+              <h4 style={{ fontSize: '1.1rem', marginBottom: '0.75rem' }}>Cara Bayar</h4>
+              <p className="text-secondary" style={{ fontSize: '0.85rem', lineHeight: '1.6', marginBottom: '1.5rem' }}>
+                Silakan transfer ke rekening di atas, lalu upload bukti pembayaran melalui menu <strong>My Order</strong> untuk verifikasi.
+              </p>
+            </>
+          )}
 
-      {/* FAB: Start/Join Session (Visible on Home) */}
-      {view === 'home' && (
-        <button 
-          className="fab" 
-          onClick={(!session || sessionDone) ? startSession : () => setView('live-session')}
-        >
-          <PlusCircle size={32} />
-        </button>
+          <button className="btn-primary-pill" style={{ width: '100%' }} onClick={() => setView('orders')}>
+            Buka My Order
+          </button>
+        </div>
       )}
 
-      <BottomNav />
+      {alreadyPaid && (
+        <div className="success-banner" style={{ marginTop: '1rem', padding: '1.5rem', borderRadius: '20px' }}>
+          <span style={{ fontSize: '1.5rem', marginRight: '1rem' }}>🎉</span>
+          <div>
+            <strong style={{ display: 'block' }}>Pembayaran Berhasil!</strong>
+            <p className="text-secondary" style={{ fontSize: '0.8rem' }}>Tunggu {session.payer} membeli kopinya.</p>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+};
 
-      {/* Dialogs & Modals */}
-      {dialog && (
-        <ConfirmDialog
-          title={dialog.title}
-          message={dialog.message}
-          onConfirm={dialog.onConfirm}
-          onCancel={() => setDialog(null)}
-          confirmText={dialog.confirmText}
-          danger={dialog.danger}
+// ─── GUEST PAGE ──────────────────────────────────────────────────────────────
+const renderGuestPage = () => (
+  <div className="guest-view fade-in" style={{ padding: '2rem' }}>
+    <div className="glass-panel" style={{ textAlign: 'center', padding: '3rem 1.5rem' }}>
+      <div style={{ background: 'var(--surface)', width: '80px', height: '80px', borderRadius: '40px', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 2rem' }}>
+        <Coffee size={40} className="text-secondary" />
+      </div>
+      <h2 style={{ marginBottom: '1rem' }}>Kamu Sedang Menonton</h2>
+      <p className="text-secondary" style={{ marginBottom: '2.5rem' }}>Kamu tidak ikut dalam sesi ini. Tunggu sesi berikutnya untuk memesan!</p>
+
+      <div className="status-mini-card" style={{ background: 'var(--bg-primary)', padding: '1.25rem', borderRadius: '20px', textAlign: 'left' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: session.companion ? '1fr 1fr' : '1fr', gap: '12px' }}>
+          <div>
+            <p style={{ fontSize: '0.7rem', marginBottom: '6px' }} className="text-secondary uppercase font-bold">Payer Utama</p>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <UserAvatar username={session.payer} size={24} />
+              <strong style={{ fontSize: '0.9rem' }}>{session.payer || '...'}</strong>
+            </div>
+          </div>
+          {session.companion && (
+            <div style={{ paddingLeft: '12px', borderLeft: '1px solid rgba(255,255,255,0.1)' }}>
+              <p style={{ fontSize: '0.7rem', marginBottom: '6px' }} className="text-secondary uppercase font-bold">Pendamping</p>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <UserAvatar username={session.companion} size={24} />
+                <strong style={{ fontSize: '0.9rem' }}>{session.companion}</strong>
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
+
+      <button className="btn-secondary" style={{ marginTop: '2.5rem', width: '100%' }} onClick={() => setView('home')}>Kembali ke Home</button>
+    </div>
+  </div>
+);
+
+// ─── MAIN RENDER ────────────────────────────────────────────────────────────
+return (
+  <div className="app-container main-app">
+    <header className="mobile-header">
+      <h1 className="text-gradient">NgopiGak</h1>
+      <div className="header-actions">
+        {/* Notifications moved to navbar */}
+      </div>
+    </header>
+
+    <main className="main-content">
+      {view === 'home' && renderHome()}
+      {view === 'orders' && renderMyOrders()}
+      {view === 'live-session' && renderSession()}
+      {view === 'history' && (
+        <HistoryView
+          history={store.history}
+          payerHistory={store.payerHistory}
+          currentUser={currentUser}
+          onSelectSession={(s) => {
+            setSelectedSession(s);
+            setView('history-detail');
+          }}
         />
       )}
+      {view === 'history-detail' && (
+        <HistoryDetailView
+          session={selectedSession}
+          currentUser={currentUser}
+          api={api}
+          onBack={() => setView('history')}
+        />
+      )}
+      {view === 'order-detail' && (
+        <OrderDetailView
+          order={selectedOrder}
+          currentUser={currentUser}
+          api={api}
+          onBack={() => setView('orders')}
+          onPaymentConfirm={checkSessionComplete}
+          setDialog={setDialog}
+        />
+      )}
+      {view === 'profile' && (
+        <ProfileView
+          username={currentUser}
+          history={store.history}
+          payerHistory={store.payerHistory}
+          onSave={onUpdateProfile}
+          onLogout={() => {
+            localStorage.removeItem('ngopi_current_user');
+            setCurrentUser('');
+            setView('home');
+          }}
+        />
+      )}
+      {view === 'notifications' && (
+        <NotificationView
+          notifications={store.session?.notifications || []}
+          username={currentUser}
+          onAction={handleNotifAction}
+        />
+      )}
+      {view === 'admin' && (
+        !isAdminUnlocked ? (
+          <AdminPinGate
+            serverPin={store.adminPin}
+            onSuccess={() => setIsAdminUnlocked(true)}
+            onClose={() => setView('home')}
+          />
+        ) : (
+          <AdminView
+            menu={store.menu}
+            users={store.users}
+            history={store.history}
+            activeSession={store.session}
+            onSaveMenu={saveMenu}
+            onResetPin={onResetPin}
+            onForceClose={forceClose}
+            onDeleteActiveSession={api.deleteActiveSession}
+            onDeleteHistory={api.deleteHistory}
+            onUpdateHistoricalOrder={api.updateHistoricalOrder}
+            onDeleteAllNotifs={api.deleteAllNotifications}
+            onSaveAdminPin={api.saveAdminPin}
+            setDialog={setDialog}
+          />
+        )
+      )}
+    </main>
 
-    </div>
-  );
-}
+    {/* FAB: Start/Join Session (Visible on Home) */}
+    {view === 'home' && (
+      <button
+        className="fab"
+        onClick={(!session || sessionDone) ? startSession : () => setView('live-session')}
+      >
+        <PlusCircle size={32} />
+      </button>
+    )}
+
+    <BottomNav />
+
+    {/* Dialogs & Modals */}
+    {dialog && (
+      <ConfirmDialog
+        title={dialog.title}
+        message={dialog.message}
+        onConfirm={dialog.onConfirm}
+        onCancel={() => setDialog(null)}
+        confirmText={dialog.confirmText}
+        danger={dialog.danger}
+      />
+    )}
+
+  </div>
+);
+  }
+
