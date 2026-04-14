@@ -63,6 +63,131 @@ function StatusBadge({ isPaid }) {
   );
 }
 
+// ─── PAYMENT INFO CARD ────────────────────────────────────────────────────────
+function PaymentInfoCard({ info, payer, companion }) {
+  if (!info) return null;
+
+  return (
+    <div className="payment-info-card glass-panel-premium fade-in" style={{
+      background: 'linear-gradient(145deg, rgba(230, 145, 56, 0.1) 0%, rgba(20, 20, 20, 0.4) 100%)',
+      padding: '1.5rem',
+      borderRadius: '28px',
+      border: '1px solid rgba(230, 145, 56, 0.3)',
+      position: 'relative',
+      overflow: 'hidden'
+    }}>
+      {/* Decorative pulse element */}
+      <div style={{
+        position: 'absolute',
+        top: '-20px',
+        right: '-20px',
+        width: '100px',
+        height: '100px',
+        background: 'var(--accent-primary)',
+        filter: 'blur(60px)',
+        opacity: 0.2,
+        zIndex: 0
+      }}></div>
+
+      <div style={{ position: 'relative', zIndex: 1 }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '1.25rem' }}>
+          <div>
+            <p className="text-secondary" style={{ fontSize: '0.7rem', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: '4px' }}>Transfer ke {payer}</p>
+            {companion && <p className="text-secondary" style={{ fontSize: '0.65rem', opacity: 0.7, margin: 0 }}>Pendamping: {companion}</p>}
+          </div>
+          <div style={{
+            background: 'var(--accent-primary)',
+            padding: '4px 10px',
+            borderRadius: '10px',
+            fontSize: '0.65rem',
+            fontWeight: 900,
+            color: 'white',
+            boxShadow: '0 4px 12px rgba(230, 145, 56, 0.3)'
+          }}>
+            {info.method}
+          </div>
+        </div>
+
+        <div style={{ background: 'rgba(0,0,0,0.3)', padding: '1.25rem', borderRadius: '20px', border: '1px solid rgba(255,255,255,0.05)' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <div>
+              <p style={{ fontWeight: 900, fontSize: '1.4rem', letterSpacing: '2px', margin: 0, color: 'white' }}>{info.accountNo}</p>
+              <p className="text-secondary" style={{ fontSize: '0.85rem', fontWeight: 600, marginTop: '4px' }}>{info.bankName || 'Digital Wallet'}</p>
+            </div>
+            <button
+              className="btn-primary-pill"
+              style={{ padding: '0 16px', height: '36px', width: 'auto', fontSize: '0.75rem', borderRadius: '14px' }}
+              onClick={() => {
+                navigator.clipboard.writeText(info.accountNo);
+                alert('Nomor disalin!');
+              }}
+            >
+              Salin
+            </button>
+          </div>
+        </div>
+
+        <p className="text-secondary" style={{ fontSize: '0.7rem', marginTop: '1rem', fontStyle: 'italic', textAlign: 'center' }}>
+          Pastikan nominal transfer sesuai dengan total pesanan Anda.
+        </p>
+      </div>
+    </div>
+  );
+}
+
+// ─── PROOF PREVIEW MODAL ──────────────────────────────────────────────────────
+function ProofPreviewModal({ url, onClose, username }) {
+  if (!url) return null;
+  return (
+    <div className="modal-overlay" onClick={onClose} style={{
+      position: 'fixed',
+      top: 0,
+      left: 0,
+      right: 0,
+      bottom: 0,
+      background: 'rgba(0,0,0,0.9)',
+      zIndex: 2000,
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'center',
+      padding: '1rem',
+      backdropFilter: 'blur(10px)'
+    }}>
+      <div className="modal-content fade-in-scale" onClick={e => e.stopPropagation()} style={{
+        maxWidth: '100%',
+        maxHeight: '100%',
+        position: 'relative',
+        display: 'flex',
+        flexDirection: 'column'
+      }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+            <UserAvatar username={username} size={32} />
+            <span style={{ fontWeight: 700, color: 'white' }}>Bukti {username}</span>
+          </div>
+          <button onClick={onClose} style={{ background: 'rgba(255,255,255,0.1)', border: 'none', color: 'white', borderRadius: '50%', width: '36px', height: '36px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+            <X size={24} />
+          </button>
+        </div>
+        <img
+          src={url}
+          alt="Bukti Bayar"
+          style={{
+            maxWidth: '100%',
+            maxHeight: '80vh',
+            objectFit: 'contain',
+            borderRadius: '16px',
+            boxShadow: '0 20px 50px rgba(0,0,0,0.5)'
+          }}
+        />
+        <div style={{ marginTop: '1.5rem', textAlign: 'center' }}>
+          <button className="btn-primary-pill" onClick={onClose}>Tutup</button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // ─── DIALOG COMPONENT ─────────────────────────────────────────────────────────
 function ConfirmDialog({ title, message, onConfirm, onCancel, confirmText = 'Ya, Lanjutkan', danger = false }) {
   return (
@@ -136,7 +261,7 @@ function notifIcon(type) {
 }
 
 // ─── ORDER DETAIL VIEW ────────────────────────────────────────────────────────
-function OrderDetailView({ order, currentUser, api, onBack, onPaymentConfirm, setDialog }) {
+function OrderDetailView({ order, currentUser, api, onBack, onPaymentConfirm, setDialog, setPreviewProof }) {
   if (!order) return (
     <div className="glass-panel" style={{ padding: '4rem 2rem', textAlign: 'center' }}>
       <AlertTriangle size={48} className="text-secondary opacity-50 mb-4" />
@@ -275,7 +400,10 @@ function OrderDetailView({ order, currentUser, api, onBack, onPaymentConfirm, se
 
             <div style={{ marginTop: '1.5rem' }}>
               {localProof && (
-                <div style={{ borderRadius: '20px', overflow: 'hidden', border: '1px solid var(--glass-border)', marginBottom: '1.5rem' }}>
+                <div
+                  style={{ borderRadius: '20px', overflow: 'hidden', border: '1px solid var(--glass-border)', marginBottom: '1.5rem', cursor: 'pointer' }}
+                  onClick={() => setPreviewProof({ url: localProof, username: currentUser })}
+                >
                   <img src={localProof} alt="Bukti" style={{ width: '100%', maxHeight: '250px', objectFit: 'cover' }} />
                 </div>
               )}
@@ -927,7 +1055,7 @@ function HistoryView({ history, payerHistory, currentUser, onSelectSession }) {
 }
 
 // ─── HISTORY DETAIL VIEW ──────────────────────────────────────────────────────
-function HistoryDetailView({ session, onBack, currentUser, api }) {
+function HistoryDetailView({ session, onBack, currentUser, api, setPreviewProof, setView, setSelectedOrder }) {
   if (!session) return null;
 
   const orders = Array.isArray(session?.orders) ? session.orders : [];
@@ -999,7 +1127,17 @@ function HistoryDetailView({ session, onBack, currentUser, api }) {
               <div style={{ textAlign: 'right' }}>
                 <p style={{ fontWeight: 700, fontSize: '0.9rem' }}>{formatRp(o.item.price)}</p>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '6px', justifyContent: 'flex-end' }}>
-                  {o.paymentProof && <Camera size={12} className="text-secondary" />}
+                  {o.paymentProof && (
+                    <div
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setPreviewProof({ url: o.paymentProof, username: o.username });
+                      }}
+                      style={{ cursor: 'pointer', padding: '2px' }}
+                    >
+                      <Camera size={12} className="text-accent" />
+                    </div>
+                  )}
                   <span style={{ fontSize: '0.65rem', fontWeight: 800, color: orderDebt ? '#ef4444' : '#4ade80' }}>
                     {orderDebt ? 'HUTANG' : 'LUNAS'}
                   </span>
@@ -1035,6 +1173,7 @@ export default function App() {
   // Dialogs
   const [dialog, setDialog] = useState(null); // { title, message, onConfirm, danger?, confirmText? }
   const [isAdminUnlocked, setIsAdminUnlocked] = useState(false);
+  const [previewProof, setPreviewProof] = useState(null); // { url, username }
 
   // Form states
   const [selectedCoffeeId, setSelectedCoffeeId] = useState('');
@@ -2110,8 +2249,8 @@ const renderPayerPage = () => {
                   <p className="text-secondary" style={{ fontSize: '0.8rem' }}>{o.item?.emoji || '☕'} {o.item?.name || 'Item'}</p>
                 </div>
               </div>
-              <div style={{ textAlign: 'right' }}>
-                <p style={{ fontWeight: 800, marginBottom: '6px' }}>{formatRp(o.item?.price || 0)}</p>
+              <div style={{ textAlign: 'right', display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '8px' }}>
+                <p style={{ fontWeight: 800 }}>{formatRp(o.item?.price || 0)}</p>
                 {o.username !== session.payer && (
                   <button
                     className={`badge ${o.isPaid ? 'badge-glass' : 'badge-amber'}`}
@@ -2122,8 +2261,23 @@ const renderPayerPage = () => {
                   </button>
                 )}
                 {o.paymentProof && (
-                  <div style={{ marginTop: '4px' }}>
-                    <a href={o.paymentProof} target="_blank" rel="noreferrer" style={{ fontSize: '0.7rem', color: 'var(--accent-primary)', fontWeight: 600 }}>Lihat Bukti</a>
+                  <div
+                    onClick={() => {
+                      setPreviewProof({ url: o.paymentProof, username: o.username });
+                    }}
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '4px',
+                      cursor: 'pointer',
+                      padding: '4px 8px',
+                      background: 'rgba(230, 145, 56, 0.1)',
+                      borderRadius: '8px',
+                      border: '1px solid rgba(230, 145, 56, 0.2)'
+                    }}
+                  >
+                    <Camera size={14} className="text-accent" />
+                    <span style={{ fontSize: '0.7rem', color: 'var(--accent-primary)', fontWeight: 700 }}>Lihat Bukti</span>
                   </div>
                 )}
               </div>
@@ -2181,22 +2335,11 @@ const renderPenitipPage = () => {
           </div>
         </div>
 
-        <div className="transfer-info glass-panel" style={{ background: 'var(--bg-primary)', padding: '1.25rem', borderRadius: '20px' }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '12px' }}>
-            <div>
-              <p className="text-secondary" style={{ fontSize: '0.8rem', margin: 0 }}>Bayar ke {session.payer}:</p>
-              {session.companion && <p className="text-secondary" style={{ fontSize: '0.7rem', margin: 0, opacity: 0.8 }}>Pendamping: {session.companion}</p>}
-            </div>
-            <span className="text-accent" style={{ fontSize: '0.7rem', fontWeight: 800 }}>{session.paymentInfo?.method}</span>
-          </div>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            <div>
-              <p style={{ fontWeight: 800, fontSize: '1.1rem', letterSpacing: '1px' }}>{session.paymentInfo?.accountNo}</p>
-              <p className="text-secondary" style={{ fontSize: '0.8rem' }}>{session.paymentInfo?.bankName || 'Digital Wallet'}</p>
-            </div>
-            <button className="btn-secondary" style={{ padding: '8px 12px', fontSize: '0.75rem', width: 'auto' }} onClick={() => { navigator.clipboard.writeText(session.paymentInfo?.accountNo); alert('Nomor disalin!'); }}>Salin</button>
-          </div>
-        </div>
+        <PaymentInfoCard
+          info={session.paymentInfo}
+          payer={session.payer}
+          companion={session.companion}
+        />
       </div>
 
       {!alreadyPaid && (
@@ -2250,7 +2393,7 @@ const renderGuestPage = () => (
       <h2 style={{ marginBottom: '1rem' }}>Kamu Sedang Menonton</h2>
       <p className="text-secondary" style={{ marginBottom: '2.5rem' }}>Kamu tidak ikut dalam sesi ini. Tunggu sesi berikutnya untuk memesan!</p>
 
-      <div className="status-mini-card" style={{ background: 'var(--bg-primary)', padding: '1.25rem', borderRadius: '20px', textAlign: 'left' }}>
+      <div className="status-mini-card" style={{ background: 'var(--bg-primary)', padding: '1.25rem', borderRadius: '20px', textAlign: 'left', marginBottom: '1.5rem' }}>
         <div style={{ display: 'grid', gridTemplateColumns: session.companion ? '1fr 1fr' : '1fr', gap: '12px' }}>
           <div>
             <p style={{ fontSize: '0.7rem', marginBottom: '6px' }} className="text-secondary uppercase font-bold">Payer Utama</p>
@@ -2270,6 +2413,17 @@ const renderGuestPage = () => (
           )}
         </div>
       </div>
+
+      {session.paymentInfo && (
+        <div className="fade-in">
+          <h4 style={{ fontSize: '0.9rem', marginBottom: '1rem', textAlign: 'left', paddingLeft: '4px' }}>Info Pembayaran</h4>
+          <PaymentInfoCard
+            info={session.paymentInfo}
+            payer={session.payer}
+            companion={session.companion}
+          />
+        </div>
+      )}
 
       <button className="btn-secondary" style={{ marginTop: '2.5rem', width: '100%' }} onClick={() => setView('home')}>Kembali ke Home</button>
     </div>
@@ -2307,6 +2461,9 @@ return (
           currentUser={currentUser}
           api={api}
           onBack={() => setView('history')}
+          setPreviewProof={setPreviewProof}
+          setView={setView}
+          setSelectedOrder={setSelectedOrder}
         />
       )}
       {view === 'order-detail' && (
@@ -2317,6 +2474,7 @@ return (
           onBack={() => setView('orders')}
           onPaymentConfirm={checkSessionComplete}
           setDialog={setDialog}
+          setPreviewProof={setPreviewProof}
         />
       )}
       {view === 'profile' && (
@@ -2387,6 +2545,14 @@ return (
         onCancel={() => setDialog(null)}
         confirmText={dialog.confirmText}
         danger={dialog.danger}
+      />
+    )}
+
+    {previewProof && (
+      <ProofPreviewModal
+        url={previewProof.url}
+        username={previewProof.username}
+        onClose={() => setPreviewProof(null)}
       />
     )}
 
