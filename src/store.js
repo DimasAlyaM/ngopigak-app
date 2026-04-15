@@ -25,11 +25,18 @@ export function loadStore() {
 // SUPABASE SYNC (REALTIME)
 // ============================================================================
 
+let syncChannel = null;
+
 export async function initSupabaseSync() {
   await fetchFullState();
   
+  // Cleanup existing channel if re-initializing (HMR fallback)
+  if (syncChannel) {
+    await supabase.removeChannel(syncChannel);
+  }
+
   // Realtime subscription
-  supabase.channel('schema-db-changes')
+  syncChannel = supabase.channel('schema-db-changes')
     .on(
       'postgres_changes',
       { event: '*', schema: 'public' },

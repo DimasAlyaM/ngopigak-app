@@ -737,6 +737,7 @@ input:focus, select:focus { outline: none; background: var(--bg-secondary); bord
   .text-gradient {
     background: linear-gradient(135deg, var(--accent-primary) 0%, #ffffff 100%);
     -webkit-background-clip: text;
+    background-clip: text;
     -webkit-text-fill-color: transparent;
     font-size: 1.5rem;
     font-weight: 800;
