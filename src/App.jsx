@@ -2085,13 +2085,26 @@ const renderSession = () => {
                   <ChevronDown size={20} />
                 </div>
                 {showMenuResults && (
-                  <div className="glass-panel dropdown-results" style={{ position: 'absolute', top: 'calc(100% + 8px)', left: 0, right: 0, zIndex: 100, maxHeight: '250px', overflowY: 'auto', padding: '8px' }}>
+                  <div className="glass-panel search-results-list" style={{ position: 'absolute', top: 'calc(100% + 8px)', left: 0, right: 0, zIndex: 1000, maxHeight: '250px', overflowY: 'auto', padding: '8px' }}>
                     {(store.menu || []).filter(m => m && m.name.toLowerCase().includes(coffeeSearch.toLowerCase())).map(m => (
-                      <div key={m.id} className="dropdown-item" onClick={() => { setSelectedCoffeeId(m.id); setCoffeeSearch(`${m.emoji} ${m.name}`); setShowMenuResults(false); }} style={{ padding: '12px', borderRadius: '12px', cursor: 'pointer', display: 'flex', justifyContent: 'space-between' }}>
-                        <span>{m.emoji} {m.name}</span>
-                        <span className="text-accent">{formatRp(m.price)}</span>
+                      <div
+                        key={m.id}
+                        className="search-item"
+                        onMouseDown={(e) => {
+                          e.preventDefault();
+                          setSelectedCoffeeId(m.id);
+                          setCoffeeSearch(`${m.emoji} ${m.name}`);
+                          setShowMenuResults(false);
+                        }}
+                        style={{ padding: '14px 12px', borderRadius: '12px', cursor: 'pointer', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}
+                      >
+                        <span style={{ fontWeight: 700 }}>{m.emoji} {m.name}</span>
+                        <span className="text-accent" style={{ fontWeight: 800 }}>{formatRp(m.price)}</span>
                       </div>
                     ))}
+                    {(store.menu || []).filter(m => m && m.name.toLowerCase().includes(coffeeSearch.toLowerCase())).length === 0 && (
+                      <div className="search-empty">Kopi tidak ditemukan...</div>
+                    )}
                   </div>
                 )}
               </div>

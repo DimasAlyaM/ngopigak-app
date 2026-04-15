@@ -688,6 +688,19 @@ input:focus, select:focus { outline: none; background: var(--bg-secondary); bord
   opacity: 0.8;
 }
 
+/* Specific enhancements for mobile tap targets */
+.search-item {
+  transition: background 0.1s ease, transform 0.1s ease;
+  user-select: none;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.search-item:active {
+  background: var(--accent-primary) !important;
+  transform: scale(0.98);
+  opacity: 0.9;
+}
+
 .search-empty {
   padding: 15px;
   text-align: center;
