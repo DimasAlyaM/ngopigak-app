@@ -132,10 +132,15 @@ async function fetchFullState() {
              id: rawActive.id,
              status: 'force-closed',
              startedBy: rawActive.started_by,
+             startedById: rawActive.started_by_id,
              startedAt: rawActive.started_at,
              closedAt: new Date().toISOString(),
              payer: rawActive.payer,
+             payerId: rawActive.payer_id,
+             companion: rawActive.companion,
+             companionId: rawActive.companion_id,
              debtors: debtors,
+             debtorIds: debtorIds,
              orders: sessionOrders.map(o => ({
                username: o.username,
               isPaid: o.is_paid,
@@ -223,7 +228,7 @@ async function fetchFullState() {
 export const api = {
   createSession: async (userObj) => {
     try {
-      const id = Date.now().toString();
+      const id = crypto.randomUUID();
       const { error } = await supabase.from('sessions').insert({
         id,
         status: 'open',
@@ -240,17 +245,35 @@ export const api = {
 
   addOrder: async (sessionId, userObj, menuItem) => {
     try {
-      // Upsert equivalent: Delete old order by this user in this session, then insert
-      await supabase.from('orders').delete().match({ session_id: sessionId, user_id: userObj.id });
-      await supabase.from('orders').insert({
-        session_id: sessionId,
-        username: userObj.username,
-        user_id: userObj.id,
-        coffee_id: menuItem.id,
-        coffee_name: menuItem.name,
-        coffee_price: menuItem.price
-      });
-      fetchFullState();
+      // Safe upsert: update existing order if exists, otherwise insert
+      const { data: existing } = await supabase
+        .from('orders')
+        .select('id')
+        .eq('session_id', sessionId)
+        .eq('user_id', userObj.id)
+        .maybeSingle();
+
+      if (existing) {
+        await supabase.from('orders').update({
+          username: userObj.username,
+          coffee_id: menuItem.id,
+          coffee_name: menuItem.name,
+          coffee_price: menuItem.price,
+          coffee_emoji: menuItem.emoji || '☕',
+          is_paid: false
+        }).eq('id', existing.id);
+      } else {
+        await supabase.from('orders').insert({
+          session_id: sessionId,
+          username: userObj.username,
+          user_id: userObj.id,
+          coffee_id: menuItem.id,
+          coffee_name: menuItem.name,
+          coffee_price: menuItem.price,
+          coffee_emoji: menuItem.emoji || '☕'
+        });
+      }
+      // Realtime will trigger fetchFullState — no manual call needed
     } catch (err) {
       console.error("Failed to add order:", err);
       alert("Error menambah pesanan: " + err.message);
@@ -279,21 +302,26 @@ export const api = {
 
   incrementRoleCount: async (userId, role = 'pay') => {
     try {
-      const column = role === 'pay' ? 'pay_count' : 'companion_count';
-      // Find row by user_id
-      const { data: current } = await supabase.from('payer_history').select('*').eq('user_id', userId).single();
-      
+      const { data: current } = await supabase
+        .from('payer_history')
+        .select('*')
+        .eq('user_id', userId)
+        .maybeSingle(); // ← maybeSingle: tidak error jika row belum ada
+
       const updates = { user_id: userId };
       if (role === 'pay') {
-        updates.pay_count = current ? (current.pay_count || 0) + 1 : 1;
-        if (current) updates.companion_count = current.companion_count || 0;
+        updates.pay_count = (current?.pay_count || 0) + 1;
+        updates.companion_count = current?.companion_count || 0;
       } else {
-        updates.companion_count = current ? (current.companion_count || 0) + 1 : 1;
-        if (current) updates.pay_count = current.pay_count || 0;
+        updates.companion_count = (current?.companion_count || 0) + 1;
+        updates.pay_count = current?.pay_count || 0;
       }
 
-      const { error } = await supabase.from('payer_history').upsert(updates);
+      const { error } = await supabase
+        .from('payer_history')
+        .upsert(updates, { onConflict: 'user_id' });
       if (error) throw error;
+      // Realtime covers refresh
     } catch (err) {
       console.error("Failed to increment role count:", err);
     }
@@ -305,11 +333,10 @@ export const api = {
       marked_by_payer: markedByPayer ? true : false,
       paid_at: new Date().toISOString()
     }).eq('id', orderId);
-    await fetchFullState();
+    // Realtime covers refresh
   },
 
   updateOrder: async (orderId, updates) => {
-    // Map cammelCase to snake_case if necessary
     const payload = {};
     if (updates.isPaid !== undefined) payload.is_paid = updates.isPaid;
     if (updates.paymentProof !== undefined) payload.payment_proof = updates.paymentProof;
@@ -317,7 +344,7 @@ export const api = {
     if (updates.paidAt !== undefined) payload.paid_at = updates.paidAt;
     
     await supabase.from('orders').update(payload).eq('id', orderId);
-    fetchFullState();
+    // Realtime covers refresh
   },
 
   notify: async (sessionId, target, type, message) => {
@@ -344,13 +371,19 @@ export const api = {
     }
   },
 
-  markNotifRead: async (notifId, username) => {
-    const { data } = await supabase.from('notifications').select('is_read_by').eq('id', notifId).single();
+  // Mark notification as read by userId (UUID-based, backward compatible with old username entries)
+  markNotifRead: async (notifId, userId) => {
+    const { data } = await supabase
+      .from('notifications')
+      .select('is_read_by')
+      .eq('id', notifId)
+      .maybeSingle();
     if (data) {
       const arr = data.is_read_by || [];
-      if (!arr.includes(username)) {
+      // Check by UUID (new) — skip if already marked
+      if (!arr.includes(userId)) {
         await supabase.from('notifications').update({
-          is_read_by: [...arr, username]
+          is_read_by: [...arr, userId]
         }).eq('id', notifId);
       }
     }
@@ -555,6 +588,16 @@ export const api = {
   }
 };
 
+// Fisher-Yates shuffle — unbiased, truly random
+function shuffleArray(arr) {
+  const a = [...arr];
+  for (let i = a.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [a[i], a[j]] = [a[j], a[i]];
+  }
+  return a;
+}
+
 export function selectRoles(participants, payerHistory, lastRoles = null) {
   if (participants.length === 0) return { payerId: null, companionId: null };
   
@@ -566,34 +609,28 @@ export function selectRoles(participants, payerHistory, lastRoles = null) {
   }
 
   const primaryPool = participants.filter(p => !excludeSet.has(p));
-
-  // If primaryPool is empty (e.g., only 2 people total and they were both roles last time), 
-  // we must fall back to the participants
   const finalCandidates = primaryPool.length > 0 ? primaryPool : participants;
 
-  // 1. SELECT PAYER (Based on least payCount with random tie-break)
-  // First shuffle to ensure fairness among equal counts
-  const shuffledPayers = [...finalCandidates].sort(() => Math.random() - 0.5);
+  // 1. SELECT PAYER — least payCount, tie-break by Fisher-Yates shuffle
+  const shuffledPayers = shuffleArray(finalCandidates);
   const sortedPayers = shuffledPayers.sort((a, b) => {
     const countA = payerHistory[a]?.payCount || 0;
     const countB = payerHistory[b]?.payCount || 0;
     return countA - countB;
   });
-  
   const payerId = sortedPayers[0];
   
-  // 2. SELECT COMPANION (Based on least companionCount with random tie-break)
+  // 2. SELECT COMPANION — least companionCount, tie-break by Fisher-Yates shuffle
   const companionCandidates = participants.filter(p => p !== payerId);
   const primaryCompanionPool = companionCandidates.filter(p => !excludeSet.has(p));
   const finalCompanionCandidates = primaryCompanionPool.length > 0 ? primaryCompanionPool : companionCandidates;
 
-  const shuffledCompanions = [...finalCompanionCandidates].sort(() => Math.random() - 0.5);
+  const shuffledCompanions = shuffleArray(finalCompanionCandidates);
   const sortedCompanions = shuffledCompanions.sort((a, b) => {
     const countA = payerHistory[a]?.companionCount || 0;
     const countB = payerHistory[b]?.companionCount || 0;
     return countA - countB;
   });
-
   const companionId = sortedCompanions.length > 0 ? sortedCompanions[0] : null;
   
   return { payerId, companionId };

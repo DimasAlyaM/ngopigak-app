@@ -487,12 +487,13 @@ const markNotifsRead = async () => {
   let changed = false;
   const updatedNotifs = s.session.notifications.map(n => {
     const isForMe = n.toId === currentUser.id || n.to === 'all';
-    const alreadyRead = n.readBy?.includes(currentUser.username);
+    // Backward compat: old is_read_by entries stored username, new ones store UUID
+    const alreadyRead = n.readBy?.includes(currentUser.id) || n.readBy?.includes(currentUser.username);
 
     if (isForMe && !alreadyRead) {
       changed = true;
-      api.markNotifRead(n.id, currentUser.username).catch(err => console.error("Notif sync fail:", err));
-      return { ...n, readBy: [...(n.readBy || []), currentUser.username] };
+      api.markNotifRead(n.id, currentUser.id).catch(err => console.error("Notif sync fail:", err));
+      return { ...n, readBy: [...(n.readBy || []), currentUser.id] };
     }
     return n;
   });
@@ -548,7 +549,10 @@ const goToHistory = (filter = 'all') => {
 const BottomNav = () => {
   const s = loadStore();
   const myNotifs = (s.session?.notifications || []).filter(n => n.toId === currentUser?.id || n.to === 'all');
-  const unread = myNotifs.filter(n => !n.readBy?.includes(currentUser?.username)).length;
+  // Backward compat: old is_read_by entries stored username, new ones store UUID
+  const unread = myNotifs.filter(n => 
+    !n.readBy?.includes(currentUser?.id) && !n.readBy?.includes(currentUser?.username)
+  ).length;
 
   return (
     <nav className="bottom-nav">

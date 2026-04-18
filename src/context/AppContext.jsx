@@ -6,8 +6,22 @@ const AppContext = createContext();
 export const AppProvider = ({ children }) => {
   const [store, setStore] = useState(() => loadStore());
   const [currentUser, setCurrentUser] = useState(() => {
-    const saved = localStorage.getItem('ngopi_current_v2');
-    return saved ? JSON.parse(saved) : null;
+    try {
+      const saved = localStorage.getItem('ngopi_current_v2');
+      if (!saved) return null;
+      const parsed = JSON.parse(saved);
+      // Check expiry (7 days)
+      if (parsed.expiresAt && Date.now() > parsed.expiresAt) {
+        localStorage.removeItem('ngopi_current_v2');
+        return null;
+      }
+      // Return user object without the expiresAt meta field
+      const { expiresAt: _, ...user } = parsed;
+      return user;
+    } catch {
+      localStorage.removeItem('ngopi_current_v2');
+      return null;
+    }
   });
 
   const refreshStore = useCallback(() => {
@@ -36,10 +50,14 @@ export const AppProvider = ({ children }) => {
     };
   }, [refreshStore]);
 
-  // Persist currentUser to localStorage when it changes
+  // Persist currentUser to localStorage when it changes (with 7-day expiry)
   useEffect(() => {
     if (currentUser) {
-      localStorage.setItem('ngopi_current_v2', JSON.stringify(currentUser));
+      const SESSION_EXPIRY_MS = 7 * 24 * 60 * 60 * 1000; // 7 hari
+      localStorage.setItem('ngopi_current_v2', JSON.stringify({
+        ...currentUser,
+        expiresAt: Date.now() + SESSION_EXPIRY_MS
+      }));
     } else {
       localStorage.removeItem('ngopi_current_v2');
       localStorage.removeItem('ngopi_current_user'); // Cleanup old format
