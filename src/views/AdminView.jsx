@@ -236,9 +236,14 @@ function AdminView({
                           <div className="fade-in" style={{ padding: '0 16px 16px 16px', borderTop: '1px solid rgba(255,255,255,0.05)' }}>
                             <div style={{ marginTop: '12px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
                                {h.orders.map((ord, idx) => {
-                                  const isPaid = h.debtorIds 
-                                    ? !h.debtorIds.includes(ord.userId) 
-                                    : !h.debtors?.some(d => (d || '').toLowerCase() === (ord.username || '').toLowerCase());
+                                  const isPayerOrder = h.payerId
+                                    ? ord.userId === h.payerId
+                                    : ord.username?.toLowerCase() === h.payer?.toLowerCase();
+                                  const isPaid = isPayerOrder ? true : (
+                                    h.debtorIds
+                                      ? !h.debtorIds.includes(ord.userId)
+                                      : !h.debtors?.some(d => (d || '').toLowerCase() === (ord.username || '').toLowerCase())
+                                  );
                                   return (
                                     <div key={idx} className="admin-list-item" style={{ background: 'rgba(0,0,0,0.2)', padding: '10px' }}>
                                       <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
@@ -248,7 +253,7 @@ function AdminView({
                                           <span style={{ fontSize: '0.7rem', opacity: 0.6 }}>{ord.item.name}</span>
                                         </div>
                                       </div>
-                                      {ord.userId !== h.payerId ? (
+                                      {!isPayerOrder ? (
                                       <button 
                                         className="admin-stat-badge" 
                                         style={{ 

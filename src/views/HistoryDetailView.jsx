@@ -53,9 +53,15 @@ function HistoryDetailView({ session, onBack, setPreviewProof, setView, setSelec
 
       <div className="card-stack" style={{ marginBottom: '2rem' }}>
         {orders.map((o, idx) => {
-          const orderDebt = session.debtorIds 
-            ? session.debtorIds.includes(o.userId) 
-            : session.debtors?.some(d => (d || '').toLowerCase() === (o.username || '').toLowerCase());
+          // Support old sessions (no userId) by falling back to username comparison
+          const isPayer = session.payerId
+            ? o.userId === session.payerId
+            : o.username?.toLowerCase() === session.payer?.toLowerCase();
+          const orderDebt = isPayer ? false : (
+            session.debtorIds
+              ? session.debtorIds.includes(o.userId)
+              : session.debtors?.some(d => (d || '').toLowerCase() === (o.username || '').toLowerCase())
+          );
           return (
             <div 
               key={idx} 
@@ -94,7 +100,7 @@ function HistoryDetailView({ session, onBack, setPreviewProof, setView, setSelec
                       <Camera size={12} className="text-accent" />
                     </div>
                   )}
-                  {o.userId !== session.payerId ? (
+                  {!isPayer ? (
                     <span style={{ fontSize: '0.65rem', fontWeight: 800, color: orderDebt ? '#ef4444' : '#4ade80' }}>
                       {orderDebt ? 'HUTANG' : 'LUNAS'}
                     </span>
