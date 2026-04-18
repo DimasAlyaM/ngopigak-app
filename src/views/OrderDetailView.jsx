@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
-import { useAppContext } from '../context/AppContext.jsx';
+import { useAppStore } from "../context/useAppStore.js";
+import { api } from "../store.js";
 import { AlertTriangle, ChevronLeft, Camera, CheckCircle, Loader2 } from 'lucide-react';
 import { loadStore } from '../store.js';
 import { formatRp, formatDate } from '../utils/formatters.js';
@@ -15,7 +16,7 @@ function OrderDetailView({
   setDialog, 
   setPreviewProof 
 }) {
-  const { store, currentUser, api } = useAppContext();
+  const { store, currentUser } = useAppStore();
   if (!order) return (
     <div className="glass-panel" style={{ padding: '4rem 2rem', textAlign: 'center' }}>
       <AlertTriangle size={48} className="text-secondary opacity-50 mb-4" />

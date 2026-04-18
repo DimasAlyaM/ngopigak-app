@@ -1,5 +1,6 @@
 import { useState } from 'react';
-import { useAppContext } from '../context/AppContext.jsx';
+import { useAppStore } from "../context/useAppStore.js";
+import { api } from "../store.js";
 import { Shield, Trash2, ChevronDown, Coffee } from 'lucide-react';
 import UserAvatar from '../components/UserAvatar';
 import { formatRp, formatDate } from '../utils/formatters.js';
@@ -15,7 +16,7 @@ function AdminView({
   onDeleteAllNotifs, 
   setDialog 
 }) {
-  const { store, api } = useAppContext();
+  const { store } = useAppStore();
   const { menu, users, history, session: activeSession } = store;
   const { saveMenu: onSaveMenu, resetUserPin: onResetPin, saveAdminPin: onSaveAdminPin } = api;
 

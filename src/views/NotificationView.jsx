@@ -1,4 +1,5 @@
-import { useAppContext } from '../context/AppContext.jsx';
+import { useAppStore } from "../context/useAppStore.js";
+import { api } from "../store.js";
 import { Bell, Info, CreditCard, Coffee, Clock, CheckCircle, AlertTriangle } from 'lucide-react';
 import { formatDate } from '../utils/formatters.js';
 
@@ -21,7 +22,7 @@ function notifIcon(type) {
  * NotificationView Component
  */
 function NotificationView({ onAction }) {
-  const { store, currentUser } = useAppContext();
+  const { store, currentUser } = useAppStore();
   const username = currentUser?.username;
   const userId = currentUser?.id;
   const notifications = store.session?.notifications || [];

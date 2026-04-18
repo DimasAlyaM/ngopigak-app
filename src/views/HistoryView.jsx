@@ -1,4 +1,5 @@
-import { useAppContext } from '../context/AppContext.jsx';
+import { useAppStore } from "../context/useAppStore.js";
+import { api } from "../store.js";
 import { History } from 'lucide-react';
 import { formatRp, formatDate } from '../utils/formatters.js';
 
@@ -6,7 +7,7 @@ import { formatRp, formatDate } from '../utils/formatters.js';
  * HistoryView Component
  */
 function HistoryView({ onSelectSession }) {
-  const { store, currentUser } = useAppContext();
+  const { store, currentUser } = useAppStore();
   const { history, payerHistory } = store;
   const validHistory = (history || []).filter(s => s && Array.isArray(s.orders));
   const displayedHistory = [...validHistory].sort((a, b) => new Date(b.startedAt || 0) - new Date(a.startedAt || 0));

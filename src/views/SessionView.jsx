@@ -1,5 +1,6 @@
 import { Loader2, Users, Coffee, Bell, Camera, Shield, Info, AlertTriangle, CheckCircle, ChevronDown, Clock, Search } from 'lucide-react';
-import { useAppContext } from '../context/AppContext.jsx';
+import { useAppStore } from "../context/useAppStore.js";
+import { api } from "../store.js";
 import { formatRp, formatTime } from '../utils/formatters.js';
 import UserAvatar from '../components/UserAvatar';
 import PaymentInfoCard from '../components/PaymentInfoCard';
@@ -34,7 +35,7 @@ function SessionView({
   onSubmitPaymentInfo,
   onCloseSessionNow
 }) {
-  const { store, currentUser } = useAppContext();
+  const { store, currentUser } = useAppStore();
   const session = store.session;
 
   if (!session) {

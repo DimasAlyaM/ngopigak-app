@@ -1,24 +1,9 @@
 import { supabase } from './supabase.js';
-
+import { useAppStore } from './context/useAppStore.js';
 const STORE_KEY = 'ngopi_store_v3';
 
-// Helper to keep local UI updated while network requests happen
-function notifyLocalUpdate() {
-  window.dispatchEvent(new CustomEvent('sync_store'));
-}
-
-// Global cached state (monolithic format for compatibility with App.jsx)
-let memoryStore = {
-  session: null,
-  history: [],
-  payerHistory: {},
-  menu: [],
-  users: [], // will store { username, pin } objects
-  adminPin: null // global admin pin for menu access
-};
-
 export function loadStore() {
-  return { ...memoryStore }; // return new object reference for React state update
+  return useAppStore.getState().store;
 }
 
 // ============================================================================
@@ -74,7 +59,7 @@ async function fetchFullState() {
     if (ordersErr) console.error("Supabase Error (Orders):", ordersErr);
 
     // Rebuild Menu
-    memoryStore.menu = (menu || []).map(m => ({
+    const newMenu = (menu || []).map(m => ({
       id: m.id,
       name: m.name,
       price: m.price,
@@ -82,18 +67,15 @@ async function fetchFullState() {
     }));
 
     // Rebuild Users from dedicated table
-    memoryStore.users = (users || []).map(u => ({
+    const newUsers = (users || []).map(u => ({
       id: u.id,
       username: u.username,
       pin: u.pin
     }));
 
-    // Rebuild Payer History (store as array of objects)
-    memoryStore.payerHistory = payers || [];
-
     // Rebuild Admin Pin
     const adminPinRow = (settings || []).find(s => s.key === 'admin_pin');
-    memoryStore.adminPin = adminPinRow ? adminPinRow.value : null;
+    const newAdminPin = adminPinRow ? adminPinRow.value : null;
     
     // Also track names for quick-selection (extract from history if needed)
     const userSet = new Set();
@@ -153,19 +135,19 @@ async function fetchFullState() {
           await supabase.from('sessions').delete().eq('id', rawActive.id);
           fetchFullState();
         });
-        memoryStore.session = null;
-        notifyLocalUpdate();
+        useAppStore.getState().setStoreParam({ session: null });
         return; 
       }
     }
 
+    let newSession = null;
     const activeSessionRow = rawActive;
     
     if (activeSessionRow) {
       const sessionOrders = (orders || []).filter(o => o.session_id === activeSessionRow.id);
       const sessionNotifs = (notifications || []).filter(n => n.session_id === activeSessionRow.id);
       
-      memoryStore.session = {
+      newSession = {
         id: activeSessionRow.id,
         status: activeSessionRow.status,
         startedBy: activeSessionRow.started_by,
@@ -207,15 +189,17 @@ async function fetchFullState() {
           createdAt: n.created_at
         }))
       };
-    } else {
-      memoryStore.session = null;
     }
 
-    // Rebuild History with safety check for null data
-    memoryStore.history = (historic || []).filter(h => h && h.data).map(h => h.data);
-
-    // Notify UI
-    notifyLocalUpdate();
+    // Push all updates to Zustand
+    useAppStore.getState().setStoreParam({
+      menu: newMenu,
+      users: newUsers,
+      adminPin: newAdminPin,
+      payerHistory: payers || [],
+      history: (historic || []).filter(h => h && h.data).map(h => h.data),
+      session: newSession
+    });
   } catch (err) {
     console.error("Critical error in fetchFullState:", err);
   }
@@ -355,7 +339,8 @@ export const api = {
         targetUser = target.username;
       } else {
         targetId = target;
-        const u = memoryStore.users.find(user => user.id === targetId);
+        const users = useAppStore.getState().store.users;
+        const u = users.find(user => user.id === targetId);
         targetUser = u ? u.username : 'Unknown';
       }
 

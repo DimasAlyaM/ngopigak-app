@@ -1,9 +1,10 @@
-import { useAppContext } from '../context/AppContext.jsx';
+import { useAppStore } from "../context/useAppStore.js";
+import { api } from "../store.js";
 import { Coffee, Clock } from 'lucide-react';
 import { formatRp, formatDate } from '../utils/formatters.js';
 
 function MyOrdersView({ setView, setSelectedOrder }) {
-  const { store, currentUser } = useAppContext();
+  const { store, currentUser } = useAppStore();
   const { session, history } = store;
   const sessionDone = session?.status === 'completed' || session?.status === 'force-closed';
 

@@ -1,4 +1,5 @@
-import { useAppContext } from '../context/AppContext.jsx';
+import { useAppStore } from "../context/useAppStore.js";
+import { api } from "../store.js";
 import { ChevronLeft, Camera } from 'lucide-react';
 import { formatDate, formatRp } from '../utils/formatters.js';
 import UserAvatar from '../components/UserAvatar';
@@ -8,7 +9,7 @@ import UserAvatar from '../components/UserAvatar';
  * Shows details of a specific session from history.
  */
 function HistoryDetailView({ session, onBack, setPreviewProof, setView, setSelectedOrder }) {
-  const { currentUser, api } = useAppContext();
+  const { currentUser } = useAppStore();
   if (!session) return null;
 
   const orders = Array.isArray(session?.orders) ? session.orders : [];

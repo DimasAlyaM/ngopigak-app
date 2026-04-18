@@ -1,10 +1,11 @@
-import { useAppContext } from '../context/AppContext.jsx';
+import { useAppStore } from "../context/useAppStore.js";
+import { api } from "../store.js";
 
 /**
  * AdminPinGate Component
  */
 function AdminPinGate({ onSuccess, onClose }) {
-  const { store, api } = useAppContext();
+  const { store } = useAppStore();
   const serverPin = store.adminPin;
   const isFirstTime = !serverPin;
 

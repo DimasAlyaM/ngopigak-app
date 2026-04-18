@@ -1,10 +1,11 @@
-import { useAppContext } from '../context/AppContext.jsx';
+import { useAppStore } from "../context/useAppStore.js";
+import { api } from "../store.js";
 import { Coffee, Clock, Users, Shield, PlusCircle } from 'lucide-react';
 import UserAvatar from '../components/UserAvatar';
 import { formatRp, formatTime } from '../utils/formatters.js';
 
 function HomeView({ timeLeft, onStartSession, onJoinSession, onSelectSession, setView, setSelectedSession }) {
-  const { store, currentUser } = useAppContext();
+  const { store, currentUser } = useAppStore();
   const { session, history } = store;
   
   const sessionDone = session?.status === 'completed' || session?.status === 'force-closed';
