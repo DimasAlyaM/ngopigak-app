@@ -271,7 +271,7 @@ export const api = {
     if (updates.coffeeBought !== undefined) payload.coffee_bought = updates.coffeeBought;
     if (updates.forceClosedBy !== undefined) payload.force_closed_by = updates.forceClosedBy;
     if (updates.debtors !== undefined) payload.debtors = updates.debtors;
-    if (updates.debtorsIds !== undefined) payload.debtors_ids = updates.debtorsIds; // Handle if schema allows
+    if (updates.debtorIds !== undefined) payload.debtors_ids = updates.debtorIds;
     
     await supabase.from('sessions').update(payload).eq('id', sessionId);
     await fetchFullState();

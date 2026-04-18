@@ -135,75 +135,8 @@ export default function App() {
     api.notify(s.session.id, payerId, 'info', `Kamu terpilih sebagai Pembayar! Silakan lengkapi info pembayaran.`);
   }, [api]);
 
-  useEffect(() => {
-    const handleClickOutside = (event) => {
-      if (coffeeDropdownRef.current && !coffeeDropdownRef.current.contains(event.target)) {
-        setShowMenuResults(false);
-      }
-    };
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, []);
 
-  // Timer management
-  useEffect(() => {
-    const session = store.session;
-    if (session?.status === 'open') {
-      const elapsed = Math.floor((Date.now() - new Date(session.startedAt).getTime()) / 1000);
-      const remaining = Math.max(0, 600 - elapsed);
-      setTimeLeft(remaining);
-
-      if (remaining <= 0) {
-        closeSessionAndSelectRoles();
-        return;
-      }
-
-      timerRef.current = setInterval(() => {
-        setTimeLeft(prev => {
-          if (prev <= 1) {
-            clearInterval(timerRef.current);
-            closeSessionAndSelectRoles();
-            return 0;
-          }
-          return prev - 1;
-        });
-      }, 1000);
-    } else {
-      clearInterval(timerRef.current);
-    }
-    return () => clearInterval(timerRef.current);
-  }, [store.session?.status, store.session?.id]);
-
-  // Confetti celebration for 'completed' session
-  useEffect(() => {
-    if (view === 'live-session' && store.session?.status === 'completed') {
-      confetti({
-        particleCount: 150,
-        spread: 70,
-        origin: { y: 0.6 }
-      });
-    }
-  }, [store.session?.status, view]);
-
-  // AUTO-FINALIZE WATCHER: Triggered whenever session state changes
-  useEffect(() => {
-    if (!session || session.status !== 'active' || !currentUser) return;
-    if (currentUser.id !== session.payerId) return;
-
-    const others = session.orders.filter(o =>
-      o.userId !== session.payerId &&
-      o.userId !== session.companionId
-    );
-    const allOthersPaid = others.every(o => o.isPaid);
-
-    if (allOthersPaid && session.coffeeBought) {
-      console.log("Watcher: All conditions met. Finalizing session...");
-      checkSessionComplete();
-    }
-  }, [session, currentUser, checkSessionComplete]);
-
-
-  // ─── ACTIONS ───────────────────────────────────────────────────────────────
+// ─── ACTIONS ───────────────────────────────────────────────────────────────
 
   const login = async (e) => {
     e.preventDefault();
@@ -615,75 +548,7 @@ const goToHistory = (filter = 'all') => {
 };
 
 
-if (renderError) {
-  return (
-    <div className="empty-state" style={{ padding: '4rem 2rem' }}>
-      <div className="glass-panel" style={{ maxWidth: '500px', margin: '0 auto', padding: '2rem', border: '2px solid var(--red)' }}>
-        <AlertTriangle size={48} className="text-red mb-4" />
-        <h2 className="text-red">Waduh, Sistem Eror!</h2>
-        <p className="text-secondary mt-2 mb-6">Terjadi masalah saat memuat data. Tenang, data ngopi kamu aman kok.</p>
-        <code style={{ display: 'block', background: '#f5f5f5', padding: '1rem', borderRadius: '4px', fontSize: '0.8rem', textAlign: 'left', overflow: 'auto' }}>
-          {renderError}
-        </code>
-        <button className="btn-primary mt-6" style={{ width: '100%' }} onClick={() => window.location.reload()}>Refresh Halaman</button>
-      </div>
-    </div>
-  );
-}
-
-// ─── VIEW: LOGIN ────────────────────────────────────────────────────────────
-if (!currentUser) {
-  return (
-    <div className="app-container login-mode">
-      <div className="login-screen fade-in">
-        <div className="login-card glass-panel">
-          <div className="login-brand">
-            <div className="login-logo"><Coffee size={40} /></div>
-            <h1 className="text-gradient">NgopiGak</h1>
-          </div>
-
-          <h2 className="login-title">Selamat Datang</h2>
-          <p className="text-secondary">Silakan masuk untuk mulai ngopi bareng rekan tim kamu.</p>
-
-          <form onSubmit={login} className="modern-form">
-            <div className="form-group">
-              <label>Nama Pengguna</label>
-              <input
-                id="login-name"
-                type="text"
-                value={loginInput}
-                onChange={e => setLoginInput(e.target.value)}
-                placeholder="Masukkan nama kamu"
-                autoFocus
-                required
-              />
-            </div>
-            <div className="form-group">
-              <label>4 Digit PIN</label>
-              <input
-                id="login-pin"
-                type="password"
-                inputMode="numeric"
-                maxLength={4}
-                value={pinInput}
-                onChange={e => setPinInput(e.target.value.replace(/\D/g, ''))}
-                placeholder="****"
-                required
-              />
-            </div>
-            <button id="login-submit" type="submit" className="btn-primary">
-              Masuk Sekarang
-            </button>
-          </form>
-
-          <div className="login-footer">
-            Dimsam • 2026
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-}
+// ─── RENDER HELPERS ────────────────────────────────────────────────────────
 
 // ─── BOTTOM NAVIGATION COMPONENT ───────────────────────────────────────────
 const BottomNav = () => {
@@ -776,6 +641,152 @@ const BottomNav = () => {
       onCloseSessionNow={closeSessionAndSelectRoles}
     />
   );
+
+
+// ─── EFFECTS ───────────────────────────────────────────────────────────────
+
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (coffeeDropdownRef.current && !coffeeDropdownRef.current.contains(event.target)) {
+        setShowMenuResults(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  // Timer management
+  useEffect(() => {
+    const session = store.session;
+    if (session?.status === 'open') {
+      const elapsed = Math.floor((Date.now() - new Date(session.startedAt).getTime()) / 1000);
+      const remaining = Math.max(0, 600 - elapsed);
+      setTimeLeft(remaining);
+
+      if (remaining <= 0) {
+        closeSessionAndSelectRoles();
+        return;
+      }
+
+      timerRef.current = setInterval(() => {
+        setTimeLeft(prev => {
+          if (prev <= 1) {
+            clearInterval(timerRef.current);
+            closeSessionAndSelectRoles();
+            return 0;
+          }
+          return prev - 1;
+        });
+      }, 1000);
+    } else {
+      clearInterval(timerRef.current);
+    }
+    return () => clearInterval(timerRef.current);
+  }, [store.session?.status, store.session?.id]);
+
+  // Confetti celebration for 'completed' session
+  useEffect(() => {
+    if (view === 'live-session' && store.session?.status === 'completed') {
+      confetti({
+        particleCount: 150,
+        spread: 70,
+        origin: { y: 0.6 }
+      });
+    }
+  }, [store.session?.status, view]);
+
+  // AUTO-FINALIZE WATCHER: Triggered whenever session state changes
+  useEffect(() => {
+    if (!session || session.status !== 'active' || !currentUser) return;
+    if (currentUser.id !== session.payerId) return;
+
+    const others = session.orders.filter(o =>
+      o.userId !== session.payerId &&
+      o.userId !== session.companionId
+    );
+    const allOthersPaid = others.every(o => o.isPaid);
+
+    if (allOthersPaid && session.coffeeBought) {
+      console.log("Watcher: All conditions met. Finalizing session...");
+      checkSessionComplete();
+    }
+  }, [session, currentUser, checkSessionComplete]);
+
+
+  // ─── ACTIONS ───────────────────────────────────────────────────────────────
+
+
+
+if (renderError) {
+  return (
+    <div className="empty-state" style={{ padding: '4rem 2rem' }}>
+      <div className="glass-panel" style={{ maxWidth: '500px', margin: '0 auto', padding: '2rem', border: '2px solid var(--red)' }}>
+        <AlertTriangle size={48} className="text-red mb-4" />
+        <h2 className="text-red">Waduh, Sistem Eror!</h2>
+        <p className="text-secondary mt-2 mb-6">Terjadi masalah saat memuat data. Tenang, data ngopi kamu aman kok.</p>
+        <code style={{ display: 'block', background: '#f5f5f5', padding: '1rem', borderRadius: '4px', fontSize: '0.8rem', textAlign: 'left', overflow: 'auto' }}>
+          {renderError}
+        </code>
+        <button className="btn-primary mt-6" style={{ width: '100%' }} onClick={() => window.location.reload()}>Refresh Halaman</button>
+      </div>
+    </div>
+  );
+}
+
+// ─── VIEW: LOGIN ────────────────────────────────────────────────────────────
+if (!currentUser) {
+  return (
+    <div className="app-container login-mode">
+      <div className="login-screen fade-in">
+        <div className="login-card glass-panel">
+          <div className="login-brand">
+            <div className="login-logo"><Coffee size={40} /></div>
+            <h1 className="text-gradient">NgopiGak</h1>
+          </div>
+
+          <h2 className="login-title">Selamat Datang</h2>
+          <p className="text-secondary">Silakan masuk untuk mulai ngopi bareng rekan tim kamu.</p>
+
+          <form onSubmit={login} className="modern-form">
+            <div className="form-group">
+              <label>Nama Pengguna</label>
+              <input
+                id="login-name"
+                type="text"
+                value={loginInput}
+                onChange={e => setLoginInput(e.target.value)}
+                placeholder="Masukkan nama kamu"
+                autoFocus
+                required
+              />
+            </div>
+            <div className="form-group">
+              <label>4 Digit PIN</label>
+              <input
+                id="login-pin"
+                type="password"
+                inputMode="numeric"
+                maxLength={4}
+                value={pinInput}
+                onChange={e => setPinInput(e.target.value.replace(/\D/g, ''))}
+                placeholder="****"
+                required
+              />
+            </div>
+            <button id="login-submit" type="submit" className="btn-primary">
+              Masuk Sekarang
+            </button>
+          </form>
+
+          <div className="login-footer">
+            Dimsam • 2026
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 
 // ─── MAIN RENDER ────────────────────────────────────────────────────────────
 return (
@@ -881,4 +892,3 @@ return (
     </div>
   );
 }
-
