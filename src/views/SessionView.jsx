@@ -59,7 +59,7 @@ function SessionView({
     return null;
   })();
 
-  const myOrder = session?.orders?.find(o => o.userId === currentUser.id);
+  const myOrder = session?.orders?.find(o => o.userId === currentUser?.id);
 
   // Statistics
   const totalAmount = session?.orders?.reduce((sum, o) => sum + (o.item?.price || 0), 0) || 0;
@@ -171,7 +171,7 @@ function SessionView({
         <h4 style={{ marginBottom: '1rem', paddingLeft: '4px' }}>Daftar Pesanan ({session.orders?.length || 0})</h4>
         <div className="card-stack">
           {(session.orders || []).map(o => (
-            <div key={o.id} className={`item-card glass-panel ${o.userId === currentUser.id ? 'active-border' : ''}`} style={{ padding: '12px 16px', borderRadius: '20px' }}>
+            <div key={o.id} className={`item-card glass-panel ${o.userId === currentUser?.id ? 'active-border' : ''}`} style={{ padding: '12px 16px', borderRadius: '20px' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
                 <UserAvatar username={o.username} size={36} />
                 <div>
@@ -347,7 +347,7 @@ function SessionView({
   if (session.status === 'open') return renderOpenSession();
 
   if (session.status === 'payment-setup') {
-    const isPayer = session.payerId === currentUser.id;
+    const isPayer = session.payerId === currentUser?.id;
     return (
       <div className="payment-setup fade-in" style={{ padding: '1.5rem' }}>
         <div className="glass-panel" style={{ textAlign: 'center', padding: '2rem 1.5rem' }}>

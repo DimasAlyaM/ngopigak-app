@@ -1,4 +1,7 @@
 import { useAppContext } from '../context/AppContext.jsx';
+import { ChevronLeft, Camera } from 'lucide-react';
+import { formatDate, formatRp } from '../utils/formatters.js';
+import UserAvatar from '../components/UserAvatar';
 
 /**
  * HistoryDetailView Component 

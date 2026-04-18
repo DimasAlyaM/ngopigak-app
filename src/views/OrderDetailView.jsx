@@ -68,8 +68,8 @@ function OrderDetailView({
     const prevPaid = localIsPaid;
     setLocalIsPaid(true); // Optimistic
     try {
+      const s = loadStore();
       if (order.sessionId === 'active' || (s.session && order.sessionId === s.session.id)) {
-        const s = loadStore();
         const activeOrder = s.session?.orders?.find(o => o.userId === currentUser.id);
         if (activeOrder) {
           await api.updateOrder(activeOrder.id, { isPaid: true, markedByPayer: false });
