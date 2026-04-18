@@ -12,13 +12,13 @@ function MyOrdersView({ setView, setSelectedOrder }) {
 
   // Past orders from history
   history.forEach(s => {
-    const myOrder = s.orders.find(o => o.username === currentUser);
+    const myOrder = s.orders.find(o => o.userId === currentUser?.id || o.username === currentUser?.username);
     if (myOrder) {
       allPersonalOrders.push({
         ...myOrder,
         sessionDate: s.startedAt,
         payer: s.payer,
-        isPaid: !(s.debtors || []).includes(currentUser),
+        isPaid: !(s.debtors || []).includes(currentUser?.username) && !(s.debtorIds || []).includes(currentUser?.id),
         sessionId: s.id
       });
     }
@@ -26,7 +26,7 @@ function MyOrdersView({ setView, setSelectedOrder }) {
 
   // Active session order if exists
   if (session && !sessionDone) {
-    const myActiveOrder = session.orders.find(o => o.username === currentUser);
+    const myActiveOrder = session.orders.find(o => o.userId === currentUser?.id);
     if (myActiveOrder) {
       allPersonalOrders.push({
         ...myActiveOrder,

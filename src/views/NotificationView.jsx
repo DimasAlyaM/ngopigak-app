@@ -22,9 +22,10 @@ function notifIcon(type) {
  */
 function NotificationView({ onAction }) {
   const { store, currentUser } = useAppContext();
-  const username = currentUser;
+  const username = currentUser?.username;
+  const userId = currentUser?.id;
   const notifications = store.session?.notifications || [];
-  const myNotifs = notifications.filter(n => n.to === username || n.to === 'all');
+  const myNotifs = notifications.filter(n => n.toId === userId || n.to === username || n.to === 'all');
 
   return (
     <div className="notif-view fade-in">

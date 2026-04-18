@@ -13,7 +13,7 @@ function HomeView({ timeLeft, onStartSession, onJoinSession, onSelectSession, se
     <div className="home-view fade-in" style={{ padding: '1rem' }}>
       <div className="welcome-section" style={{ marginBottom: '2rem' }}>
         <p className="text-secondary" style={{ fontSize: '0.9rem', fontWeight: 500 }}>Selamat Pagi,</p>
-        <h2 style={{ fontSize: '1.8rem' }}>{currentUser}! 👋</h2>
+        <h2 style={{ fontSize: '1.8rem' }}>{currentUser?.username}! 👋</h2>
       </div>
 
       {/* Dynamic Session Section */}
@@ -116,7 +116,7 @@ function HomeView({ timeLeft, onStartSession, onJoinSession, onSelectSession, se
             <Coffee size={14} className="text-accent" />
           </div>
           <span className="text-secondary" style={{ fontSize: '0.75rem', fontWeight: 600 }}>Kopi Dipesan</span>
-          <p style={{ fontSize: '1.5rem', fontWeight: 800 }}>{history?.filter(s => s.orders.some(o => o.username === currentUser)).length || 0}</p>
+          <p style={{ fontSize: '1.5rem', fontWeight: 800 }}>{history?.filter(s => s.orders.some(o => o.username === currentUser?.username)).length || 0}</p>
         </div>
       </div>
     </div>
