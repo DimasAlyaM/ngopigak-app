@@ -18,20 +18,28 @@ function ProfileView({ onSave, onLogout }) {
   const username = currentUser.username;
   const validHistory = (history || []).filter(s => s && Array.isArray(s.orders));
 
+  // Helper: check if an order belongs to current user (supports old data without userId)
+  const isMyOrder = (o) => (userId && o.userId === userId) || o.username?.toLowerCase() === username?.toLowerCase();
+  // Helper: check if a session's payer is current user
+  const isMyPayerSession = (s) => (userId && s.payerId === userId) || s.payer?.toLowerCase() === username?.toLowerCase();
+
   // Stats
-  const mySessions = validHistory.filter(s => s.orders.some(o => o.userId === userId));
-  const myDebts = mySessions.filter(s => 
-    s.payerId !== userId && 
-    (s.debtorIds?.includes(userId) || s.debtors?.some(d => (d || '').toLowerCase() === username.toLowerCase()))
+  const mySessions = validHistory.filter(s => s.orders.some(o => isMyOrder(o)));
+  const myDebts = mySessions.filter(s =>
+    !isMyPayerSession(s) &&
+    (
+      (userId && s.debtorIds?.includes(userId)) ||
+      s.debtors?.some(d => (d || '').toLowerCase() === username.toLowerCase())
+    )
   );
 
   const totalOwed = myDebts.reduce((acc, s) => {
-    const myOrder = s.orders.find(o => o.userId === userId);
+    const myOrder = s.orders.find(o => isMyOrder(o));
     return acc + (myOrder?.item?.price || 0);
   }, 0);
 
   const totalCoffee = mySessions.reduce((acc, s) => {
-    const count = s.orders.filter(o => o.userId === userId).length;
+    const count = s.orders.filter(o => isMyOrder(o)).length;
     return acc + count;
   }, 0);
 
@@ -56,7 +64,7 @@ function ProfileView({ onSave, onLogout }) {
           {!isEditing ? (
             <div style={{ textAlign: 'center', marginTop: '1.5rem' }}>
               <h2 style={{ fontSize: '1.8rem', fontWeight: 800, margin: 0 }}>{username}</h2>
-              <p className="text-secondary" style={{ fontSize: '0.9rem', marginTop: '4px' }}>Ngopi Sejak {mySessions.length > 0 ? formatDate(mySessions[mySessions.length - 1].startedAt).split(',')[0] : 'Hari Ini'}</p>
+              <p className="text-secondary" style={{ fontSize: '0.9rem', marginTop: '4px' }}>Ngopi Sejak {mySessions.length > 0 ? formatDate([...mySessions].sort((a, b) => new Date(a.startedAt) - new Date(b.startedAt))[0].startedAt).split(',')[0] : 'Hari Ini'}</p>
             </div>
           ) : (
             <div className="modern-form" style={{ marginTop: '1.5rem', width: '100%' }}>
