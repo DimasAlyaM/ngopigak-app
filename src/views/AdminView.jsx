@@ -103,13 +103,13 @@ function AdminView({
                   {users.map(u => {
                     let debt = 0;
                     history.forEach(session => {
-                      if (session?.debtors?.some(d => (d || '').toLowerCase() === (u.username || '').toLowerCase())) {
-                        const order = session.orders?.find(o => (o.username || '').toLowerCase() === (u.username || '').toLowerCase());
+                      if (session.payerId !== u.id && (session.debtorIds || []).includes(u.id)) {
+                        const order = session.orders?.find(o => o.userId === u.id);
                         debt += order?.item?.price || 0;
                       }
                     });
                     return (
-                      <div key={u.username} className="admin-list-item">
+                      <div key={u.id} className="admin-list-item">
                         <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
                           <UserAvatar username={u.username} size={36} />
                           <div style={{ display: 'flex', flexDirection: 'column' }}>
@@ -123,7 +123,7 @@ function AdminView({
                           setDialog({
                             title: 'Reset PIN?',
                             message: `PIN untuk ${u.username} akan diubah menjadi '1234'.`,
-                            onConfirm: () => { onResetPin(u.username); setDialog(null); }
+                            onConfirm: () => { onResetPin(u.id); setDialog(null); }
                           });
                         }}>Reset PIN</button>
                       </div>
@@ -148,6 +148,10 @@ function AdminView({
                     <div className="stat-row" style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px', fontSize: '0.9rem' }}>
                       <span style={{ opacity: 0.7 }}>Pembuat:</span>
                       <span style={{ fontWeight: 700 }}>{activeSession.startedBy}</span>
+                    </div>
+                    <div className="stat-row" style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px', fontSize: '0.9rem' }}>
+                      <span style={{ opacity: 0.7 }}>Payer:</span>
+                      <span style={{ fontWeight: 700 }}>{activeSession.payer || '-'}</span>
                     </div>
                     <div className="stat-row" style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px', fontSize: '0.9rem' }}>
                       <span style={{ opacity: 0.7 }}>Jumlah Pesanan:</span>
@@ -231,37 +235,43 @@ function AdminView({
                         {isExpanded && (
                           <div className="fade-in" style={{ padding: '0 16px 16px 16px', borderTop: '1px solid rgba(255,255,255,0.05)' }}>
                             <div style={{ marginTop: '12px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                              {h.orders.map((ord, idx) => {
-                                const isPaid = !h.debtors?.some(d => (d || '').toLowerCase() === (ord.username || '').toLowerCase());
-                                return (
-                                  <div key={idx} className="admin-list-item" style={{ background: 'rgba(0,0,0,0.2)', padding: '10px' }}>
-                                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                                      <UserAvatar username={ord.username} size={24} />
-                                      <div style={{ display: 'flex', flexDirection: 'column' }}>
-                                        <span style={{ fontSize: '0.85rem', fontWeight: 700 }}>{ord.username}</span>
-                                        <span style={{ fontSize: '0.7rem', opacity: 0.6 }}>{ord.item.name}</span>
+                               {h.orders.map((ord, idx) => {
+                                  const isPaid = h.debtorIds 
+                                    ? !h.debtorIds.includes(ord.userId) 
+                                    : !h.debtors?.some(d => (d || '').toLowerCase() === (ord.username || '').toLowerCase());
+                                  return (
+                                    <div key={idx} className="admin-list-item" style={{ background: 'rgba(0,0,0,0.2)', padding: '10px' }}>
+                                      <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                                        <UserAvatar username={ord.username} size={24} />
+                                        <div style={{ display: 'flex', flexDirection: 'column' }}>
+                                          <span style={{ fontSize: '0.85rem', fontWeight: 700 }}>{ord.username}</span>
+                                          <span style={{ fontSize: '0.7rem', opacity: 0.6 }}>{ord.item.name}</span>
+                                        </div>
                                       </div>
-                                    </div>
-                                    <button 
-                                      className="admin-stat-badge" 
-                                      style={{ 
-                                        border: 'none', 
-                                        cursor: 'pointer',
-                                        background: isPaid ? 'rgba(74, 222, 128, 0.2)' : 'rgba(239, 68, 68, 0.2)',
-                                        color: isPaid ? '#4ade80' : '#f87171' 
-                                      }}
-                                      onClick={async () => {
-                                        const key = `${h.id}-${ord.username}`;
-                                        setTogglingStatus(key);
-                                        try {
-                                          await onUpdateHistoricalOrder(h.id, ord.username, { isPaid: !isPaid });
-                                        } finally {
-                                          setTogglingStatus(null);
-                                        }
-                                      }}
-                                    >
-                                      {togglingStatus === `${h.id}-${ord.username}` ? '...' : (isPaid ? 'LUNAS' : 'HUTANG')}
-                                    </button>
+                                      {ord.userId !== h.payerId ? (
+                                      <button 
+                                        className="admin-stat-badge" 
+                                        style={{ 
+                                          border: 'none', 
+                                          cursor: 'pointer',
+                                          background: isPaid ? 'rgba(74, 222, 128, 0.2)' : 'rgba(239, 68, 68, 0.2)',
+                                          color: isPaid ? '#4ade80' : '#f87171' 
+                                        }}
+                                        onClick={async () => {
+                                          const key = `${h.id}-${ord.userId}`;
+                                          setTogglingStatus(key);
+                                          try {
+                                            await onUpdateHistoricalOrder(h.id, ord.userId, { isPaid: !isPaid });
+                                          } finally {
+                                            setTogglingStatus(null);
+                                          }
+                                        }}
+                                      >
+                                        {togglingStatus === `${h.id}-${ord.userId}` ? '...' : (isPaid ? 'LUNAS' : 'HUTANG')}
+                                      </button>
+                                    ) : (
+                                      <span className="admin-stat-badge" style={{ background: 'rgba(74, 222, 128, 0.1)', color: '#4ade80', opacity: 0.6 }}>PAYER</span>
+                                    )}
                                   </div>
                                 );
                               })}

@@ -50,7 +50,9 @@ function HistoryDetailView({ session, onBack, setPreviewProof, setView, setSelec
 
       <div className="card-stack" style={{ marginBottom: '2rem' }}>
         {orders.map((o, idx) => {
-          const orderDebt = session.debtors?.some(d => (d || '').toLowerCase() === (o.username || '').toLowerCase());
+          const orderDebt = session.debtorIds 
+            ? session.debtorIds.includes(o.userId) 
+            : session.debtors?.some(d => (d || '').toLowerCase() === (o.username || '').toLowerCase());
           return (
             <div 
               key={idx} 
@@ -61,6 +63,7 @@ function HistoryDetailView({ session, onBack, setPreviewProof, setView, setSelec
                   ...o,
                   sessionDate: session.startedAt,
                   payer: session.payer,
+                  payerId: session.payerId,
                   isPaid: !orderDebt,
                   sessionId: session.id
                 });
@@ -81,16 +84,22 @@ function HistoryDetailView({ session, onBack, setPreviewProof, setView, setSelec
                     <div 
                       onClick={(e) => {
                         e.stopPropagation();
-                        setPreviewProof({ url: o.paymentProof, username: o.username });
+                        setPreviewProof({ url: o.paymentProof, username: o.username, userId: o.userId });
                       }}
                       style={{ cursor: 'pointer', padding: '2px' }}
                     >
                       <Camera size={12} className="text-accent" />
                     </div>
                   )}
-                  <span style={{ fontSize: '0.65rem', fontWeight: 800, color: orderDebt ? '#ef4444' : '#4ade80' }}>
-                    {orderDebt ? 'HUTANG' : 'LUNAS'}
-                  </span>
+                  {o.userId !== session.payerId ? (
+                    <span style={{ fontSize: '0.65rem', fontWeight: 800, color: orderDebt ? '#ef4444' : '#4ade80' }}>
+                      {orderDebt ? 'HUTANG' : 'LUNAS'}
+                    </span>
+                  ) : (
+                    <span style={{ fontSize: '0.65rem', fontWeight: 800, opacity: 0.5, color: '#4ade80' }}>
+                      PAYER
+                    </span>
+                  )}
                 </div>
               </div>
             </div>

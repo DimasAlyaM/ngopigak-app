@@ -10,31 +10,35 @@ import { formatRp, formatDate } from '../utils/formatters.js';
 function ProfileView({ onSave, onLogout }) {
   const { store, currentUser } = useAppContext();
   const { history, payerHistory } = store;
-  const username = currentUser;
-  const [name, setName] = useState(username);
+  const [name, setName] = useState(currentUser?.username || '');
   const [isEditing, setIsEditing] = useState(false);
 
-  const usernameLower = (username || '').toLowerCase();
+  if (!currentUser) return null;
+  const userId = currentUser.id;
+  const username = currentUser.username;
   const validHistory = (history || []).filter(s => s && Array.isArray(s.orders));
 
   // Stats
-  const mySessions = validHistory.filter(s => s.orders.some(o => (o.username || '').toLowerCase() === usernameLower));
-  const myDebts = mySessions.filter(s => s.debtors?.some(d => (d || '').toLowerCase() === usernameLower));
+  const mySessions = validHistory.filter(s => s.orders.some(o => o.userId === userId));
+  const myDebts = mySessions.filter(s => 
+    s.payerId !== userId && 
+    (s.debtorIds?.includes(userId) || s.debtors?.some(d => (d || '').toLowerCase() === username.toLowerCase()))
+  );
 
   const totalOwed = myDebts.reduce((acc, s) => {
-    const myOrder = s.orders.find(o => (o.username || '').toLowerCase() === usernameLower);
+    const myOrder = s.orders.find(o => o.userId === userId);
     return acc + (myOrder?.item?.price || 0);
   }, 0);
 
   const totalCoffee = mySessions.reduce((acc, s) => {
-    const count = s.orders.filter(o => (o.username || '').toLowerCase() === usernameLower).length;
+    const count = s.orders.filter(o => o.userId === userId).length;
     return acc + count;
   }, 0);
 
-  const stats = payerHistory && (payerHistory[username] || payerHistory[usernameLower]) || { pay: 0, companion: 0 };
+  const stats = (payerHistory || []).find(ph => ph.user_id === userId) || { pay_count: 0, companion_count: 0 };
 
   const handleSave = () => {
-    onSave(username, name);
+    onSave(userId, name);
     setIsEditing(false);
   };
 
@@ -85,7 +89,7 @@ function ProfileView({ onSave, onLogout }) {
           </div>
           <div className="stat-box-modern">
             <span className="stat-label">Jadi Payer</span>
-            <h3>{stats.pay} <small style={{ fontSize: '0.8rem', opacity: 0.5 }}>Kali</small></h3>
+            <h3>{stats.pay_count || 0} <small style={{ fontSize: '0.8rem', opacity: 0.5 }}>Kali</small></h3>
           </div>
           <div className="stat-box-modern">
             <span className="stat-label">Ikut Sesi</span>

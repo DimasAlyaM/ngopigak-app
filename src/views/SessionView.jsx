@@ -53,14 +53,13 @@ function SessionView({
   const sessionDone = session.status === 'completed' || session.status === 'force-closed';
   const myRole = (() => {
     if (!session || !currentUser) return null;
-    const cur = currentUser.toLowerCase();
-    if ((session.payer || '').toLowerCase() === cur) return 'payer';
-    if ((session.companion || '').toLowerCase() === cur) return 'companion';
-    if (session?.orders?.some(o => (o.username || '').toLowerCase() === cur)) return 'penitip';
+    if (session.payerId === currentUser.id) return 'payer';
+    if (session.companionId === currentUser.id) return 'companion';
+    if (session.orders.some(o => o.userId === currentUser.id)) return 'penitip';
     return null;
   })();
 
-  const myOrder = session?.orders?.find(o => (o.username || '').toLowerCase() === (currentUser || '').toLowerCase());
+  const myOrder = session?.orders?.find(o => o.userId === currentUser.id);
 
   // Statistics
   const totalAmount = session?.orders?.reduce((sum, o) => sum + (o.item?.price || 0), 0) || 0;
@@ -172,7 +171,7 @@ function SessionView({
         <h4 style={{ marginBottom: '1rem', paddingLeft: '4px' }}>Daftar Pesanan ({session.orders?.length || 0})</h4>
         <div className="card-stack">
           {(session.orders || []).map(o => (
-            <div key={o.id} className={`item-card glass-panel ${o.username === currentUser ? 'active-border' : ''}`} style={{ padding: '12px 16px', borderRadius: '20px' }}>
+            <div key={o.id} className={`item-card glass-panel ${o.userId === currentUser.id ? 'active-border' : ''}`} style={{ padding: '12px 16px', borderRadius: '20px' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
                 <UserAvatar username={o.username} size={36} />
                 <div>
@@ -198,7 +197,7 @@ function SessionView({
 
   const renderPayerPage = () => {
     const orders = session.orders || [];
-    const nonPayer = orders.filter(o => o.username !== session.payer);
+    const nonPayer = orders.filter(o => o.userId !== session.payerId);
     const paidCount = nonPayer.filter(o => o.isPaid).length;
 
     return (
@@ -227,25 +226,27 @@ function SessionView({
                   <UserAvatar username={o.username} size={40} />
                   <div>
                     <p style={{ fontSize: '0.95rem', fontWeight: 700 }}>
-                      {o.username} {o.username === session.payer && <span className="text-accent" style={{ fontSize: '0.7rem' }}>(Kamu)</span>}
+                      {o.username} {o.userId === session.payerId && <span className="text-accent" style={{ fontSize: '0.7rem' }}>(Kamu)</span>}
                     </p>
                     <p className="text-secondary" style={{ fontSize: '0.8rem' }}>{o.item?.emoji || '☕'} {o.item?.name || 'Item'}</p>
                   </div>
                 </div>
                 <div style={{ textAlign: 'right', display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '8px' }}>
                   <p style={{ fontWeight: 800 }}>{formatRp(o.item?.price || 0)}</p>
-                  {o.username !== session.payer && (
+                  {o.userId !== session.payerId ? (
                     <button
                       className={`badge ${o.isPaid ? 'badge-glass' : 'badge-amber'}`}
                       style={{ border: 'none', cursor: 'pointer' }}
-                      onClick={() => !o.isPaid && onMarkPaidByPayer(o.username)}
+                      onClick={() => !o.isPaid && onMarkPaidByPayer(o.userId)}
                     >
                       {o.isPaid ? 'LUNAS ✅' : 'Tandai Lunas'}
                     </button>
+                  ) : (
+                    <span className="badge badge-glass" style={{ opacity: 0.6 }}>PAYER</span>
                   )}
                   {o.paymentProof && (
                     <div
-                      onClick={() => setPreviewProof({ url: o.paymentProof, username: o.username })}
+                      onClick={() => setPreviewProof({ url: o.paymentProof, username: o.username, userId: o.userId })}
                       style={{ display: 'flex', alignItems: 'center', gap: '4px', cursor: 'pointer', padding: '4px 8px', background: 'rgba(230, 145, 56, 0.1)', borderRadius: '8px', border: '1px solid rgba(230, 145, 56, 0.2)' }}
                     >
                       <Camera size={14} className="text-accent" />
@@ -346,7 +347,7 @@ function SessionView({
   if (session.status === 'open') return renderOpenSession();
 
   if (session.status === 'payment-setup') {
-    const isPayer = session.payer === currentUser;
+    const isPayer = session.payerId === currentUser.id;
     return (
       <div className="payment-setup fade-in" style={{ padding: '1.5rem' }}>
         <div className="glass-panel" style={{ textAlign: 'center', padding: '2rem 1.5rem' }}>

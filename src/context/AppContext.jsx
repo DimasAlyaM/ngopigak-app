@@ -5,7 +5,10 @@ const AppContext = createContext();
 
 export const AppProvider = ({ children }) => {
   const [store, setStore] = useState(() => loadStore());
-  const [currentUser, setCurrentUser] = useState(() => localStorage.getItem('ngopi_current_user') || '');
+  const [currentUser, setCurrentUser] = useState(() => {
+    const saved = localStorage.getItem('ngopi_current_v2');
+    return saved ? JSON.parse(saved) : null;
+  });
 
   const refreshStore = useCallback(() => {
     try {
@@ -36,9 +39,10 @@ export const AppProvider = ({ children }) => {
   // Persist currentUser to localStorage when it changes
   useEffect(() => {
     if (currentUser) {
-      localStorage.setItem('ngopi_current_user', currentUser);
+      localStorage.setItem('ngopi_current_v2', JSON.stringify(currentUser));
     } else {
-      localStorage.removeItem('ngopi_current_user');
+      localStorage.removeItem('ngopi_current_v2');
+      localStorage.removeItem('ngopi_current_user'); // Cleanup old format
     }
   }, [currentUser]);
 

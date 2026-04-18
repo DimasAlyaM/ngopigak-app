@@ -117,7 +117,9 @@ async function fetchFullState() {
       if (elapsed > SESSION_TIMEOUT_MS) {
         // Calculate debtors before closing
         const sessionOrders = (orders || []).filter(o => o.session_id === rawActive.id);
-        const debtors = sessionOrders.filter(o => !o.is_paid && o.username !== rawActive.payer).map(o => o.username);
+        const debtors = sessionOrders
+          .filter(o => !o.is_paid && (o.username || '').toLowerCase() !== (rawActive.payer || '').toLowerCase())
+          .map(o => o.username);
 
         supabase.from('sessions').update({
           status: 'force-closed',
@@ -136,9 +138,10 @@ async function fetchFullState() {
              debtors: debtors,
              orders: sessionOrders.map(o => ({
                username: o.username,
-               isPaid: o.is_paid,
-               item: { id: o.coffee_id, name: o.coffee_name, price: o.coffee_price, emoji: o.coffee_emoji || '☕' }
-             }))
+              isPaid: o.is_paid,
+              userId: o.user_id,
+              item: { id: o.coffee_id, name: o.coffee_name, price: o.coffee_price, emoji: o.coffee_emoji || '☕' }
+            }))
           };
           await supabase.from('historic_sessions').insert({ id: rawActive.id, data: fullSession });
           // After moving to history, remove from active sessions table
@@ -161,10 +164,13 @@ async function fetchFullState() {
         id: activeSessionRow.id,
         status: activeSessionRow.status,
         startedBy: activeSessionRow.started_by,
+        startedById: activeSessionRow.started_by_id,
         startedAt: activeSessionRow.started_at,
         closedAt: activeSessionRow.closed_at,
         payer: activeSessionRow.payer,
+        payerId: activeSessionRow.payer_id,
         companion: activeSessionRow.companion,
+        companionId: activeSessionRow.companion_id,
         paymentInfo: activeSessionRow.payment_method ? {
           method: activeSessionRow.payment_method,
           bankName: activeSessionRow.bank_name,
@@ -174,9 +180,11 @@ async function fetchFullState() {
         coffeeBoughtAt: activeSessionRow.coffee_bought_at,
         forceClosedBy: activeSessionRow.force_closed_by,
         debtors: activeSessionRow.debtors || [],
+        debtorIds: activeSessionRow.debtors_ids || [], // Assuming it exists or mapping it manually
         orders: sessionOrders.map(o => ({
           id: o.id,
           username: o.username,
+          userId: o.user_id,
           item: { id: o.coffee_id, name: o.coffee_name, price: o.coffee_price, emoji: o.coffee_emoji || '' },
           isPaid: o.is_paid,
           paidAt: o.paid_at, 
@@ -186,6 +194,7 @@ async function fetchFullState() {
         notifications: sessionNotifs.map(n => ({
           id: n.id,
           to: n.target_user,
+          toId: n.target_id,
           type: n.type,
           message: n.message,
           sessionId: n.session_id,
@@ -212,13 +221,14 @@ async function fetchFullState() {
 // ============================================================================
 
 export const api = {
-  createSession: async (startedBy) => {
+  createSession: async (userObj) => {
     try {
       const id = Date.now().toString();
       const { error } = await supabase.from('sessions').insert({
         id,
         status: 'open',
-        started_by: startedBy.toLowerCase(),
+        started_by: userObj.username,
+        started_by_id: userObj.id
       });
       if (error) throw error;
       fetchFullState();
@@ -228,14 +238,14 @@ export const api = {
     }
   },
 
-  addOrder: async (sessionId, username, menuItem) => {
+  addOrder: async (sessionId, userObj, menuItem) => {
     try {
-      const user = username.toLowerCase();
       // Upsert equivalent: Delete old order by this user in this session, then insert
-      await supabase.from('orders').delete().match({ session_id: sessionId, username: user });
+      await supabase.from('orders').delete().match({ session_id: sessionId, user_id: userObj.id });
       await supabase.from('orders').insert({
         session_id: sessionId,
-        username: user,
+        username: userObj.username,
+        user_id: userObj.id,
         coffee_id: menuItem.id,
         coffee_name: menuItem.name,
         coffee_price: menuItem.price
@@ -251,7 +261,9 @@ export const api = {
     const payload = {};
     if (updates.status !== undefined) payload.status = updates.status;
     if (updates.payer !== undefined) payload.payer = updates.payer;
+    if (updates.payerId !== undefined) payload.payer_id = updates.payerId;
     if (updates.companion !== undefined) payload.companion = updates.companion;
+    if (updates.companionId !== undefined) payload.companion_id = updates.companionId;
     if (updates.closedAt !== undefined) payload.closed_at = updates.closedAt;
     if (updates.paymentMethod !== undefined) payload.payment_method = updates.paymentMethod;
     if (updates.bankName !== undefined) payload.bank_name = updates.bankName;
@@ -259,18 +271,19 @@ export const api = {
     if (updates.coffeeBought !== undefined) payload.coffee_bought = updates.coffeeBought;
     if (updates.forceClosedBy !== undefined) payload.force_closed_by = updates.forceClosedBy;
     if (updates.debtors !== undefined) payload.debtors = updates.debtors;
+    if (updates.debtorsIds !== undefined) payload.debtors_ids = updates.debtorsIds; // Handle if schema allows
     
     await supabase.from('sessions').update(payload).eq('id', sessionId);
     await fetchFullState();
   },
 
-  incrementRoleCount: async (username, role = 'pay') => {
+  incrementRoleCount: async (userId, role = 'pay') => {
     try {
-      const user = username.toLowerCase();
       const column = role === 'pay' ? 'pay_count' : 'companion_count';
-      const { data: current } = await supabase.from('payer_history').select('*').eq('username', user).single();
+      // Find row by user_id
+      const { data: current } = await supabase.from('payer_history').select('*').eq('user_id', userId).single();
       
-      const updates = { username: user };
+      const updates = { user_id: userId };
       if (role === 'pay') {
         updates.pay_count = current ? (current.pay_count || 0) + 1 : 1;
         if (current) updates.companion_count = current.companion_count || 0;
@@ -307,11 +320,12 @@ export const api = {
     fetchFullState();
   },
 
-  notify: async (sessionId, targetUser, type, message) => {
+  notify: async (sessionId, targetObj, type, message) => {
     try {
       await supabase.from('notifications').insert({
         session_id: sessionId,
-        target_user: targetUser.toLowerCase(),
+        target_user: targetObj.username,
+        target_id: targetObj.id,
         type,
         message
       });
@@ -355,108 +369,77 @@ export const api = {
   // Auth & Profile
   login: async (username, pin) => {
     try {
-      const user = username.trim().toLowerCase();
-      let existing = memoryStore.users.find(u => u.username === user);
-      
-      if (!existing) {
-        const { data, error } = await supabase.from('users').select('*').eq('username', user).single();
-        if (error && error.code === 'PGRST116') {
-          // No user found
-        } else if (error) {
-          console.error("Login Check Error:", error);
-          if (error.message.includes("Could not find the table")) {
-            return { success: false, message: "Hubungi Admin: Tabel 'users' belum dibuat di Supabase." };
-          }
-          return { success: false, message: "Error DB: " + error.message };
-        }
-        
-        if (data) {
-          existing = { username: data.username.toLowerCase(), pin: data.pin };
-          memoryStore.users.push(existing);
-        }
-      }
+      const typedName = username.trim();
+      // Case-insensitive search using .ilike
+      const { data: matchedUser, error: fetchErr } = await supabase
+        .from('users')
+        .select('*')
+        .ilike('username', typedName)
+        .single();
 
-      if (!existing) {
-        const { error: insErr } = await supabase.from('users').insert({ username: user, pin });
+      if (fetchErr && fetchErr.code === 'PGRST116') {
+        // No user found -> Register new
+        const { data: newUser, error: insErr } = await supabase
+          .from('users')
+          .insert({ username: typedName, pin })
+          .select()
+          .single();
+
         if (insErr) {
            console.error("Registration Error:", insErr);
            return { success: false, message: "Gagal registrasi: " + insErr.message };
         }
         fetchFullState();
-        return { success: true, isNew: true };
-      } else {
-        if (existing.pin === pin) {
-          return { success: true, isNew: false };
+        return { success: true, isNew: true, user: { id: newUser.id, username: newUser.username } };
+      } else if (fetchErr) {
+        console.error("Login Check Error:", fetchErr);
+        return { success: false, message: "Error DB: " + fetchErr.message };
+      }
+      
+      if (matchedUser) {
+        if (matchedUser.pin === pin) {
+          return { success: true, isNew: false, user: { id: matchedUser.id, username: matchedUser.username } };
         } else {
           return { success: false, message: "PIN salah!" };
         }
       }
+      return { success: false, message: "Terjadi kesalahan sistem." };
     } catch (e) {
       console.error(e);
       return { success: false, message: "Terjadi kesalahan sistem." };
     }
   },
 
-  updateProfile: async (oldUsername, newUsername) => {
+  updateProfile: async (userId, newName) => {
     try {
-      await supabase.from('users').update({ username: newUsername }).eq('username', oldUsername);
-    } catch (e) {
-      console.warn("Possible duplicate username when updating users table, skipping base rename.");
+      // 1. Update the display name in the users table
+      const { error: userErr } = await supabase.from('users').update({ username: newName }).eq('id', userId);
+      if (userErr) throw userErr;
+
+      // 2. We can also update it in active sessions/orders so the UI updates immediately
+      await supabase.from('sessions').update({ started_by: newName }).eq('started_by_id', userId);
+      await supabase.from('sessions').update({ payer: newName }).eq('payer_id', userId);
+      await supabase.from('sessions').update({ companion: newName }).eq('companion_id', userId);
+      await supabase.from('orders').update({ username: newName }).eq('user_id', userId);
+      await supabase.from('notifications').update({ target_user: newName }).eq('target_id', userId);
+
+      // 3. For History (historic_sessions), it's stored in JSON. 
+      // We'll let it be for now to avoid expensive full-history scans, 
+      // or implement a background cleanup if needed.
+      
+      await fetchFullState();
+    } catch (err) {
+      console.error("Update profile failed:", err);
+      throw err;
     }
-    
-    await supabase.from('payer_history').update({ username: newUsername }).eq('username', oldUsername);
-    await supabase.from('orders').update({ username: newUsername }).eq('username', oldUsername);
-    await supabase.from('sessions').update({ started_by: newUsername }).eq('started_by', oldUsername);
-    await supabase.from('sessions').update({ payer: newUsername }).eq('payer', oldUsername);
-    await supabase.from('sessions').update({ companion: newUsername }).eq('companion', oldUsername);
+  },
 
-    const { data: allSessions } = await supabase.from('sessions').select('id, debtors');
-    if (allSessions) {
-      for (const s of allSessions) {
-        if (s.debtors?.includes(oldUsername)) {
-          const newDebtors = s.debtors.map(d => (d === oldUsername ? newUsername : d));
-          await supabase.from('sessions').update({ debtors: newDebtors }).eq('id', s.id);
-        }
-      }
-    }
-
-    const { data: allHistoric } = await supabase.from('historic_sessions').select('id, data');
-    if (allHistoric) {
-      for (const h of allHistoric) {
-        if (!h.data) continue;
-        let changed = false;
-        let d = h.data;
-
-        if (d.payer === oldUsername) { d.payer = newUsername; changed = true; }
-        if (d.companion === oldUsername) { d.companion = newUsername; changed = true; }
-        if (d.started_by === oldUsername) { d.started_by = newUsername; changed = true; }
-        if (d.force_closed_by === oldUsername) { d.force_closed_by = newUsername; changed = true; }
-
-        if (d.debtors?.includes(oldUsername)) {
-          d.debtors = d.debtors.map(u => u === oldUsername ? newUsername : u);
-          changed = true;
-        }
-
-        if (d.orders?.some(o => o.username === oldUsername)) {
-          d.orders = d.orders.map(o => o.username === oldUsername ? { ...o, username: newUsername } : o);
-          changed = true;
-        }
-
-        if (changed) {
-          await supabase.from('historic_sessions').update({ data: d }).eq('id', h.id);
-        }
-      }
-    }
-
+  resetUserPin: async (userId, newPin = '1234') => {
+    await supabase.from('users').update({ pin: newPin }).eq('id', userId);
     fetchFullState();
   },
 
-  resetUserPin: async (username, newPin = '1234') => {
-    await supabase.from('users').update({ pin: newPin }).eq('username', username);
-    fetchFullState();
-  },
-
-  updateHistoricalOrder: async (sessionId, username, updates) => {
+  updateHistoricalOrder: async (sessionId, userId, updates) => {
     const { data: h, error: fetchErr } = await supabase.from('historic_sessions').select('data').eq('id', sessionId).single();
     if (fetchErr || !h || !h.data) {
       console.error("Failed to fetch historic session:", fetchErr);
@@ -466,19 +449,23 @@ export const api = {
     const d = { ...h.data };
     let changed = false;
 
-    const orderIndex = d.orders.findIndex(o => (o.username || '').toLowerCase() === username.toLowerCase());
+    const orderIndex = d.orders.findIndex(o => o.userId === userId || (o.username || '').toLowerCase() === userId);
     if (orderIndex !== -1) {
       d.orders[orderIndex] = { ...d.orders[orderIndex], ...updates };
       
-      const uName = d.orders[orderIndex].username; // use the original username from the order object
-
       if (updates.isPaid) {
-        // Remove from debtors
-        d.debtors = (d.debtors || []).filter(u => (u || '').toLowerCase() !== username.toLowerCase());
+        // Remove from debtorIds
+        d.debtorIds = (d.debtorIds || []).filter(id => id !== userId);
+        // Legacy cleanup
+        if (d.debtors) {
+          const uName = d.orders[orderIndex].username;
+          d.debtors = d.debtors.filter(u => (u || '').toLowerCase() !== (uName || '').toLowerCase());
+        }
       } else {
-        // Add back to debtors if not already there
-        if (!d.debtors?.some(u => (u || '').toLowerCase() === username.toLowerCase())) {
-           d.debtors = [...(d.debtors || []), uName];
+        // Add back to debtorIds if not already there AND not the payer
+        const isNotPayer = userId !== d.payerId;
+        if (isNotPayer && !d.debtorIds?.includes(userId)) {
+           d.debtorIds = [...(d.debtorIds || []), userId];
         }
       }
       changed = true;
@@ -560,45 +547,45 @@ export const api = {
 };
 
 export function selectRoles(participants, payerHistory, lastRoles = null) {
-  if (participants.length === 0) return { payer: null, companion: null };
+  if (participants.length === 0) return { payerId: null, companionId: null };
   
   // Rule: Last session's payer and companion shouldn't be picked if others are available
   const excludeSet = new Set();
   if (lastRoles) {
-    if (lastRoles.payer) excludeSet.add(lastRoles.payer.toLowerCase());
-    if (lastRoles.companion) excludeSet.add(lastRoles.companion.toLowerCase());
+    if (lastRoles.payerId) excludeSet.add(lastRoles.payerId);
+    if (lastRoles.companionId) excludeSet.add(lastRoles.companionId);
   }
 
-  const primaryPool = participants.filter(p => !excludeSet.has(p.toLowerCase()));
+  const primaryPool = participants.filter(p => !excludeSet.has(p));
 
   // If primaryPool is empty (e.g., only 2 people total and they were both roles last time), 
   // we must fall back to the participants
   const finalCandidates = primaryPool.length > 0 ? primaryPool : participants;
 
-  // 1. SELECT PAYER (Based on least pay count with random tie-break)
+  // 1. SELECT PAYER (Based on least payCount with random tie-break)
   // First shuffle to ensure fairness among equal counts
   const shuffledPayers = [...finalCandidates].sort(() => Math.random() - 0.5);
   const sortedPayers = shuffledPayers.sort((a, b) => {
-    const countA = (payerHistory[a]?.pay || payerHistory[a.toLowerCase()]?.pay || 0);
-    const countB = (payerHistory[b]?.pay || payerHistory[b.toLowerCase()]?.pay || 0);
+    const countA = payerHistory[a]?.payCount || 0;
+    const countB = payerHistory[b]?.payCount || 0;
     return countA - countB;
   });
   
-  const payer = sortedPayers[0];
+  const payerId = sortedPayers[0];
   
-  // 2. SELECT COMPANION (Based on least companion count with random tie-break)
-  const companionCandidates = participants.filter(p => p.toLowerCase() !== payer.toLowerCase());
-  const primaryCompanionPool = companionCandidates.filter(p => !excludeSet.has(p.toLowerCase()));
+  // 2. SELECT COMPANION (Based on least companionCount with random tie-break)
+  const companionCandidates = participants.filter(p => p !== payerId);
+  const primaryCompanionPool = companionCandidates.filter(p => !excludeSet.has(p));
   const finalCompanionCandidates = primaryCompanionPool.length > 0 ? primaryCompanionPool : companionCandidates;
 
   const shuffledCompanions = [...finalCompanionCandidates].sort(() => Math.random() - 0.5);
   const sortedCompanions = shuffledCompanions.sort((a, b) => {
-    const countA = (payerHistory[a]?.companion || payerHistory[a.toLowerCase()]?.companion || 0);
-    const countB = (payerHistory[b]?.companion || payerHistory[b.toLowerCase()]?.companion || 0);
+    const countA = payerHistory[a]?.companionCount || 0;
+    const countB = payerHistory[b]?.companionCount || 0;
     return countA - countB;
   });
 
-  const companion = sortedCompanions.length > 0 ? sortedCompanions[0] : null;
+  const companionId = sortedCompanions.length > 0 ? sortedCompanions[0] : null;
   
-  return { payer, companion };
+  return { payerId, companionId };
 }

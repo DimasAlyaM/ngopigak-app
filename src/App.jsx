@@ -66,18 +66,20 @@ export default function App() {
   const [proofInput, setProofInput] = useState(''); 
   const [isUploadingActive, setIsUploadingActive] = useState(false);
 
-  // Derived states
-  const session = store.session;
+  // Derivations
+  const myOrder = (() => {
+    if (!session || !currentUser) return null;
+    return session.orders.find(o => o.userId === currentUser.id);
+  })();
+
   const myRole = (() => {
     if (!session || !currentUser) return null;
-    const cur = currentUser.toLowerCase();
-    if ((session.payer || '').toLowerCase() === cur) return 'payer';
-    if ((session.companion || '').toLowerCase() === cur) return 'companion';
-    if (session?.orders?.some(o => (o.username || '').toLowerCase() === cur)) return 'penitip';
-    return null;
+    if (session.payerId === currentUser.id) return 'payer';
+    if (session.companionId === currentUser.id) return 'companion';
+    if (session.orders.some(o => o.userId === currentUser.id)) return 'penitip';
+    return 'guest';
   })();
-  const myOrder = session?.orders?.find(o => (o.username || '').toLowerCase() === (currentUser || '').toLowerCase());
-  const myNotifs = session?.notifications?.filter(n => n.to === currentUser || n.to === 'all') || [];
+  const myNotifs = session?.notifications?.filter(n => n.to === currentUser.id || n.to === 'all') || [];
   const sessionDone = session?.status === 'completed' || session?.status === 'force-closed';
 
   const closeSessionAndSelectRoles = useCallback(async () => {
@@ -93,22 +95,43 @@ export default function App() {
       return;
     }
 
-    const participants = [...new Set(s.session.orders.map(o => o.username))];
-    const sortedHistory = [...(s.history || [])].sort((a, b) => new Date(b.startedAt) - new Date(a.startedAt));
-    const lastSession = sortedHistory[0];
-    const lastRoles = lastSession ? { payer: lastSession.payer, companion: lastSession.companion } : null;
+    const participants = [...new Set(s.session.orders.map(o => o.userId))];
+    if (participants.length < 1) {
+      alert("Harus ada pemesan untuk memilih payer!");
+      return;
+    }
 
-    const { payer, companion } = selectRoles(participants, s.payerHistory || {}, lastRoles);
+    const lastRoles = s.history.length > 0 ? { payerId: s.history[0].payer_id, companionId: s.history[0].companion_id } : null;
     
+    // We need to map participants (IDs) to their pay status in stats
+    const statsForSelect = {};
+    (s.users || []).forEach(u => {
+      const hist = (s.payerHistory || []).find(ph => ph.user_id === u.id);
+      statsForSelect[u.id] = { 
+        username: u.username,
+        payCount: hist?.pay_count || 0,
+        companionCount: hist?.companion_count || 0
+      };
+    });
+
+    const { payerId, companionId } = selectRoles(participants, statsForSelect, lastRoles);
+
+    const payerObj = s.users.find(u => u.id === payerId);
+    const companionObj = s.users.find(u => u.id === companionId);
+
     await api.updateSession(s.session.id, {
       status: 'payment-setup',
-      payer, companion, closedAt: new Date().toISOString()
+      payer: payerObj?.username,
+      payerId: payerId,
+      companion: companionObj?.username,
+      companionId: companionId,
+      closedAt: new Date().toISOString()
     });
 
     participants.forEach(p => {
-      api.notify(s.session.id, p, 'info', `Sesi ditutup! Pembayar: ${payer} | Pendamping: ${companion || '-'}`);
+      api.notify(s.session.id, p, 'info', `Sesi ditutup! Pembayar: ${payerObj?.username} | Pendamping: ${companionObj?.username || '-'}`);
     });
-    api.notify(s.session.id, payer, 'info', `Kamu terpilih sebagai Pembayar! Silakan lengkapi info pembayaran.`);
+    api.notify(s.session.id, payerId, 'info', `Kamu terpilih sebagai Pembayar! Silakan lengkapi info pembayaran.`);
   }, [api]);
 
   useEffect(() => {
@@ -164,11 +187,11 @@ export default function App() {
   // AUTO-FINALIZE WATCHER: Triggered whenever session state changes
   useEffect(() => {
     if (!session || session.status !== 'active') return;
-    if (currentUser.toLowerCase() !== (session.payer || '').toLowerCase()) return;
+    if (currentUser.id !== session.payerId) return;
 
     const others = session.orders.filter(o =>
-      o.username.toLowerCase() !== session.payer.toLowerCase() &&
-      o.username.toLowerCase() !== (session.companion || '').toLowerCase()
+      o.userId !== session.payerId &&
+      o.userId !== session.companionId
     );
     const allOthersPaid = others.every(o => o.isPaid);
 
@@ -193,15 +216,10 @@ export default function App() {
     try {
       const res = await api.login(name, pin);
       if (res.success) {
-        // Only show registration message if it's actually the very first setup 
-        // to avoid annoying repetitive alerts.
-        if (res.isNew) {
-          alert(`Selamat datang ${name}! PIN kamu telah didaftarkan.`);
-        }
-        setCurrentUser(name);
-        localStorage.setItem('ngopi_current_user', name);
+        setCurrentUser(res.user); // Store { id, username }
         setLoginInput('');
         setPinInput('');
+        setView('home');
       } else {
         alert(res.message);
       }
@@ -212,7 +230,7 @@ export default function App() {
   };
 
   const logout = () => {
-    setCurrentUser('');
+    setCurrentUser(null);
     localStorage.removeItem('ngopi_current_user');
     setView('home');
     setDialog(null);
@@ -224,7 +242,7 @@ export default function App() {
       alert('Sudah ada sesi aktif!');
       return;
     }
-    await api.createSession(currentUser);
+    await api.createSession(currentUser.id);
     setView('live-session');
   };
 
@@ -237,7 +255,7 @@ export default function App() {
     const menu = s.menu.find(m => m.id === selectedCoffeeId);
     if (!menu) return;
 
-    await api.addOrder(s.session.id, currentUser, menu);
+    await api.addOrder(s.session.id, currentUser.id, menu);
     setSelectedCoffeeId('');
   };
 
@@ -250,7 +268,7 @@ export default function App() {
 
     const s = loadStore();
     if (!s.session) return;
-    const payer = s.session.payer;
+    const payerId = s.session.payerId;
 
     await api.updateSession(s.session.id, {
       status: 'active',
@@ -260,15 +278,15 @@ export default function App() {
         accountNo: accountNo
       }
     });
-    await api.incrementRoleCount(payer, 'pay');
-    if (s.session.companion) {
-      await api.incrementRoleCount(s.session.companion, 'companion');
+    await api.incrementRoleCount(payerId, 'pay');
+    if (s.session.companionId) {
+      await api.incrementRoleCount(s.session.companionId, 'companion');
     }
 
     s.session.orders.forEach(o => {
-      if (o.username !== payer) {
-        api.notify(s.session.id, o.username, 'payment',
-          ` Info Transfer: ${paymentMethod}${paymentMethod === 'BANK' ? ` (${bankName})` : ''} – ${accountNo} a.n. ${payer}. Total kamu: ${formatRp(o.item.price)}`
+      if (o.userId !== payerId) {
+        api.notify(s.session.id, o.userId, 'payment',
+          ` Info Transfer: ${paymentMethod}${paymentMethod === 'BANK' ? ` (${bankName})` : ''} – ${accountNo} a.n. ${s.session.payer}. Total kamu: ${formatRp(o.item.price)}`
         );
       }
     });
@@ -276,14 +294,14 @@ export default function App() {
     setPaymentMethod(''); setBankName(''); setAccountNo('');
   };
 
-  const submitProof = async (username) => {
+  const submitProof = async (userId) => {
     const s = loadStore();
     if (!s.session) return;
-    const order = s.session.orders.find(o => o.username === username);
+    const order = s.session.orders.find(o => o.userId === userId);
     if (!order) return;
 
     await api.updateOrder(order.id, { paymentProof: proofInput });
-    api.notify(s.session.id, s.session.payer, 'payment', `${username} telah mengirimkan bukti pembayaran.`);
+    api.notify(s.session.id, s.session.payerId, 'payment', `${currentUser.username} telah mengirimkan bukti pembayaran.`);
     alert('Bukti pembayaran terkirim!');
     setProofInput('');
   };
@@ -292,8 +310,8 @@ export default function App() {
     const s = loadStore();
     if (!s.session) return;
     s.session.orders.forEach(o => {
-      if (o.username !== s.session.payer && !o.isPaid) {
-        api.notify(s.session.id, o.username, 'payment', `Tagihan ngopi! Jangan lupa bayar ke ${s.session.payer} ya bro.`);
+      if (o.userId !== s.session.payerId && !o.isPaid) {
+        api.notify(s.session.id, o.userId, 'payment', `Tagihan ngopi! Jangan lupa bayar ke ${s.session.payer} ya bro.`);
       }
     });
     alert('Notifikasi tagihan dikirim!');
@@ -302,23 +320,28 @@ export default function App() {
   const confirmBought = async () => {
     const s = loadStore();
     if (!s.session) return;
-    await api.updateSession(s.session.id, { coffeeBought: true });
+    await api.updateSession(s.session.id, { coffeeBought: true, coffeeBoughtAt: new Date().toISOString() });
+    
+    // Notify only if not payer
+    if (currentUser.id !== s.session.payerId) {
+       await api.notify(s.session.id, s.session.payerId, 'coffee-bought', `${currentUser.username} sudah belikan kopi!`);
+    }
     s.session.orders.forEach(o => {
-      if (o.username !== currentUser) {
-        api.notify(s.session.id, o.username, 'bought', ` Kopi sudah dibeli oleh ${s.session.payer} dan dalam perjalanan!`);
+      if (o.userId !== currentUser.id) {
+        api.notify(s.session.id, o.userId, 'bought', ` Kopi sudah dibeli oleh ${s.session.payer} dan dalam perjalanan!`);
       }
     });
     setDialog(null);
     // After buying, watcher will check if session is now complete
   };
 
-  const markMyPayment = async (username) => {
+  const markMyPayment = async (userId) => {
     const s = loadStore();
     if (!s.session) return;
-    const order = s.session.orders.find(o => o.username === username);
+    const order = s.session.orders.find(o => o.userId === userId);
     if (order && !order.isPaid) {
       await api.markOrderPaid(order.id, false);
-      api.notify(s.session.id, s.session.payer, 'payment', `${username} sudah bayar (menunggu verifikasi).`);
+      api.notify(s.session.id, s.session.payerId, 'payment', `${currentUser.username} sudah bayar (menunggu verifikasi).`);
       // checkSessionComplete will be called by Payer when they verify
     }
   };
@@ -329,6 +352,23 @@ export default function App() {
 
     // 1. Check if it's the current session in memory
     if (s.session && s.session.id === targetSessionId) {
+      const isPaymentNotif = n.type === 'payment' || n.type === 'debt';
+      if (isPaymentNotif) {
+        const myActiveOrder = s.session.orders.find(o => o.userId === currentUser.id);
+        if (myActiveOrder) {
+          setSelectedOrder({
+            ...myActiveOrder,
+            sessionDate: s.session.startedAt,
+            payer: s.session.payer,
+            payerId: s.session.payerId,
+            isPaid: myActiveOrder.isPaid || false,
+            sessionId: s.session.id,
+            isLive: true
+          });
+          setView('order-detail');
+          return;
+        }
+      }
       setView('live-session');
       return;
     }
@@ -336,13 +376,14 @@ export default function App() {
     // 2. Check in History
     const histSession = s.history.find(h => h.id === targetSessionId);
     if (histSession) {
-      const myOrder = histSession.orders?.find(o => (o.username || '').toLowerCase() === currentUser.toLowerCase());
+      const myOrder = histSession.orders?.find(o => o.userId === currentUser.id);
       if (myOrder) {
         setSelectedOrder({
           ...myOrder,
           sessionDate: histSession.startedAt,
           payer: histSession.payer,
-          isPaid: !(histSession.debtors || []).some(d => (d || '').toLowerCase() === currentUser.toLowerCase()),
+          payerId: histSession.payerId,
+          isPaid: !(histSession.debtorIds || []).includes(currentUser.id),
           sessionId: histSession.id
         });
         setView('order-detail');
@@ -364,49 +405,41 @@ export default function App() {
     setView('history');
   };
 
-  const markPaidByPayer = async (username) => {
+  const markPaidByPayer = async (userId) => {
     const s = loadStore();
     if (!s.session) return;
-    const order = s.session.orders.find(o => o.username === username);
+    const order = s.session.orders.find(o => o.userId === userId);
     if (order && !order.isPaid) {
       await api.markOrderPaid(order.id, true);
-      api.notify(s.session.id, username, 'payment', `${s.session.payer} mengonfirmasi pembayaranmu.`);
+      api.notify(s.session.id, userId, 'payment', `${s.session.payer} mengonfirmasi pembayaranmu.`);
       // No need to call checkSessionComplete, the watcher handles it
     }
   };
 
   async function checkSessionComplete() {
-  const s = loadStore();
-  if (!s.session) return;
+    const s = loadStore();
+    if (!s.session) return;
 
-  const session = s.session;
-  const others = session.orders.filter(o =>
-    o.username.toLowerCase() !== (session.payer || '').toLowerCase() &&
-    o.username.toLowerCase() !== (session.companion || '').toLowerCase()
-  );
-  const allOthersPaid = others.every(o => o.isPaid);
+    const allPaid = s.session.orders.every(o => o.isPaid || o.userId === s.session.payerId);
+    if (allPaid && s.session.coffeeBought) {
+      // Logic for debtors: those who didn't pay (and aren't the payer)
+      const debtors = s.session.orders
+        .filter(o => !o.isPaid && o.userId !== s.session.payerId)
+        .map(o => o.username);
+      
+      const debtorIds = s.session.orders
+        .filter(o => !o.isPaid && o.userId !== s.session.payerId)
+        .map(o => o.userId);
 
-  if (allOthersPaid && session.coffeeBought) {
-    alert('Selamat Ngopi! Semua pembayaran sudah lunas & kopi sudah dikonfirmasi.');
-    setView('home');
-    try {
-      await api.updateSession(session.id, { status: 'completed' });
-      const historyPayload = {
-        ...session,
-        status: 'completed',
-        companion: session.companion,
-        orders: session.orders.map(o => ({ ...o, isPaid: true }))
-      };
-      await api.saveHistory(session.id, historyPayload);
-      await api.deleteActiveSession(session.id);
-      session.orders.forEach(o => {
-        api.notify(session.id, o.username, 'done', 'Sesi ngopi selesai! Makasih sudah patungan adil.');
-      });
-    } catch (e) {
-      console.error("Error closing session history:", e);
+      // Increment stats by ID
+      if (s.session.payerId) await api.incrementRoleCount(s.session.payerId, 'pay');
+      if (s.session.companionId) await api.incrementRoleCount(s.session.companionId, 'companion');
+
+      await api.completeSession(s.session.id, { debtors, debtorIds });
+      setActiveMenu(null);
+      setView('home');
     }
   }
-}
 
 const forceClose = async () => {
   const s = loadStore();
@@ -421,17 +454,19 @@ const forceClose = async () => {
   setActiveMenu(null);
 
   try {
-    const debtors = s.session.orders.filter(o => !o.isPaid && o.username !== s.session.payer).map(o => o.username);
+    const debtors = s.session.orders
+      .filter(o => !o.isPaid && o.userId !== s.session.payerId)
+      .map(o => o.username);
     const sessionId = s.session.id;
 
     // Ensure counts are updated even on force close for fairness
-    await api.incrementRoleCount(s.session.payer, 'pay');
-    if (s.session.companion) {
-      await api.incrementRoleCount(s.session.companion, 'companion');
+    await api.incrementRoleCount(s.session.payerId, 'pay');
+    if (s.session.companionId) {
+      await api.incrementRoleCount(s.session.companionId, 'companion');
     }
 
     // Wrap background work to ensure it completes
-    await api.updateSession(sessionId, { status: 'force-closed', forceClosedBy: currentUser, debtors });
+    await api.updateSession(sessionId, { status: 'force-closed', forceClosedBy: currentUser.username, debtors });
     const currentSession = loadStore().session;
     const full = { ...currentSession, status: 'force-closed', forceClosedBy: currentUser, debtors, companion: currentSession.companion };
     await api.saveHistory(sessionId, full);

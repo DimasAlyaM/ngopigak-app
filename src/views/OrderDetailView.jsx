@@ -33,7 +33,7 @@ function OrderDetailView({
     if (!order) return;
     const s = loadStore();
     let sess = null;
-    if (order.sessionId === 'active') {
+    if (order.sessionId === 'active' || (s.session && order.sessionId === s.session.id)) {
       sess = s.session;
     } else {
       sess = s.history.find(h => h.id === order.sessionId);
@@ -47,14 +47,14 @@ function OrderDetailView({
     setIsUploading(true);
     try {
       const url = await api.uploadProof(file);
-      if (order.sessionId === 'active') {
-        const s = loadStore();
-        const activeOrder = s.session.orders.find(o => o.username === currentUser);
+      const s = loadStore();
+      if (order.sessionId === 'active' || (s.session && order.sessionId === s.session.id)) {
+        const activeOrder = s.session.orders.find(o => o.userId === currentUser.id);
         if (activeOrder) {
           await api.updateOrder(activeOrder.id, { paymentProof: url });
         }
       } else {
-        await api.updateHistoricalOrder(order.sessionId, currentUser, { paymentProof: url });
+        await api.updateHistoricalOrder(order.sessionId, currentUser.id, { paymentProof: url });
       }
       setLocalProof(url);
     } catch (err) {
@@ -68,16 +68,16 @@ function OrderDetailView({
     const prevPaid = localIsPaid;
     setLocalIsPaid(true); // Optimistic
     try {
-      if (order.sessionId === 'active') {
+      if (order.sessionId === 'active' || (s.session && order.sessionId === s.session.id)) {
         const s = loadStore();
-        const activeOrder = s.session?.orders?.find(o => (o.username || '').toLowerCase() === (currentUser || '').toLowerCase());
+        const activeOrder = s.session?.orders?.find(o => o.userId === currentUser.id);
         if (activeOrder) {
           await api.updateOrder(activeOrder.id, { isPaid: true, markedByPayer: false });
-          api.notify(s.session.id, s.session.payer, 'payment', `${currentUser} telah membayar & upload bukti.`);
+          api.notify(s.session.id, { id: s.session.payerId, username: s.session.payer }, 'payment', `${currentUser.username} telah membayar & upload bukti.`);
           if (onPaymentConfirm) onPaymentConfirm(s, activeOrder.id);
         }
       } else {
-        await api.updateHistoricalOrder(order.sessionId, currentUser, { isPaid: true });
+        await api.updateHistoricalOrder(order.sessionId, currentUser.id, { isPaid: true });
       }
       alert("Konfirmasi pembayaran terkirim!");
     } catch (err) {
@@ -113,7 +113,11 @@ function OrderDetailView({
           </div>
           <div style={{ display: 'flex', justifyContent: 'space-between', padding: '12px', fontSize: '0.9rem' }}>
             <span className="text-secondary">Status</span>
-            <StatusBadge isPaid={localIsPaid} />
+            {order.userId !== order.payerId ? (
+              <StatusBadge isPaid={localIsPaid} />
+            ) : (
+              <span className="badge badge-glass" style={{ opacity: 0.6, fontSize: '0.75rem' }}>PAYER SESI INI</span>
+            )}
           </div>
         </div>
       </div>
@@ -154,7 +158,7 @@ function OrderDetailView({
               {localProof && (
                 <div 
                   style={{ borderRadius: '20px', overflow: 'hidden', border: '1px solid var(--glass-border)', marginBottom: '1.5rem', cursor: 'pointer' }}
-                  onClick={() => setPreviewProof({ url: localProof, username: currentUser })}
+                  onClick={() => setPreviewProof({ url: localProof, username: currentUser.username, userId: currentUser.id })}
                 >
                   <img src={localProof} alt="Bukti" style={{ width: '100%', maxHeight: '250px', objectFit: 'cover' }} />
                 </div>

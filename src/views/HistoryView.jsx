@@ -26,9 +26,9 @@ function HistoryView({ onSelectSession }) {
         ) : (
           displayedHistory.map(h => {
             const total = h.orders?.reduce((sum, o) => sum + (o.item?.price || 0), 0) || 0;
-            const myOrder = h.orders?.find(o => (o.username || '').toLowerCase() === (currentUser || '').toLowerCase());
-            const isPayer = (h.payer || '').toLowerCase() === (currentUser || '').toLowerCase();
-            const isCompanion = (h.companion || '').toLowerCase() === (currentUser || '').toLowerCase();
+            const myOrder = h.orders?.find(o => o.userId === currentUser.id);
+            const isPayer = h.payerId === currentUser.id;
+            const isCompanion = h.companionId === currentUser.id;
 
             return (
               <div key={h.id} className="history-card glass-panel" onClick={() => onSelectSession(h)}>
