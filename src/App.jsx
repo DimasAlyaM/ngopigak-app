@@ -80,7 +80,7 @@ export default function App() {
     if (session.orders.some(o => o.userId === currentUser.id)) return 'penitip';
     return 'guest';
   })();
-  const myNotifs = session?.notifications?.filter(n => n.to === currentUser.id || n.to === 'all') || [];
+  const myNotifs = session?.notifications?.filter(n => n.toId === currentUser?.id || n.to === 'all') || [];
   const sessionDone = session?.status === 'completed' || session?.status === 'force-closed';
 
   const closeSessionAndSelectRoles = useCallback(async () => {
@@ -348,7 +348,7 @@ export default function App() {
     }
   };
 
-  const checkSessionComplete = async () => {
+  const checkSessionComplete = useCallback(async () => {
     const s = loadStore();
     if (!s.session || s.session.status !== 'active') return;
 
@@ -400,7 +400,7 @@ export default function App() {
       setActiveMenu(null);
       setView('home');
     }
-  };
+  }, [api]);
 
 const forceClose = async () => {
   const s = loadStore();
@@ -551,8 +551,8 @@ const goToHistory = (filter = 'all') => {
 // ─── BOTTOM NAVIGATION COMPONENT ───────────────────────────────────────────
 const BottomNav = () => {
   const s = loadStore();
-  const myNotifs = (s.session?.notifications || []).filter(n => n.toId === currentUser.id || n.to === 'all');
-  const unread = myNotifs.filter(n => !n.readBy?.includes(currentUser.username)).length;
+  const myNotifs = (s.session?.notifications || []).filter(n => n.toId === currentUser?.id || n.to === 'all');
+  const unread = myNotifs.filter(n => !n.readBy?.includes(currentUser?.username)).length;
 
   return (
     <nav className="bottom-nav">
