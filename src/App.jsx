@@ -8,7 +8,7 @@ import './App.css';
 import { useAppStore } from './context/useAppStore.js';
 import { useAuth } from './hooks/useAuth.js';
 import { useSessionActions } from './hooks/useSessionActions.js';
-import { loadStore, api } from './store.js'; // Keep api and loadStore for inner component usage if needed
+import { loadStore, api, initSupabaseSync } from './store.js'; // Keep api and loadStore for inner component usage if needed
 
 // Components
 import ConfirmDialog from './components/ConfirmDialog';
@@ -125,6 +125,11 @@ export default function App() {
 
   // Timer management
   useEffect(() => {
+    // Start Supabase sync once
+    initSupabaseSync();
+  }, []);
+
+  useEffect(() => {
     const session = store.session;
     if (session?.status === 'open') {
       const elapsed = Math.floor((Date.now() - new Date(session.startedAt).getTime()) / 1000);
@@ -239,6 +244,17 @@ export default function App() {
             </form>
             <div className="login-footer">Dimsam • 2026</div>
           </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (!store || !useAppStore.getState().isInitialized) {
+    return (
+      <div className="app-container" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+        <div style={{ textAlign: 'center', color: 'var(--secondary-text)' }}>
+          <Coffee size={40} className="spin" style={{ marginBottom: '1rem', color: 'var(--primary-color)' }} />
+          <p>Memuat Data NgopiGak...</p>
         </div>
       </div>
     );
