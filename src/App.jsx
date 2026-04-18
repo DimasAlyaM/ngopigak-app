@@ -35,6 +35,7 @@ import SessionView from './views/SessionView';
 // ─── MAIN APP ─────────────────────────────────────────────────────────────────
 export default function App() {
   const { store, setStore, currentUser, setCurrentUser, api } = useAppContext();
+  const { session, history, users, payerHistory } = store;
   
   const [loginInput, setLoginInput] = useState('');
   const [pinInput, setPinInput] = useState('');
@@ -186,7 +187,7 @@ export default function App() {
 
   // AUTO-FINALIZE WATCHER: Triggered whenever session state changes
   useEffect(() => {
-    if (!session || session.status !== 'active') return;
+    if (!session || session.status !== 'active' || !currentUser) return;
     if (currentUser.id !== session.payerId) return;
 
     const others = session.orders.filter(o =>
@@ -199,7 +200,7 @@ export default function App() {
       console.log("Watcher: All conditions met. Finalizing session...");
       checkSessionComplete();
     }
-  }, [session, currentUser]);
+  }, [session, currentUser, checkSessionComplete]);
 
 
   // ─── ACTIONS ───────────────────────────────────────────────────────────────
@@ -231,7 +232,7 @@ export default function App() {
 
   const logout = () => {
     setCurrentUser(null);
-    localStorage.removeItem('ngopi_current_user');
+    localStorage.removeItem('ngopi_current_v2');
     setView('home');
     setDialog(null);
   };
@@ -242,7 +243,7 @@ export default function App() {
       alert('Sudah ada sesi aktif!');
       return;
     }
-    await api.createSession(currentUser.id);
+    await api.createSession(currentUser);
     setView('live-session');
   };
 
@@ -255,7 +256,7 @@ export default function App() {
     const menu = s.menu.find(m => m.id === selectedCoffeeId);
     if (!menu) return;
 
-    await api.addOrder(s.session.id, currentUser.id, menu);
+    await api.addOrder(s.session.id, currentUser, menu);
     setSelectedCoffeeId('');
   };
 
@@ -416,9 +417,9 @@ export default function App() {
     }
   };
 
-  async function checkSessionComplete() {
+  const checkSessionComplete = async () => {
     const s = loadStore();
-    if (!s.session) return;
+    if (!s.session || s.session.status !== 'active') return;
 
     const allPaid = s.session.orders.every(o => o.isPaid || o.userId === s.session.payerId);
     if (allPaid && s.session.coffeeBought) {
@@ -431,15 +432,44 @@ export default function App() {
         .filter(o => !o.isPaid && o.userId !== s.session.payerId)
         .map(o => o.userId);
 
+      const fullSessionData = {
+        id: s.session.id,
+        status: 'completed',
+        startedBy: s.session.startedBy,
+        startedById: s.session.startedById,
+        startedAt: s.session.startedAt,
+        closedAt: new Date().toISOString(),
+        payer: s.session.payer,
+        payerId: s.session.payerId,
+        companion: s.session.companion,
+        companionId: s.session.companionId,
+        debtors,
+        debtorIds,
+        orders: s.session.orders.map(o => ({
+          username: o.username,
+          userId: o.userId,
+          isPaid: o.isPaid,
+          item: o.item,
+          paymentProof: o.paymentProof
+        }))
+      };
+
       // Increment stats by ID
       if (s.session.payerId) await api.incrementRoleCount(s.session.payerId, 'pay');
       if (s.session.companionId) await api.incrementRoleCount(s.session.companionId, 'companion');
 
-      await api.completeSession(s.session.id, { debtors, debtorIds });
+      await api.saveHistory(s.session.id, fullSessionData);
+      await api.updateSession(s.session.id, { 
+        status: 'completed', 
+        closedAt: new Date().toISOString(),
+        debtors,
+        debtorIds
+      });
+      
       setActiveMenu(null);
       setView('home');
     }
-  }
+  };
 
 const forceClose = async () => {
   const s = loadStore();
@@ -457,31 +487,64 @@ const forceClose = async () => {
     const debtors = s.session.orders
       .filter(o => !o.isPaid && o.userId !== s.session.payerId)
       .map(o => o.username);
+    
+    const debtorIds = s.session.orders
+      .filter(o => !o.isPaid && o.userId !== s.session.payerId)
+      .map(o => o.userId);
+
     const sessionId = s.session.id;
 
     // Ensure counts are updated even on force close for fairness
-    await api.incrementRoleCount(s.session.payerId, 'pay');
+    if (s.session.payerId) await api.incrementRoleCount(s.session.payerId, 'pay');
     if (s.session.companionId) {
       await api.incrementRoleCount(s.session.companionId, 'companion');
     }
 
+    const fullSessionData = {
+      id: s.session.id,
+      status: 'force-closed',
+      startedBy: s.session.startedBy,
+      startedById: s.session.startedById,
+      startedAt: s.session.startedAt,
+      closedAt: new Date().toISOString(),
+      payer: s.session.payer,
+      payerId: s.session.payerId,
+      companion: s.session.companion,
+      companionId: s.session.companionId,
+      debtors,
+      debtorIds,
+      orders: s.session.orders.map(o => ({
+        username: o.username,
+        userId: o.userId,
+        isPaid: o.isPaid,
+        item: o.item,
+        paymentProof: o.paymentProof
+      }))
+    };
+
     // Wrap background work to ensure it completes
-    await api.updateSession(sessionId, { status: 'force-closed', forceClosedBy: currentUser.username, debtors });
-    const currentSession = loadStore().session;
-    const full = { ...currentSession, status: 'force-closed', forceClosedBy: currentUser, debtors, companion: currentSession.companion };
-    await api.saveHistory(sessionId, full);
+    await api.saveHistory(sessionId, fullSessionData);
+    await api.updateSession(sessionId, { 
+      status: 'force-closed', 
+      forceClosedBy: currentUser.username, 
+      debtors,
+      debtorIds
+    });
+    
     await api.deleteActiveSession(sessionId);
 
-    if (debtors.length > 0) {
-      debtors.forEach(d => api.notify(sessionId, d, 'debt', `Sesi ditutup paksa. Hutangmu dicatat.`));
-    }
+    // Notify participants
     s.session.orders.forEach(o => {
-      api.notify(sessionId, o.username, 'done', `Sesi ditutup paksa oleh ${currentUser}.`);
+      const isDebtor = debtorIds.includes(o.userId);
+      if (isDebtor) {
+        api.notify(sessionId, o.userId, 'debt', `Sesi ditutup paksa. Hutangmu ke ${s.session.payer} dicatat.`);
+      } else {
+        api.notify(sessionId, o.userId, 'done', `Sesi ditutup paksa oleh ${currentUser.username}.`);
+      }
     });
+
   } catch (err) {
     console.error("Force close background sync error:", err);
-    // We don't alert here because the user is already on the Home screen
-    // and the session is likely at least marked as closed in common scenarios.
   }
 };
 
@@ -496,10 +559,13 @@ const markNotifsRead = async () => {
   // Optimistically update memory so badge clears instantly
   let changed = false;
   const updatedNotifs = s.session.notifications.map(n => {
-    if ((n.to === currentUser || n.to === 'all') && !n.readBy?.includes(currentUser)) {
+    const isForMe = n.toId === currentUser.id || n.to === 'all';
+    const alreadyRead = n.readBy?.includes(currentUser.username);
+
+    if (isForMe && !alreadyRead) {
       changed = true;
-      api.markNotifRead(n.id, currentUser).catch(err => console.error("Notif sync fail:", err));
-      return { ...n, readBy: [...(n.readBy || []), currentUser] };
+      api.markNotifRead(n.id, currentUser.username).catch(err => console.error("Notif sync fail:", err));
+      return { ...n, readBy: [...(n.readBy || []), currentUser.username] };
     }
     return n;
   });
@@ -516,22 +582,24 @@ const saveMenu = async (newMenu) => {
   await api.saveMenu(newMenu);
 };
 
-const onResetPin = async (username) => {
-  await api.resetUserPin(username);
-  alert(`PIN untuk ${username} berhasil di-reset menjadi '1234'.`);
+const onResetPin = async (userId) => {
+  await api.resetUserPin(userId);
+  alert(`PIN berhasil di-reset menjadi '1234'.`);
 };
 
-const onUpdateProfile = async (oldName, newName) => {
+const onUpdateProfile = async (userId, newName) => {
   const trimmed = newName.trim();
-  if (!trimmed || trimmed === oldName) return;
+  if (!trimmed || trimmed === currentUser.username) return;
 
   try {
-    await api.updateProfile(oldName, trimmed);
-    // Update local states immediately
-    setCurrentUser(trimmed);
-    localStorage.setItem('ngopi_current_user', trimmed);
-    setDialog(null); // Close confirmation if any
-    setActiveMenu(null); // Close dropdown menu
+    await api.updateProfile(userId, trimmed);
+    // Update local states immediately with object format
+    const updatedUser = { ...currentUser, username: trimmed };
+    setCurrentUser(updatedUser);
+    localStorage.setItem('ngopi_current_v2', JSON.stringify(updatedUser));
+    
+    setDialog(null); 
+    setActiveMenu(null); 
     alert("Profil berhasil diperbarui!");
   } catch (err) {
     console.error(err);
@@ -620,8 +688,8 @@ if (!currentUser) {
 // ─── BOTTOM NAVIGATION COMPONENT ───────────────────────────────────────────
 const BottomNav = () => {
   const s = loadStore();
-  const myNotifs = (s.session?.notifications || []).filter(n => n.to === currentUser || n.to === 'all');
-  const unread = myNotifs.filter(n => !n.readBy?.includes(currentUser)).length;
+  const myNotifs = (s.session?.notifications || []).filter(n => n.toId === currentUser.id || n.to === 'all');
+  const unread = myNotifs.filter(n => !n.readBy?.includes(currentUser.username)).length;
 
   return (
     <nav className="bottom-nav">
@@ -648,7 +716,7 @@ const BottomNav = () => {
         <div className="nav-icon"><User size={20} /></div>
         <span>Profile</span>
       </div>
-      {currentUser.toLowerCase() === 'admin' && (
+      {currentUser?.username?.toLowerCase() === 'admin' && (
         <div className={`nav-item ${view === 'admin' ? 'active' : ''}`} onClick={() => setView('admin')}>
           <div className="nav-icon"><Shield size={20} /></div>
           <span>Admin</span>

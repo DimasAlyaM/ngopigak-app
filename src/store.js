@@ -81,20 +81,15 @@ async function fetchFullState() {
       emoji: m.emoji
     }));
 
-    // Rebuild Payer History
-    memoryStore.payerHistory = {};
-    (payers || []).forEach(p => {
-      memoryStore.payerHistory[p.username] = { 
-        pay: p.pay_count || 0, 
-        companion: p.companion_count || 0 
-      };
-    });
-
     // Rebuild Users from dedicated table
     memoryStore.users = (users || []).map(u => ({
-      username: u.username.toLowerCase(),
+      id: u.id,
+      username: u.username,
       pin: u.pin
     }));
+
+    // Rebuild Payer History (store as array of objects)
+    memoryStore.payerHistory = payers || [];
 
     // Rebuild Admin Pin
     const adminPinRow = (settings || []).find(s => s.key === 'admin_pin');
@@ -118,14 +113,19 @@ async function fetchFullState() {
         // Calculate debtors before closing
         const sessionOrders = (orders || []).filter(o => o.session_id === rawActive.id);
         const debtors = sessionOrders
-          .filter(o => !o.is_paid && (o.username || '').toLowerCase() !== (rawActive.payer || '').toLowerCase())
+          .filter(o => !o.is_paid && o.user_id !== rawActive.payer_id)
           .map(o => o.username);
+        
+        const debtorIds = sessionOrders
+          .filter(o => !o.is_paid && o.user_id !== rawActive.payer_id)
+          .map(o => o.user_id);
 
         supabase.from('sessions').update({
           status: 'force-closed',
           force_closed_by: 'System (Auto-Expire)',
           closed_at: new Date().toISOString(),
-          debtors: debtors
+          debtors: debtors,
+          debtors_ids: debtorIds
         }).eq('id', rawActive.id).then(async () => {
           // Build and save history too
           const fullSession = {
@@ -320,12 +320,22 @@ export const api = {
     fetchFullState();
   },
 
-  notify: async (sessionId, targetObj, type, message) => {
+  notify: async (sessionId, target, type, message) => {
     try {
+      let targetId, targetUser;
+      if (typeof target === 'object' && target !== null) {
+        targetId = target.id;
+        targetUser = target.username;
+      } else {
+        targetId = target;
+        const u = memoryStore.users.find(user => user.id === targetId);
+        targetUser = u ? u.username : 'Unknown';
+      }
+
       await supabase.from('notifications').insert({
         session_id: sessionId,
-        target_user: targetObj.username,
-        target_id: targetObj.id,
+        target_user: targetUser,
+        target_id: targetId,
         type,
         message
       });
