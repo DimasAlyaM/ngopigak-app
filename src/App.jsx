@@ -102,7 +102,7 @@ export default function App() {
       return;
     }
 
-    const lastRoles = s.history.length > 0 ? { payerId: s.history[0].payer_id, companionId: s.history[0].companion_id } : null;
+    const lastRoles = s.history.length > 0 ? { payerId: s.history[0].payerId, companionId: s.history[0].companionId } : null;
     
     // We need to map participants (IDs) to their pay status in stats
     const statsForSelect = {};
@@ -286,7 +286,7 @@ export default function App() {
     if (s.session && s.session.id === targetSessionId) {
       const isPaymentNotif = n.type === 'payment' || n.type === 'debt';
       if (isPaymentNotif) {
-        const myActiveOrder = s.session.orders.find(o => o.userId === currentUser.id);
+        const myActiveOrder = s.session.orders.find(o => o.userId === currentUser?.id);
         if (myActiveOrder) {
           setSelectedOrder({
             ...myActiveOrder,
@@ -384,10 +384,6 @@ export default function App() {
           paymentProof: o.paymentProof
         }))
       };
-
-      // Increment stats by ID
-      if (s.session.payerId) await api.incrementRoleCount(s.session.payerId, 'pay');
-      if (s.session.companionId) await api.incrementRoleCount(s.session.companionId, 'companion');
 
       await api.saveHistory(s.session.id, fullSessionData);
       await api.updateSession(s.session.id, { 
