@@ -380,14 +380,19 @@ export const api = {
   login: async (username, pin) => {
     try {
       const typedName = username.trim();
-      // Case-insensitive search using .ilike
+      // Case-insensitive search using .ilike, .maybeSingle() returns null (not error) if not found
       const { data: matchedUser, error: fetchErr } = await supabase
         .from('users')
         .select('*')
         .ilike('username', typedName)
-        .single();
+        .maybeSingle();
 
-      if (fetchErr && fetchErr.code === 'PGRST116') {
+      if (fetchErr) {
+        console.error("Login Check Error:", fetchErr);
+        return { success: false, message: "Error DB: " + fetchErr.message };
+      }
+
+      if (!matchedUser) {
         // No user found -> Register new
         const { data: newUser, error: insErr } = await supabase
           .from('users')
@@ -401,19 +406,13 @@ export const api = {
         }
         fetchFullState();
         return { success: true, isNew: true, user: { id: newUser.id, username: newUser.username } };
-      } else if (fetchErr) {
-        console.error("Login Check Error:", fetchErr);
-        return { success: false, message: "Error DB: " + fetchErr.message };
       }
       
-      if (matchedUser) {
-        if (matchedUser.pin === pin) {
-          return { success: true, isNew: false, user: { id: matchedUser.id, username: matchedUser.username } };
-        } else {
-          return { success: false, message: "PIN salah!" };
-        }
+      if (matchedUser.pin === pin) {
+        return { success: true, isNew: false, user: { id: matchedUser.id, username: matchedUser.username } };
+      } else {
+        return { success: false, message: "PIN salah!" };
       }
-      return { success: false, message: "Terjadi kesalahan sistem." };
     } catch (e) {
       console.error(e);
       return { success: false, message: "Terjadi kesalahan sistem." };

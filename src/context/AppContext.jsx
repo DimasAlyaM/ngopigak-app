@@ -48,6 +48,7 @@ export const AppProvider = ({ children }) => {
 
   const value = {
     store,
+    setStore,
     currentUser,
     setCurrentUser,
     api,

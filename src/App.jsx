@@ -206,11 +206,9 @@ export default function App() {
 
     await api.updateSession(s.session.id, {
       status: 'active',
-      paymentInfo: {
-        method: paymentMethod,
-        bankName: paymentMethod === 'BANK' ? bankName : null,
-        accountNo: accountNo
-      }
+      paymentMethod: paymentMethod,
+      bankName: paymentMethod === 'BANK' ? bankName : null,
+      accountNo: accountNo
     });
     await api.incrementRoleCount(payerId, 'pay');
     if (s.session.companionId) {
