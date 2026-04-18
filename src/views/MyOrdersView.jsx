@@ -76,7 +76,7 @@ function MyOrdersView({ setView, setSelectedOrder }) {
               </div>
               <div style={{ textAlign: 'right' }}>
                 <p style={{ fontWeight: 800, fontSize: '1rem', marginBottom: '4px' }}>{formatRp(o.item?.price)}</p>
-                <span className={`badge ${o.isPaid ? 'badge-glass' : 'badge-amber'}`} style={{ fontSize: '0.65rem' }}>
+                <span style={{ fontSize: '0.65rem', fontWeight: 800, color: o.isPaid ? '#4ade80' : '#ef4444' }}>
                   {o.isPaid ? 'LUNAS' : 'HUTANG'}
                 </span>
                 {o.isLive && <div className="live-tag">Active</div>}
