@@ -38,11 +38,13 @@ export function useSessionActions() {
     
     const statsForSelect = {};
     (store.users || []).forEach(u => {
-      const hist = (store.payerHistory || []).find(ph => ph.user_id === u.id);
+      const payCount = store.history.filter(s => s.payerId === u.id || s.payer?.toLowerCase() === u.username.toLowerCase()).length;
+      const companionCount = store.history.filter(s => s.companionId === u.id || s.companion?.toLowerCase() === u.username.toLowerCase()).length;
+      
       statsForSelect[u.id] = { 
         username: u.username,
-        payCount: hist?.pay_count || 0,
-        companionCount: hist?.companion_count || 0
+        payCount: payCount,
+        companionCount: companionCount
       };
     });
 

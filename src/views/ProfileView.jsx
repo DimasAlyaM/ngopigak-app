@@ -44,7 +44,7 @@ function ProfileView({ onSave, onLogout }) {
     return acc + count;
   }, 0);
 
-  const stats = (payerHistory || []).find(ph => ph.user_id === userId) || { pay_count: 0, companion_count: 0 };
+  const myPayerCount = validHistory.filter(s => isMyPayerSession(s)).length;
 
   const handleSave = () => {
     onSave(userId, name);
@@ -98,7 +98,7 @@ function ProfileView({ onSave, onLogout }) {
           </div>
           <div className="stat-box-modern">
             <span className="stat-label">Jadi Payer</span>
-            <h3>{stats.pay_count || 0} <small style={{ fontSize: '0.8rem', opacity: 0.5 }}>Kali</small></h3>
+            <h3>{myPayerCount} <small style={{ fontSize: '0.8rem', opacity: 0.5 }}>Kali</small></h3>
           </div>
           <div className="stat-box-modern">
             <span className="stat-label">Ikut Sesi</span>

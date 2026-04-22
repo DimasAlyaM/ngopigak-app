@@ -123,7 +123,8 @@ function OrderDetailView({
         </div>
       </div>
 
-      {!localIsPaid && (
+      {/* Payment section: only show if order is unpaid AND current user is the order owner (the debtor) */}
+      {!localIsPaid && (currentUser?.id === order.userId) && (order.userId !== order.payerId) && (
         <div className="payment-management fade-in">
           {sessionInfo?.paymentInfo ? (
             <div className="glass-panel" style={{ padding: '1.5rem', marginBottom: '1.5rem', border: '1px solid var(--accent-primary)', background: 'rgba(230, 145, 56, 0.05)' }}>
@@ -185,6 +186,17 @@ function OrderDetailView({
               </button>
             </div>
           </div>
+        </div>
+      )}
+
+      {/* Payer viewing a debtor's unpaid order — show waiting message */}
+      {!localIsPaid && (currentUser?.id === order.payerId) && (order.userId !== order.payerId) && (
+        <div className="glass-panel fade-in" style={{ padding: '2.5rem 1.5rem', textAlign: 'center', borderRadius: '32px', border: '1px solid rgba(230, 145, 56, 0.2)', background: 'rgba(230, 145, 56, 0.05)' }}>
+          <div style={{ background: 'var(--accent-primary)', width: '64px', height: '64px', borderRadius: '32px', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 1.5rem', color: 'white' }}>
+            <AlertTriangle size={32} />
+          </div>
+          <h3 style={{ marginBottom: '0.5rem' }}>Menunggu Pembayaran</h3>
+          <p className="text-secondary" style={{ fontSize: '0.9rem' }}><strong>{order.username}</strong> belum membayar hutangnya kepada kamu.</p>
         </div>
       )}
 
