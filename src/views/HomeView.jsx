@@ -117,7 +117,7 @@ function HomeView({ timeLeft, onStartSession, onJoinSession, onSelectSession, se
             <Coffee size={14} className="text-accent" />
           </div>
           <span className="text-secondary" style={{ fontSize: '0.75rem', fontWeight: 600 }}>Kopi Dipesan</span>
-          <p style={{ fontSize: '1.5rem', fontWeight: 800 }}>{history?.filter(s => s.orders.some(o => o.username === currentUser?.username)).length || 0}</p>
+          <p style={{ fontSize: '1.5rem', fontWeight: 800 }}>{history?.filter(s => s.orders.some(o => o.userId === currentUser?.id || (o.username || '').toLowerCase() === (currentUser?.username || '').toLowerCase())).length || 0}</p>
         </div>
       </div>
     </div>

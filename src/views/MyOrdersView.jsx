@@ -13,14 +13,14 @@ function MyOrdersView({ setView, setSelectedOrder }) {
 
   // Past orders from history
   history.forEach(s => {
-    const myOrder = s.orders.find(o => o.userId === currentUser?.id || o.username === currentUser?.username);
+    const myOrder = s.orders.find(o => o.userId === currentUser?.id || (o.username || '').toLowerCase() === (currentUser?.username || '').toLowerCase());
     if (myOrder) {
       allPersonalOrders.push({
         ...myOrder,
         sessionDate: s.startedAt,
         payer: s.payer,
         payerId: s.payerId,
-        isPaid: !(s.debtors || []).includes(currentUser?.username) && !(s.debtorIds || []).includes(currentUser?.id),
+        isPaid: !(s.debtors || []).some(d => (d || '').toLowerCase() === (currentUser?.username || '').toLowerCase()) && !(s.debtorIds || []).includes(currentUser?.id),
         sessionId: s.id
       });
     }

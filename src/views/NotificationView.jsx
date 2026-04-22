@@ -26,7 +26,7 @@ function NotificationView({ onAction }) {
   const username = currentUser?.username;
   const userId = currentUser?.id;
   const notifications = store.session?.notifications || [];
-  const myNotifs = notifications.filter(n => n.toId === userId || n.to === username || n.to === 'all');
+  const myNotifs = notifications.filter(n => n.toId === userId || (n.to || '').toLowerCase() === (username || '').toLowerCase() || n.to === 'all');
 
   return (
     <div className="notif-view fade-in">
@@ -44,7 +44,7 @@ function NotificationView({ onAction }) {
           [...myNotifs].reverse().map(n => (
             <div
               key={n.id}
-              className={`notif-card ${n.readBy?.includes(username) ? 'read' : 'unread'}`}
+              className={`notif-card ${(n.readBy || []).some(r => r === userId || (r || '').toLowerCase() === (username || '').toLowerCase()) ? 'read' : 'unread'}`}
               onClick={() => onAction && onAction(n)}
               style={{ cursor: 'pointer' }}
             >
