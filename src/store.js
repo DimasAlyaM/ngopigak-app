@@ -33,6 +33,10 @@ export async function initSupabaseSync() {
     .subscribe();
 }
 
+export async function refreshStore() {
+  return fetchFullState();
+}
+
 async function fetchFullState() {
   try {
     const [

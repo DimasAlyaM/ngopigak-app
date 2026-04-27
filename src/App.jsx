@@ -8,7 +8,7 @@ import './App.css';
 import { useAppStore } from './context/useAppStore.js';
 import { useAuth } from './hooks/useAuth.js';
 import { useSessionActions } from './hooks/useSessionActions.js';
-import { loadStore, api, initSupabaseSync } from './store.js'; // Keep api and loadStore for inner component usage if needed
+import { loadStore, api, initSupabaseSync, refreshStore } from './store.js'; // Keep api and loadStore for inner component usage if needed
 
 // Components
 import ConfirmDialog from './components/ConfirmDialog';
@@ -270,13 +270,13 @@ export default function App() {
 
       <main className="main-content">
         <Routes>
-          <Route path="/" element={<HomeView timeLeft={timeLeft} onStartSession={actions.startSession} onJoinSession={() => navigate('/live-session')} onSelectSession={(s) => { setSelectedSession(s); navigate(`/history/${s.id}`); }} />} />
+          <Route path="/" element={<HomeView timeLeft={timeLeft} onStartSession={actions.startSession} onJoinSession={async () => { await refreshStore(); navigate('/live-session'); }} onSelectSession={(s) => { setSelectedSession(s); navigate(`/history/${s.id}`); }} />} />
           <Route path="/orders" element={<MyOrdersView setView={(v) => navigate(v === 'order-detail' ? `/order/${selectedOrder?.sessionId}` : `/${v}`)} setSelectedOrder={setSelectedOrder} />} />
           <Route path="/live-session" element={
             <SessionView
               timeLeft={timeLeft} setView={(v) => navigate(`/${v}`)} setSelectedSession={(s) => { setSelectedSession(s); navigate(`/history/${s.id}`); }} setSelectedOrder={(o) => { setSelectedOrder(o); navigate(`/order/${o.sessionId}`); }}
               setDialog={setDialog} setPreviewProof={setPreviewProof} paymentMethod={paymentMethod} setPaymentMethod={setPaymentMethod} bankName={bankName} setBankName={setBankName} accountNo={accountNo} setAccountNo={setAccountNo} coffeeSearch={coffeeSearch} setCoffeeSearch={setCoffeeSearch} showMenuResults={showMenuResults} setShowMenuResults={setShowMenuResults} coffeeDropdownRef={coffeeDropdownRef} selectedCoffeeId={selectedCoffeeId} setSelectedCoffeeId={setSelectedCoffeeId}
-              onAddOrder={() => actions.addOrder(selectedCoffeeId).then(() => setSelectedCoffeeId(''))} onStartSession={actions.startSession} onConfirmBought={actions.confirmBought} onRemindAll={actions.remindAll} onMarkPaidByPayer={actions.markPaidByPayer} onForceClose={() => actions.forceClose(() => setDialog(null))} onSubmitPaymentInfo={(e) => { e.preventDefault(); actions.submitPaymentInfo(paymentMethod, bankName, accountNo).then(() => { setPaymentMethod(''); setBankName(''); setAccountNo(''); }); }} onCloseSessionNow={actions.closeSessionAndSelectRoles}
+              onAddOrder={async () => { if (!selectedCoffeeId) { alert('Silakan pilih menu kopi dari daftar terlebih dahulu.'); return; } await actions.addOrder(selectedCoffeeId); setSelectedCoffeeId(''); setCoffeeSearch(''); }} onStartSession={actions.startSession} onConfirmBought={actions.confirmBought} onRemindAll={actions.remindAll} onMarkPaidByPayer={actions.markPaidByPayer} onForceClose={() => actions.forceClose(() => setDialog(null))} onSubmitPaymentInfo={(e) => { e.preventDefault(); actions.submitPaymentInfo(paymentMethod, bankName, accountNo).then(() => { setPaymentMethod(''); setBankName(''); setAccountNo(''); }); }} onCloseSessionNow={actions.closeSessionAndSelectRoles}
             />
           } />
           <Route path="/history" element={<HistoryView onSelectSession={(s) => { setSelectedSession(s); navigate(`/history/${s.id}`); }} />} />
@@ -291,7 +291,7 @@ export default function App() {
 
       {/* FAB: Start/Join Session (Visible on Home) */}
       {location.pathname === '/' && (
-        <button className="fab" onClick={(!store.session || sessionDone) ? actions.startSession : () => navigate('/live-session')}>
+        <button className="fab" onClick={(!store.session || sessionDone) ? actions.startSession : async () => { await refreshStore(); navigate('/live-session'); }}>
           <PlusCircle size={32} />
         </button>
       )}

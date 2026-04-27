@@ -65,12 +65,12 @@ function HomeView({ timeLeft, onStartSession, onJoinSession, onSelectSession, se
             <button
               className="btn-primary-pill"
               style={{ height: '40px', fontSize: '0.85rem', padding: '0 20px' }}
-              onClick={() => {
+              onClick={async () => {
                 if (sessionDone) {
                   setSelectedSession(session);
-                  setView('history-detail');
+                  onSelectSession(session);
                 } else {
-                  setView('live-session');
+                  if (onJoinSession) await onJoinSession();
                 }
               }}
             >
