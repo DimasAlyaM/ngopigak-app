@@ -539,6 +539,11 @@ export const api = {
     return publicUrl;
   },
 
+  saveMenu: async (items) => {
+    await supabase.from('app_settings').upsert({ key: 'menu', value: items });
+    fetchFullState();
+  },
+
   saveAdminPin: async (newPin) => {
     await supabase.from('app_settings').upsert({ key: 'admin_pin', value: newPin });
     fetchFullState();

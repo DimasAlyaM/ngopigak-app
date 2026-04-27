@@ -1,3 +1,5 @@
+import { useState } from 'react';
+import { Lock, Shield } from 'lucide-react';
 import { useAppStore } from "../context/useAppStore.js";
 import { api } from "../store.js";
 

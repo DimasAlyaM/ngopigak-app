@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { Routes, Route, useNavigate, useLocation, Navigate } from 'react-router-dom';
-import { Bell, Coffee, Clock, History, PlusCircle, Shield, User, Home, AlertTriangle } from 'lucide-react';
+import { Bell, Coffee, Clock, History, PlusCircle, Shield, User, Home, AlertTriangle, ArrowLeft } from 'lucide-react';
 import confetti from 'canvas-confetti';
 import './App.css';
 
@@ -264,6 +264,27 @@ export default function App() {
   return (
     <div className="app-container main-app">
       <header className="mobile-header">
+        {location.pathname !== '/' && (
+          <button 
+            className="btn-back" 
+            onClick={() => navigate(-1)} 
+            style={{ 
+              background: 'rgba(255,255,255,0.05)', 
+              border: '1px solid var(--glass-border)', 
+              borderRadius: '12px',
+              width: '40px',
+              height: '40px',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              color: 'white',
+              cursor: 'pointer',
+              marginRight: '12px'
+            }}
+          >
+            <ArrowLeft size={20} />
+          </button>
+        )}
         <h1 className="text-gradient">NgopiGak</h1>
         <div className="header-actions"></div>
       </header>
@@ -276,7 +297,7 @@ export default function App() {
             <SessionView
               timeLeft={timeLeft} setView={(v) => navigate(`/${v}`)} setSelectedSession={(s) => { setSelectedSession(s); navigate(`/history/${s.id}`); }} setSelectedOrder={(o) => { setSelectedOrder(o); navigate(`/order/${o.sessionId}`); }}
               setDialog={setDialog} setPreviewProof={setPreviewProof} paymentMethod={paymentMethod} setPaymentMethod={setPaymentMethod} bankName={bankName} setBankName={setBankName} accountNo={accountNo} setAccountNo={setAccountNo} coffeeSearch={coffeeSearch} setCoffeeSearch={setCoffeeSearch} showMenuResults={showMenuResults} setShowMenuResults={setShowMenuResults} coffeeDropdownRef={coffeeDropdownRef} selectedCoffeeId={selectedCoffeeId} setSelectedCoffeeId={setSelectedCoffeeId}
-              onAddOrder={async () => { if (!selectedCoffeeId) { alert('Silakan pilih menu kopi dari daftar terlebih dahulu.'); return; } await actions.addOrder(selectedCoffeeId); setSelectedCoffeeId(''); setCoffeeSearch(''); }} onStartSession={actions.startSession} onConfirmBought={actions.confirmBought} onRemindAll={actions.remindAll} onMarkPaidByPayer={actions.markPaidByPayer} onForceClose={() => actions.forceClose(() => setDialog(null))} onSubmitPaymentInfo={(e) => { e.preventDefault(); actions.submitPaymentInfo(paymentMethod, bankName, accountNo).then(() => { setPaymentMethod(''); setBankName(''); setAccountNo(''); }); }} onCloseSessionNow={actions.closeSessionAndSelectRoles}
+              onAddOrder={async (e) => { e.preventDefault(); if (!selectedCoffeeId) { alert('Silakan pilih menu kopi dari daftar terlebih dahulu.'); return; } await actions.addOrder(selectedCoffeeId); setSelectedCoffeeId(''); setCoffeeSearch(''); }} onStartSession={actions.startSession} onConfirmBought={actions.confirmBought} onRemindAll={actions.remindAll} onMarkPaidByPayer={actions.markPaidByPayer} onForceClose={() => actions.forceClose(() => setDialog(null))} onSubmitPaymentInfo={(e) => { e.preventDefault(); actions.submitPaymentInfo(paymentMethod, bankName, accountNo).then(() => { setPaymentMethod(''); setBankName(''); setAccountNo(''); }); }} onCloseSessionNow={actions.closeSessionAndSelectRoles}
             />
           } />
           <Route path="/history" element={<HistoryView onSelectSession={(s) => { setSelectedSession(s); navigate(`/history/${s.id}`); }} />} />
@@ -305,6 +326,8 @@ export default function App() {
       {previewProof && (
         <ProofPreviewModal url={previewProof.url} username={previewProof.username} onClose={() => setPreviewProof(null)} />
       )}
+      
+      <BottomNav />
     </div>
   );
 }
