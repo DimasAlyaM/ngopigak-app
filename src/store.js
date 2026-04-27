@@ -238,7 +238,7 @@ export const api = {
         .from('orders')
         .select('id')
         .eq('session_id', sessionId)
-        .eq('user_id', userObj.id)
+        .eq('username', userObj.username)
         .maybeSingle();
 
       if (existing) {
@@ -254,14 +254,13 @@ export const api = {
         await supabase.from('orders').insert({
           session_id: sessionId,
           username: userObj.username,
-          user_id: userObj.id,
           coffee_id: menuItem.id,
           coffee_name: menuItem.name,
           coffee_price: menuItem.price,
           coffee_emoji: menuItem.emoji || '☕'
         });
       }
-      // Realtime will trigger fetchFullState — no manual call needed
+      await fetchFullState();
     } catch (err) {
       console.error("Failed to add order:", err);
       alert("Error menambah pesanan: " + err.message);

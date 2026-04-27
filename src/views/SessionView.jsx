@@ -141,7 +141,17 @@ function SessionView({
                 <Search size={20} />
               </div>
               {showMenuResults && (
-                <div className="glass-panel search-results-list" style={{ position: 'absolute', top: 'calc(100% + 8px)', left: 0, right: 0, zIndex: 1000, maxHeight: '250px', overflowY: 'auto', padding: '8px' }}>
+                <div className="search-results-list" style={{ 
+                  position: 'relative', 
+                  marginTop: '12px',
+                  zIndex: 2000, 
+                  maxHeight: '250px', 
+                  overflowY: 'auto', 
+                  padding: '8px',
+                  background: 'rgba(255,255,255,0.05)',
+                  borderRadius: '16px',
+                  border: '1px solid rgba(255,255,255,0.1)',
+                }}>
                   {(store.menu || []).filter(m => m && m.name.toLowerCase().includes(coffeeSearch.toLowerCase())).map(m => (
                     <div
                       key={m.id}
