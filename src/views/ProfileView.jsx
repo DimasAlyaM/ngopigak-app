@@ -57,15 +57,21 @@ function ProfileView({ onSave, onLogout }) {
         <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', marginBottom: '2.5rem' }}>
           <div className="avatar-wrapper-large">
             <UserAvatar username={username} size={110} />
-            <button className="edit-avatar-badge" onClick={() => setIsEditing(!isEditing)}>
-              <Edit2 size={16} />
-            </button>
           </div>
 
           {!isEditing ? (
             <div style={{ textAlign: 'center', marginTop: '1.5rem' }}>
-              <h2 style={{ fontSize: '1.8rem', fontWeight: 800, margin: 0 }}>{username}</h2>
-              <p className="text-secondary" style={{ fontSize: '0.9rem', marginTop: '4px' }}>Ngopi Sejak {mySessions.length > 0 ? formatDate([...mySessions].sort((a, b) => new Date(a.startedAt) - new Date(b.startedAt))[0].startedAt).split(',')[0] : 'Hari Ini'}</p>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px' }}>
+                <h2 style={{ fontSize: '1.8rem', fontWeight: 800, margin: 0 }}>{username}</h2>
+                <button 
+                  onClick={() => setIsEditing(true)} 
+                  style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid var(--glass-border)', borderRadius: '8px', padding: '6px', cursor: 'pointer', color: 'var(--text-secondary)', display: 'flex', alignItems: 'center' }}
+                  title="Ubah Nama"
+                >
+                  <Edit2 size={16} />
+                </button>
+              </div>
+              <p className="text-secondary" style={{ fontSize: '0.9rem', marginTop: '8px' }}>Ngopi Sejak {mySessions.length > 0 ? formatDate([...mySessions].sort((a, b) => new Date(a.startedAt) - new Date(b.startedAt))[0].startedAt).split(',')[0] : 'Hari Ini'}</p>
             </div>
           ) : (
             <div className="modern-form" style={{ marginTop: '1.5rem', width: '100%' }}>

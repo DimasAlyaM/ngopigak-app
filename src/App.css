@@ -76,7 +76,7 @@
 .user-chip:hover { background: var(--accent-primary); color: var(--text-primary); border-color: var(--text-primary); }
 .user-avatar-wrapper {
   border: 2px solid var(--text-primary);
-  border-radius: 4px;
+  border-radius: 50%;
   overflow: hidden;
   background: #fff;
   display: flex; align-items: center; justify-content: center;

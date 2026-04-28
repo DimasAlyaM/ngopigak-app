@@ -11,9 +11,10 @@ export function loadStore() {
 // ============================================================================
 
 let syncChannel = null;
+const sessionsBeingProcessed = new Set();
 
 export async function initSupabaseSync() {
-  await fetchFullState();
+  await debouncedFetchFullState();
   
   // Cleanup existing channel if re-initializing (HMR fallback)
   if (syncChannel) {
@@ -27,7 +28,7 @@ export async function initSupabaseSync() {
       { event: '*', schema: 'public' },
       () => {
         // Any change in any table -> fetch full state to rebuild view
-        fetchFullState();
+        debouncedFetchFullState();
       }
     )
     .subscribe();
@@ -35,6 +36,32 @@ export async function initSupabaseSync() {
 
 export async function refreshStore() {
   return fetchFullState();
+}
+
+let fetchTimeout = null;
+let fetchPromise = null;
+
+// Debounced version for realtime events and rapid consecutive updates
+function debouncedFetchFullState() {
+  if (fetchPromise) return fetchPromise;
+  
+  if (fetchTimeout) {
+    clearTimeout(fetchTimeout);
+  }
+  
+  fetchPromise = new Promise((resolve) => {
+    fetchTimeout = setTimeout(async () => {
+      try {
+        await fetchFullState();
+      } finally {
+        fetchPromise = null;
+        fetchTimeout = null;
+        resolve();
+      }
+    }, 150); // 150ms debounce
+  });
+  
+  return fetchPromise;
 }
 
 async function fetchFullState() {
@@ -93,51 +120,64 @@ async function fetchFullState() {
     const activeCandidates = (sessions || []).filter(s => ['open', 'active', 'payment-setup'].includes(s.status));
     const rawActive = activeCandidates.sort((a, b) => new Date(b.started_at) - new Date(a.started_at))[0];
     
-    if (rawActive && rawActive.started_at) {
+    if (rawActive && rawActive.started_at && !sessionsBeingProcessed.has(rawActive.id)) {
       const elapsed = Date.now() - new Date(rawActive.started_at).getTime();
-      if (elapsed > SESSION_TIMEOUT_MS) {
+      if (elapsed > SESSION_TIMEOUT_MS && ['open', 'active', 'payment-setup'].includes(rawActive.status)) {
+        sessionsBeingProcessed.add(rawActive.id);
         // Calculate debtors before closing
         const sessionOrders = (orders || []).filter(o => o.session_id === rawActive.id);
+        const payerUser = rawActive.payer ? newUsers.find(u => u.username.toLowerCase() === rawActive.payer.toLowerCase()) : null;
+        const payerId = rawActive.payer_id || payerUser?.id;
+
         const debtors = sessionOrders
-          .filter(o => !o.is_paid && o.user_id !== rawActive.payer_id)
+          .filter(o => !o.is_paid && o.username !== rawActive.payer)
           .map(o => o.username);
         
         const debtorIds = sessionOrders
-          .filter(o => !o.is_paid && o.user_id !== rawActive.payer_id)
-          .map(o => o.user_id);
+          .filter(o => !o.is_paid && o.username !== rawActive.payer)
+          .map(o => {
+            const u = newUsers.find(nu => nu.username.toLowerCase() === o.username.toLowerCase());
+            return u ? u.id : o.user_id;
+          });
 
         supabase.from('sessions').update({
           status: 'force-closed',
           force_closed_by: 'System (Auto-Expire)',
           closed_at: new Date().toISOString(),
-          debtors: debtors,
-          debtors_ids: debtorIds
+          debtors: debtors
         }).eq('id', rawActive.id).then(async () => {
+          const starterUser = rawActive.started_by ? newUsers.find(u => u.username.toLowerCase() === rawActive.started_by.toLowerCase()) : null;
+          const companionUser = rawActive.companion ? newUsers.find(u => u.username.toLowerCase() === rawActive.companion.toLowerCase()) : null;
+
           // Build and save history too
           const fullSession = {
              id: rawActive.id,
              status: 'force-closed',
              startedBy: rawActive.started_by,
-             startedById: rawActive.started_by_id,
+             startedById: rawActive.started_by_id || starterUser?.id,
              startedAt: rawActive.started_at,
              closedAt: new Date().toISOString(),
              payer: rawActive.payer,
-             payerId: rawActive.payer_id,
+             payerId: payerId,
              companion: rawActive.companion,
-             companionId: rawActive.companion_id,
+             companionId: rawActive.companion_id || companionUser?.id,
              debtors: debtors,
              debtorIds: debtorIds,
-             orders: sessionOrders.map(o => ({
-               username: o.username,
-              isPaid: o.is_paid,
-              userId: o.user_id,
-              item: { id: o.coffee_id, name: o.coffee_name, price: o.coffee_price, emoji: o.coffee_emoji || '☕' }
-            }))
+             orders: sessionOrders.map(o => {
+               const u = newUsers.find(nu => nu.username.toLowerCase() === o.username.toLowerCase());
+               return {
+                 username: o.username,
+                 isPaid: o.is_paid,
+                 userId: u ? u.id : o.user_id,
+                 item: { id: o.coffee_id, name: o.coffee_name, price: o.coffee_price, emoji: o.coffee_emoji || '☕' }
+               };
+             })
           };
-          await supabase.from('historic_sessions').insert({ id: rawActive.id, data: fullSession });
+          await supabase.from('historic_sessions').upsert({ id: rawActive.id, data: fullSession }, { onConflict: 'id' });
           // After moving to history, remove from active sessions table
           await supabase.from('sessions').delete().eq('id', rawActive.id);
-          fetchFullState();
+          sessionsBeingProcessed.delete(rawActive.id);
+          debouncedFetchFullState();
         });
         useAppStore.getState().setStoreParam({ session: null });
         return; 
@@ -151,17 +191,21 @@ async function fetchFullState() {
       const sessionOrders = (orders || []).filter(o => o.session_id === activeSessionRow.id);
       const sessionNotifs = (notifications || []).filter(n => n.session_id === activeSessionRow.id);
       
+      const payerUser = activeSessionRow.payer ? newUsers.find(u => u.username.toLowerCase() === activeSessionRow.payer.toLowerCase()) : null;
+      const companionUser = activeSessionRow.companion ? newUsers.find(u => u.username.toLowerCase() === activeSessionRow.companion.toLowerCase()) : null;
+      const starterUser = activeSessionRow.started_by ? newUsers.find(u => u.username.toLowerCase() === activeSessionRow.started_by.toLowerCase()) : null;
+
       newSession = {
         id: activeSessionRow.id,
         status: activeSessionRow.status,
         startedBy: activeSessionRow.started_by,
-        startedById: activeSessionRow.started_by_id,
+        startedById: activeSessionRow.started_by_id || starterUser?.id,
         startedAt: activeSessionRow.started_at,
         closedAt: activeSessionRow.closed_at,
         payer: activeSessionRow.payer,
-        payerId: activeSessionRow.payer_id,
+        payerId: activeSessionRow.payer_id || payerUser?.id,
         companion: activeSessionRow.companion,
-        companionId: activeSessionRow.companion_id,
+        companionId: activeSessionRow.companion_id || companionUser?.id,
         paymentInfo: activeSessionRow.payment_method ? {
           method: activeSessionRow.payment_method,
           bankName: activeSessionRow.bank_name,
@@ -172,16 +216,19 @@ async function fetchFullState() {
         forceClosedBy: activeSessionRow.force_closed_by,
         debtors: activeSessionRow.debtors || [],
         debtorIds: activeSessionRow.debtors_ids || [], // Assuming it exists or mapping it manually
-        orders: sessionOrders.map(o => ({
-          id: o.id,
-          username: o.username,
-          userId: o.user_id,
-          item: { id: o.coffee_id, name: o.coffee_name, price: o.coffee_price, emoji: o.coffee_emoji || '' },
-          isPaid: o.is_paid,
-          paidAt: o.paid_at, 
-          markedByPayer: o.marked_by_payer,
-          paymentProof: o.payment_proof
-        })),
+        orders: sessionOrders.map(o => {
+          const u = newUsers.find(nu => nu.username.toLowerCase() === o.username.toLowerCase());
+          return {
+            id: o.id,
+            username: o.username,
+            userId: u ? u.id : o.user_id,
+            item: { id: o.coffee_id, name: o.coffee_name, price: o.coffee_price, emoji: o.coffee_emoji || '' },
+            isPaid: o.is_paid,
+            paidAt: o.paid_at, 
+            markedByPayer: o.marked_by_payer,
+            paymentProof: o.payment_proof
+          };
+        }),
         notifications: sessionNotifs.map(n => ({
           id: n.id,
           to: n.target_user,
@@ -220,11 +267,10 @@ export const api = {
       const { error } = await supabase.from('sessions').insert({
         id,
         status: 'open',
-        started_by: userObj.username,
-        started_by_id: userObj.id
+        started_by: userObj.username
       });
       if (error) throw error;
-      fetchFullState();
+      debouncedFetchFullState();
     } catch (err) {
       console.error("Failed to create session:", err);
       alert("Error membuat sesi: " + err.message);
@@ -247,7 +293,6 @@ export const api = {
           coffee_id: menuItem.id,
           coffee_name: menuItem.name,
           coffee_price: menuItem.price,
-          coffee_emoji: menuItem.emoji || '☕',
           is_paid: false
         }).eq('id', existing.id);
       } else {
@@ -256,11 +301,10 @@ export const api = {
           username: userObj.username,
           coffee_id: menuItem.id,
           coffee_name: menuItem.name,
-          coffee_price: menuItem.price,
-          coffee_emoji: menuItem.emoji || '☕'
+          coffee_price: menuItem.price
         });
       }
-      await fetchFullState();
+      await debouncedFetchFullState();
     } catch (err) {
       console.error("Failed to add order:", err);
       alert("Error menambah pesanan: " + err.message);
@@ -271,9 +315,7 @@ export const api = {
     const payload = {};
     if (updates.status !== undefined) payload.status = updates.status;
     if (updates.payer !== undefined) payload.payer = updates.payer;
-    if (updates.payerId !== undefined) payload.payer_id = updates.payerId;
     if (updates.companion !== undefined) payload.companion = updates.companion;
-    if (updates.companionId !== undefined) payload.companion_id = updates.companionId;
     if (updates.closedAt !== undefined) payload.closed_at = updates.closedAt;
     if (updates.paymentMethod !== undefined) payload.payment_method = updates.paymentMethod;
     if (updates.bankName !== undefined) payload.bank_name = updates.bankName;
@@ -281,21 +323,20 @@ export const api = {
     if (updates.coffeeBought !== undefined) payload.coffee_bought = updates.coffeeBought;
     if (updates.forceClosedBy !== undefined) payload.force_closed_by = updates.forceClosedBy;
     if (updates.debtors !== undefined) payload.debtors = updates.debtors;
-    if (updates.debtorIds !== undefined) payload.debtors_ids = updates.debtorIds;
     
     await supabase.from('sessions').update(payload).eq('id', sessionId);
-    await fetchFullState();
+    await debouncedFetchFullState();
   },
 
-  incrementRoleCount: async (userId, role = 'pay') => {
+  incrementRoleCount: async (username, role = 'pay') => {
     try {
       const { data: current } = await supabase
         .from('payer_history')
         .select('*')
-        .eq('user_id', userId)
-        .maybeSingle(); // ← maybeSingle: tidak error jika row belum ada
+        .eq('username', username)
+        .maybeSingle(); 
 
-      const updates = { user_id: userId };
+      const updates = { username: username };
       if (role === 'pay') {
         updates.pay_count = (current?.pay_count || 0) + 1;
         updates.companion_count = current?.companion_count || 0;
@@ -306,7 +347,7 @@ export const api = {
 
       const { error } = await supabase
         .from('payer_history')
-        .upsert(updates, { onConflict: 'user_id' });
+        .upsert(updates, { onConflict: 'username' });
       if (error) throw error;
       // Realtime covers refresh
     } catch (err) {
@@ -316,9 +357,7 @@ export const api = {
 
   markOrderPaid: async (orderId, markedByPayer) => {
     await supabase.from('orders').update({
-      is_paid: true,
-      marked_by_payer: markedByPayer ? true : false,
-      paid_at: new Date().toISOString()
+      is_paid: true
     }).eq('id', orderId);
     // Realtime covers refresh
   },
@@ -327,8 +366,6 @@ export const api = {
     const payload = {};
     if (updates.isPaid !== undefined) payload.is_paid = updates.isPaid;
     if (updates.paymentProof !== undefined) payload.payment_proof = updates.paymentProof;
-    if (updates.markedByPayer !== undefined) payload.marked_by_payer = updates.markedByPayer;
-    if (updates.paidAt !== undefined) payload.paid_at = updates.paidAt;
     
     await supabase.from('orders').update(payload).eq('id', orderId);
     // Realtime covers refresh
@@ -350,7 +387,6 @@ export const api = {
       await supabase.from('notifications').insert({
         session_id: sessionId,
         target_user: targetUser,
-        target_id: targetId,
         type,
         message
       });
@@ -425,7 +461,7 @@ export const api = {
            console.error("Registration Error:", insErr);
            return { success: false, message: "Gagal registrasi: " + insErr.message };
         }
-        fetchFullState();
+        debouncedFetchFullState();
         return { success: true, isNew: true, user: { id: newUser.id, username: newUser.username } };
       }
       
@@ -457,7 +493,7 @@ export const api = {
       // We'll let it be for now to avoid expensive full-history scans, 
       // or implement a background cleanup if needed.
       
-      await fetchFullState();
+      await debouncedFetchFullState();
     } catch (err) {
       console.error("Update profile failed:", err);
       throw err;
@@ -466,7 +502,7 @@ export const api = {
 
   resetUserPin: async (userId, newPin = '1234') => {
     await supabase.from('users').update({ pin: newPin }).eq('id', userId);
-    fetchFullState();
+    debouncedFetchFullState();
   },
 
   updateHistoricalOrder: async (sessionId, userId, updates) => {
@@ -503,7 +539,7 @@ export const api = {
 
     if (changed) {
       await supabase.from('historic_sessions').update({ data: d }).eq('id', sessionId);
-      fetchFullState();
+      debouncedFetchFullState();
     }
   },
 
@@ -541,17 +577,17 @@ export const api = {
 
   saveMenu: async (items) => {
     await supabase.from('app_settings').upsert({ key: 'menu', value: items });
-    fetchFullState();
+    debouncedFetchFullState();
   },
 
   saveAdminPin: async (newPin) => {
     await supabase.from('app_settings').upsert({ key: 'admin_pin', value: newPin });
-    fetchFullState();
+    debouncedFetchFullState();
   },
 
   deleteHistory: async (sessionId) => {
     await supabase.from('historic_sessions').delete().eq('id', sessionId);
-    fetchFullState();
+    debouncedFetchFullState();
   },
 
   deleteActiveSession: async (sessionId) => {
@@ -565,7 +601,7 @@ export const api = {
       const { error: notifError } = await supabase.from('notifications').delete().eq('session_id', sessionId);
       if (notifError) throw notifError;
       
-      await fetchFullState();
+      await debouncedFetchFullState();
       return { success: true };
     } catch (err) {
       console.error("Failed to delete active session:", err);
@@ -577,7 +613,7 @@ export const api = {
   deleteAllNotifications: async () => {
     // Delete all from notifications table
     await supabase.from('notifications').delete().neq('id', 0);
-    fetchFullState();
+    debouncedFetchFullState();
   }
 };
 

@@ -28,7 +28,7 @@ export function useSessionActions() {
       return;
     }
 
-    const participants = [...new Set(store.session.orders.map(o => o.userId))];
+    const participants = [...new Set(store.session.orders.map(o => o.userId).filter(Boolean))];
     if (participants.length < 1) {
       alert("Harus ada pemesan untuk memilih payer!");
       return;
@@ -55,10 +55,10 @@ export function useSessionActions() {
 
     await api.updateSession(store.session.id, {
       status: 'payment-setup',
-      payer: payerObj?.username,
-      payerId: payerId,
-      companion: companionObj?.username,
-      companionId: companionId,
+      payer: payerObj?.username || null,
+      payerId: payerId || null,
+      companion: companionObj?.username || null,
+      companionId: companionId || null,
       closedAt: new Date().toISOString()
     });
 
