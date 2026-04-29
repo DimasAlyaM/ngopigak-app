@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useAppStore } from "../context/useAppStore.js";
 import { api } from "../store.js";
-import { AlertTriangle, ChevronLeft, Camera, CheckCircle, Loader2 } from 'lucide-react';
+import { AlertTriangle, ChevronLeft, Camera, CheckCircle, Loader2, Copy } from 'lucide-react';
 import { loadStore } from '../store.js';
 import { formatRp, formatDate } from '../utils/formatters.js';
 import StatusBadge from '../components/StatusBadge';
@@ -35,10 +35,12 @@ function OrderDetailView({
   }, [order]);
 
   if (!order) return (
-    <div className="glass-panel" style={{ padding: '4rem 2rem', textAlign: 'center' }}>
-      <AlertTriangle size={48} className="text-secondary opacity-50 mb-4" />
-      <p className="text-secondary">Data pesanan tidak ditemukan.</p>
-      <button className="btn-primary mt-4" onClick={onBack}>Kembali</button>
+    <div className="session-container fade-in" style={{ textAlign: 'center', paddingTop: '4rem' }}>
+      <div className="glass-panel" style={{ padding: '3rem 1.5rem' }}>
+        <AlertTriangle size={64} className="text-secondary mb-6" style={{ margin: '0 auto', opacity: 0.5 }} />
+        <p className="text-secondary font-bold">Data pesanan tidak ditemukan.</p>
+        <button className="btn-primary mt-8" onClick={onBack}>Kembali</button>
+      </div>
     </div>
   );
 
@@ -80,7 +82,6 @@ function OrderDetailView({
       } else {
         await api.updateHistoricalOrder(order.sessionId, currentUser.id, { isPaid: true });
       }
-      alert("Konfirmasi pembayaran terkirim!");
     } catch (err) {
       setLocalIsPaid(prevPaid); // Rollback
       alert("Gagal konfirmasi: " + err.message);
@@ -88,129 +89,159 @@ function OrderDetailView({
   };
 
   return (
-    <div className="order-detail-view fade-in" style={{ padding: '1rem' }}>
-      <div className="view-header" style={{ marginBottom: '2rem', display: 'flex', alignItems: 'center', gap: '16px' }}>
-        <button className="glass-panel" style={{ padding: '8px', borderRadius: '12px', border: '1px solid var(--glass-border)', display: 'flex', alignItems: 'center', justifyContent: 'center' }} onClick={onBack}>
+    <div className="order-detail-view fade-in session-container">
+      <div className="view-header mb-8" style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+        <button 
+          className="btn-secondary" 
+          style={{ width: '44px', height: '44px', borderRadius: '14px', padding: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }} 
+          onClick={onBack}
+        >
           <ChevronLeft size={24} />
         </button>
-        <h2 className="text-gradient">Detail Pesanan</h2>
+        <h2 style={{ fontSize: '1.5rem' }}>Detail Pesanan</h2>
       </div>
 
-      <div className="glass-panel" style={{ padding: '2rem', textAlign: 'center', marginBottom: '1.5rem', borderRadius: '32px' }}>
-        <div style={{ fontSize: '3.5rem', marginBottom: '1rem', background: 'var(--surface)', width: '100px', height: '100px', borderRadius: '32px', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto' }}>
+      <div className="glass-panel mb-6" style={{ textAlign: 'center', padding: '2.5rem 1.5rem' }}>
+        <div className="mb-6" style={{ fontSize: '4rem', background: 'var(--bg-primary)', width: '112px', height: '112px', borderRadius: '32px', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto', border: '1px solid var(--glass-border)' }}>
           {order.item?.emoji || '☕'}
         </div>
-        <h3 style={{ fontSize: '1.4rem', marginBottom: '8px' }}>{order.item?.name || 'Item'}</h3>
-        <p className="text-accent" style={{ fontSize: '1.6rem', fontWeight: 800, marginBottom: '2rem' }}>{formatRp(order.item?.price)}</p>
+        <h3 className="mb-2" style={{ fontSize: '1.5rem' }}>{order.item?.name || 'Item'}</h3>
+        <p className="text-accent mb-10" style={{ fontSize: '2rem', fontWeight: 800 }}>{formatRp(order.item?.price)}</p>
 
         <div style={{ background: 'var(--bg-primary)', borderRadius: '24px', padding: '8px' }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', padding: '12px', borderBottom: '1px solid var(--glass-border)', fontSize: '0.9rem' }}>
-            <span className="text-secondary">Waktu Sesi</span>
-            <strong>{formatDate(order.sessionDate).split(',')[0]}</strong>
+          <div style={{ display: 'flex', justifyContent: 'space-between', padding: '14px 12px', borderBottom: '1px solid var(--glass-border)', fontSize: '0.9rem' }}>
+            <span className="text-secondary font-bold">Waktu Sesi</span>
+            <strong className="text-primary">{formatDate(order.sessionDate)}</strong>
           </div>
-          <div style={{ display: 'flex', justifyContent: 'space-between', padding: '12px', borderBottom: '1px solid var(--glass-border)', fontSize: '0.9rem' }}>
-            <span className="text-secondary">Payer</span>
-            <strong>{order.payer}</strong>
+          <div style={{ display: 'flex', justifyContent: 'space-between', padding: '14px 12px', borderBottom: '1px solid var(--glass-border)', fontSize: '0.9rem' }}>
+            <span className="text-secondary font-bold">Payer</span>
+            <strong className="text-primary">{order.payer}</strong>
           </div>
-          <div style={{ display: 'flex', justifyContent: 'space-between', padding: '12px', fontSize: '0.9rem' }}>
-            <span className="text-secondary">Status</span>
+          <div style={{ display: 'flex', justifyContent: 'space-between', padding: '14px 12px', fontSize: '0.9rem', alignItems: 'center' }}>
+            <span className="text-secondary font-bold">Status</span>
             {order.userId !== order.payerId ? (
               <StatusBadge isPaid={localIsPaid} />
             ) : (
-              <span className="badge badge-glass" style={{ opacity: 0.6, fontSize: '0.75rem' }}>PAYER SESI INI</span>
+              <span className="badge-role guest" style={{ opacity: 0.6 }}>PAYER SESI INI</span>
             )}
           </div>
         </div>
       </div>
 
-      {/* Payment section: only show if order is unpaid AND current user is the order owner (the debtor) */}
+      {/* Payment section */}
       {!localIsPaid && (currentUser?.id === order.userId) && (order.userId !== order.payerId) && (
         <div className="payment-management fade-in">
           {sessionInfo?.paymentInfo ? (
-            <div className="glass-panel" style={{ padding: '1.5rem', marginBottom: '1.5rem', border: '1px solid var(--accent-primary)', background: 'rgba(230, 145, 56, 0.05)' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '1rem' }}>
-                <h4 style={{ margin: 0 }}>Info Transfer</h4>
-                <span className="badge badge-amber">{sessionInfo.paymentInfo.method}</span>
+            <div className="payment-card-highlight mb-6">
+              <div className="mb-6" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <h4 className="m-0" style={{ fontWeight: 800 }}>Info Transfer</h4>
+                <span className="badge-role payer">{sessionInfo.paymentInfo.method}</span>
               </div>
-              <div style={{ background: 'var(--bg-primary)', padding: '1rem', borderRadius: '16px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <div style={{ background: 'rgba(0,0,0,0.2)', padding: '1.25rem', borderRadius: '20px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                 <div>
-                  <p style={{ fontWeight: 800, fontSize: '1.1rem', margin: 0 }}>{sessionInfo.paymentInfo.accountNo}</p>
-                  <p className="text-secondary" style={{ fontSize: '0.8rem', margin: 0 }}>{sessionInfo.paymentInfo.bankName || 'Digital Wallet'}</p>
+                  <p style={{ fontWeight: 900, fontSize: '1.25rem', margin: 0, color: 'white' }}>{sessionInfo.paymentInfo.accountNo}</p>
+                  <p className="text-secondary" style={{ fontSize: '0.85rem', margin: '4px 0 0', fontWeight: 600 }}>{sessionInfo.paymentInfo.bankName || 'Digital Wallet'}</p>
                 </div>
-                <button className="btn-secondary" style={{ width: 'auto', padding: '6px 12px', fontSize: '0.7rem' }} onClick={() => { navigator.clipboard.writeText(sessionInfo.paymentInfo.accountNo); alert('Disalin!'); }}>Salin</button>
+                <button 
+                  className="btn-secondary" 
+                  style={{ width: '44px', height: '44px', borderRadius: '12px', padding: 0, background: 'rgba(255,255,255,0.1)', border: 'none' }} 
+                  onClick={() => { navigator.clipboard.writeText(sessionInfo.paymentInfo.accountNo); alert('Disalin!'); }}
+                >
+                  <Copy size={20} color="white" />
+                </button>
               </div>
             </div>
           ) : (
-            <div className="glass-panel" style={{ padding: '1.5rem', marginBottom: '1.5rem', textAlign: 'center' }}>
-              <p className="text-secondary" style={{ fontSize: '0.85rem' }}>Menunggu info pembayaran dari <strong>{order.payer}</strong>...</p>
+            <div className="glass-panel mb-6" style={{ textAlign: 'center', padding: '1.5rem' }}>
+              <p className="text-secondary font-bold" style={{ fontSize: '0.9rem' }}>Menunggu info pembayaran dari <strong>{order.payer}</strong>...</p>
             </div>
           )}
 
-          <h4 style={{ marginBottom: '1rem', paddingLeft: '4px' }}>Upload Bukti Bayar</h4>
-          <div className="glass-panel" style={{ padding: '1.5rem', borderRadius: '32px' }}>
-            <label className="upload-box-new" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'var(--surface)', border: '2px dashed var(--glass-border)', borderRadius: '24px', padding: '2rem', cursor: 'pointer', transition: 'all 0.3s ease' }}>
+          <div className="section-header mb-4">
+            <h4 style={{ fontWeight: 800 }}>Upload Bukti Bayar</h4>
+          </div>
+          
+          <div className="glass-panel mb-10">
+            <label className="upload-box" style={{ 
+              display: 'flex', 
+              flexDirection: 'column',
+              alignItems: 'center', 
+              justifyContent: 'center', 
+              background: 'var(--bg-primary)', 
+              border: '2px dashed var(--glass-border)', 
+              borderRadius: '24px', 
+              padding: '2.5rem 1.5rem', 
+              cursor: 'pointer', 
+              transition: 'all 0.3s ease' 
+            }}>
               <input type="file" accept="image/*" style={{ display: 'none' }} onChange={handleUpload} disabled={isUploading} />
-              <div style={{ textAlign: 'center' }}>
-                {isUploading ? <Loader2 size={32} className="animate-spin text-accent" /> : localProof ? <CheckCircle size={32} className="text-green" /> : <Camera size={32} className="text-secondary" />}
-                <p style={{ marginTop: '8px', fontSize: '0.8rem', fontWeight: 600 }}>{localProof ? 'Ganti Foto' : 'Pilih Foto'}</p>
+              <div className="mb-3" style={{ background: 'var(--surface)', width: '64px', height: '64px', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                {isUploading ? <Loader2 size={32} className="spin text-accent" /> : localProof ? <CheckCircle size={32} style={{ color: 'var(--success)' }} /> : <Camera size={32} className="text-secondary" />}
               </div>
+              <p style={{ fontSize: '0.9rem', fontWeight: 800 }}>{localProof ? 'Ganti Foto Bukti' : 'Pilih Foto Bukti'}</p>
+              {!localProof && <p className="text-secondary mt-1" style={{ fontSize: '0.75rem', fontWeight: 600 }}>Tap untuk membuka galeri/kamera</p>}
             </label>
 
-            <div style={{ marginTop: '1.5rem' }}>
-              {localProof && (
-                <div
-                  style={{ borderRadius: '20px', overflow: 'hidden', border: '1px solid var(--glass-border)', marginBottom: '1.5rem', cursor: 'pointer' }}
-                  onClick={() => setPreviewProof({ url: localProof, username: currentUser.username, userId: currentUser.id })}
-                >
-                  <img src={localProof} alt="Bukti" style={{ width: '100%', maxHeight: '250px', objectFit: 'cover' }} />
-                </div>
-              )}
-              <button
-                className="btn-primary"
-                style={{ width: '100%', height: '56px', borderRadius: '20px' }}
-                onClick={() => {
-                  if (!localProof) {
-                    setDialog({
-                      title: 'Status Cash?',
-                      message: 'Belum ada bukti foto, kirim status sebagai Cash?',
-                      onConfirm: () => { handleConfirmPay(); setDialog(null); },
-                      confirmText: 'Ya, Cash'
-                    });
-                  } else {
-                    handleConfirmPay();
-                  }
-                }}
-                disabled={isUploading}
+            {localProof && (
+              <div 
+                className="mt-6 mb-6"
+                style={{ borderRadius: '20px', overflow: 'hidden', border: '1px solid var(--glass-border)', cursor: 'pointer' }}
+                onClick={() => setPreviewProof({ url: localProof, username: currentUser.username, userId: currentUser.id })}
               >
-                {isUploading ? 'Mengirim...' : 'Konfirmasi Bayar'}
-              </button>
-            </div>
+                <img src={localProof} alt="Bukti" style={{ width: '100%', maxHeight: '300px', objectFit: 'cover' }} />
+              </div>
+            )}
+
+            <button
+              className="btn-primary mt-6"
+              style={{ width: '100%' }}
+              onClick={() => {
+                if (!localProof) {
+                  setDialog({
+                    title: 'Status Cash?',
+                    message: 'Belum ada bukti foto, kirim status sebagai Cash?',
+                    onConfirm: () => { handleConfirmPay(); setDialog(null); },
+                    confirmText: 'Ya, Cash'
+                  });
+                } else {
+                  handleConfirmPay();
+                }
+              }}
+              disabled={isUploading}
+            >
+              {isUploading ? 'Mengirim...' : 'Konfirmasi Bayar'}
+            </button>
           </div>
         </div>
       )}
 
-      {/* Payer viewing a debtor's unpaid order — show waiting message */}
+      {/* Payer viewing a debtor's unpaid order */}
       {!localIsPaid && (currentUser?.id === order.payerId) && (order.userId !== order.payerId) && (
-        <div className="glass-panel fade-in" style={{ padding: '2.5rem 1.5rem', textAlign: 'center', borderRadius: '32px', border: '1px solid rgba(230, 145, 56, 0.2)', background: 'rgba(230, 145, 56, 0.05)' }}>
-          <div style={{ background: 'var(--accent-primary)', width: '64px', height: '64px', borderRadius: '32px', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 1.5rem', color: 'white' }}>
-            <AlertTriangle size={32} />
+        <div className="payment-card-highlight text-center" style={{ textAlign: 'center', padding: '3rem 1.5rem' }}>
+          <div className="mb-6" style={{ background: 'rgba(255,255,255,0.05)', width: '72px', height: '72px', borderRadius: '36px', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto' }}>
+            <AlertTriangle size={36} className="text-accent" />
           </div>
-          <h3 style={{ marginBottom: '0.5rem' }}>Menunggu Pembayaran</h3>
-          <p className="text-secondary" style={{ fontSize: '0.9rem' }}><strong>{order.username}</strong> belum membayar hutangnya kepada kamu.</p>
+          <h3 className="mb-2">Menunggu Pembayaran</h3>
+          <p className="text-secondary" style={{ fontSize: '0.95rem', lineHeight: 1.6 }}><strong>{order.username}</strong> belum membayar hutangnya kepada kamu.</p>
         </div>
       )}
 
       {localIsPaid && (
-        <div className="glass-panel fade-in" style={{ padding: '2.5rem 1.5rem', background: 'rgba(74, 222, 128, 0.05)', border: '1px solid rgba(74, 222, 128, 0.2)', textAlign: 'center', borderRadius: '32px' }}>
-          <div style={{ background: '#4ade80', width: '64px', height: '64px', borderRadius: '32px', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 1.5rem', color: 'white' }}>
-            <CheckCircle size={32} />
+        <div className="glass-panel fade-in" style={{ padding: '3rem 1.5rem', background: 'rgba(74, 222, 128, 0.05)', border: '1px solid rgba(74, 222, 128, 0.2)', textAlign: 'center', borderRadius: '32px' }}>
+          <div className="mb-6" style={{ background: 'var(--success)', width: '72px', height: '72px', borderRadius: '36px', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto', color: 'white' }}>
+            <CheckCircle size={36} />
           </div>
-          <h3 style={{ marginBottom: '0.5rem' }}>Pesanan Sudah Lunas</h3>
-          <p className="text-secondary" style={{ fontSize: '0.9rem' }}>Terima kasih sudah bayar tepat waktu! Kamu keren.</p>
+          <h3 className="mb-2">Pesanan Sudah Lunas</h3>
+          <p className="text-secondary mb-8" style={{ fontSize: '0.95rem', lineHeight: 1.6 }}>Terima kasih sudah bayar tepat waktu! Kamu keren. ✨</p>
           {localProof && (
-            <div style={{ marginTop: '2rem', opacity: 0.6 }}>
-              <p className="text-secondary" style={{ fontSize: '0.7rem', marginBottom: '8px' }}>Bukti terupload:</p>
-              <img src={localProof} alt="Proof" style={{ width: '80px', height: '80px', objectFit: 'cover', borderRadius: '12px' }} />
+            <div style={{ marginTop: '2rem' }}>
+              <p className="text-secondary font-bold mb-3" style={{ fontSize: '0.75rem', textTransform: 'uppercase' }}>Bukti terupload:</p>
+              <div 
+                style={{ width: '120px', height: '120px', margin: '0 auto', borderRadius: '16px', overflow: 'hidden', border: '1px solid var(--glass-border)', cursor: 'pointer' }}
+                onClick={() => setPreviewProof({ url: localProof, username: order.username, userId: order.userId })}
+              >
+                <img src={localProof} alt="Proof" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+              </div>
             </div>
           )}
         </div>

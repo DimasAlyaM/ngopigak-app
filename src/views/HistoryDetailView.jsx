@@ -1,4 +1,4 @@
-import { ChevronLeft, Camera } from 'lucide-react';
+import { ChevronLeft, Camera, CreditCard, Users, Coffee, ChevronRight } from 'lucide-react';
 import { formatDate, formatRp } from '../utils/formatters.js';
 import UserAvatar from '../components/UserAvatar';
 
@@ -13,45 +13,55 @@ function HistoryDetailView({ session, onBack, setPreviewProof, setView, setSelec
   const totalSession = orders.reduce((sum, o) => sum + (o.item?.price || 0), 0);
 
   return (
-    <div className="history-detail-view fade-in" style={{ padding: '1rem' }}>
-      <div className="detail-header" style={{ display: 'flex', alignItems: 'center', gap: '16px', marginBottom: '1.5rem' }}>
-        <button className="glass-panel" style={{ padding: '8px', borderRadius: '12px', border: '1px solid var(--glass-border)', display: 'flex', alignItems: 'center', justifyContent: 'center' }} onClick={onBack}>
+    <div className="history-detail-view fade-in session-container">
+      <div className="view-header mb-8" style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+        <button 
+          className="btn-secondary" 
+          style={{ width: '44px', height: '44px', borderRadius: '14px', padding: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }} 
+          onClick={onBack}
+        >
           <ChevronLeft size={24} />
         </button>
-        <h2 className="text-gradient">Detail Sesi</h2>
+        <h2 style={{ fontSize: '1.5rem' }}>Detail Sesi</h2>
       </div>
 
-      <div className="glass-panel" style={{ padding: '24px', borderRadius: '32px', marginBottom: '2rem', background: 'rgba(255,255,255,0.02)' }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '1.5rem' }}>
+      {/* Main Info Card */}
+      <div className="glass-panel mb-8" style={{ padding: '2rem 1.5rem', background: 'linear-gradient(135deg, var(--surface) 0%, var(--bg-primary) 100%)' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '2rem' }}>
           <div>
-            <span className="text-secondary" style={{ fontSize: '0.75rem', fontWeight: 800, textTransform: 'uppercase' }}>Tanggal Sesi</span>
-            <p style={{ fontSize: '1.1rem', fontWeight: 700 }}>{formatDate(session.startedAt)}</p>
+            <span className="text-secondary font-bold uppercase" style={{ fontSize: '0.65rem', letterSpacing: '0.1em' }}>Waktu Sesi</span>
+            <p style={{ fontSize: '1.25rem', fontWeight: 800, marginTop: '4px' }}>{formatDate(session.startedAt)}</p>
           </div>
           <div style={{ textAlign: 'right' }}>
-            <span className="text-secondary" style={{ fontSize: '0.75rem', fontWeight: 800, textTransform: 'uppercase' }}>Total Putaran</span>
-            <p style={{ fontSize: '1.25rem', fontWeight: 800, color: 'var(--accent-primary)' }}>{formatRp(totalSession)}</p>
+            <span className="text-secondary font-bold uppercase" style={{ fontSize: '0.65rem', letterSpacing: '0.1em' }}>Total Sesi</span>
+            <p style={{ fontSize: '1.5rem', fontWeight: 900, color: 'var(--accent-primary)', marginTop: '4px' }}>{formatRp(totalSession)}</p>
           </div>
         </div>
 
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', background: 'var(--bg-primary)', padding: '1rem', borderRadius: '20px' }}>
-          <div>
-            <span className="text-secondary" style={{ fontSize: '0.7rem', fontWeight: 700 }}>PEMBAYAR UTAMA</span>
-            <p style={{ fontWeight: 800 }}>{session.payer}</p>
+        <div className="grid-2">
+          <div className="glass-panel p-4" style={{ background: 'rgba(230, 145, 56, 0.05)', border: '1px solid rgba(230, 145, 56, 0.2)' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px' }}>
+              <CreditCard size={14} className="text-accent" />
+              <span className="text-secondary font-bold uppercase" style={{ fontSize: '0.6rem' }}>Payer</span>
+            </div>
+            <p style={{ fontWeight: 800, fontSize: '1.1rem' }}>{session.payer}</p>
           </div>
-          <div>
-            <span className="text-secondary" style={{ fontSize: '0.7rem', fontWeight: 700 }}>PENDAMPING</span>
-            <p style={{ fontWeight: 800 }}>{session.companion || '-'}</p>
+          <div className="glass-panel p-4" style={{ background: 'rgba(255, 255, 255, 0.03)', border: '1px solid var(--glass-border)' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px' }}>
+              <Users size={14} className="text-secondary" />
+              <span className="text-secondary font-bold uppercase" style={{ fontSize: '0.6rem' }}>Pendamping</span>
+            </div>
+            <p style={{ fontWeight: 800, fontSize: '1.1rem' }}>{session.companion || '-'}</p>
           </div>
         </div>
       </div>
 
-      <div style={{ marginBottom: '1rem', paddingLeft: '4px' }}>
-        <h4 style={{ fontSize: '1.1rem', fontWeight: 800 }}>Daftar Pesanan ({orders.length})</h4>
+      <div className="section-header mb-4" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+        <h4 style={{ fontWeight: 800 }}>Daftar Pesanan ({orders.length})</h4>
       </div>
 
-      <div className="card-stack" style={{ marginBottom: '2rem' }}>
+      <div className="card-stack mb-12">
         {orders.map((o, idx) => {
-          // Support old sessions (no userId) by falling back to username comparison
           const isPayer = session.payerId
             ? o.userId === session.payerId
             : o.username?.toLowerCase() === session.payer?.toLowerCase();
@@ -60,11 +70,11 @@ function HistoryDetailView({ session, onBack, setPreviewProof, setView, setSelec
               ? session.debtorIds.includes(o.userId)
               : session.debtors?.some(d => (d || '').toLowerCase() === (o.username || '').toLowerCase())
           );
+          
           return (
             <div 
               key={idx} 
-              className="item-card glass-panel" 
-              style={{ padding: '12px 16px', borderRadius: '24px', cursor: 'pointer' }}
+              className="history-card mb-3" 
               onClick={() => {
                 setSelectedOrder({
                   ...o,
@@ -77,36 +87,52 @@ function HistoryDetailView({ session, onBack, setPreviewProof, setView, setSelec
                 setView('order-detail');
               }}
             >
-              <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                <UserAvatar username={o.username} size={36} />
-                <div>
-                  <p style={{ fontSize: '0.9rem', fontWeight: 700 }}>{o.username}</p>
-                  <p className="text-secondary" style={{ fontSize: '0.8rem' }}>{o.item.name}</p>
-                </div>
-              </div>
-              <div style={{ textAlign: 'right' }}>
-                <p style={{ fontWeight: 700, fontSize: '0.9rem' }}>{formatRp(o.item.price)}</p>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '6px', justifyContent: 'flex-end' }}>
+              <div className="history-card-header">
+                <div style={{ position: 'relative' }}>
+                  <UserAvatar username={o.username} size={48} />
                   {o.paymentProof && (
                     <div 
                       onClick={(e) => {
                         e.stopPropagation();
                         setPreviewProof({ url: o.paymentProof, username: o.username, userId: o.userId });
                       }}
-                      style={{ cursor: 'pointer', padding: '2px' }}
+                      style={{ 
+                        position: 'absolute', 
+                        bottom: '-2px', 
+                        right: '-2px', 
+                        background: 'var(--accent-primary)', 
+                        padding: '4px', 
+                        borderRadius: '50%', 
+                        border: '2px solid var(--bg-primary)',
+                        cursor: 'pointer'
+                      }}
                     >
-                      <Camera size={12} className="text-accent" />
+                      <Camera size={10} color="white" />
                     </div>
                   )}
-                  {!isPayer ? (
-                    <span style={{ fontSize: '0.65rem', fontWeight: 800, color: orderDebt ? '#ef4444' : '#4ade80' }}>
-                      {orderDebt ? 'HUTANG' : 'LUNAS'}
+                </div>
+                <div className="history-info">
+                  <p style={{ fontSize: '1rem', fontWeight: 800 }}>{o.username}</p>
+                  <p className="text-secondary" style={{ fontSize: '0.8rem', fontWeight: 600, marginTop: '2px' }}>{o.item.name}</p>
+                </div>
+                <div style={{ textAlign: 'right', display: 'flex', alignItems: 'center', gap: '12px' }}>
+                  <div>
+                    <p style={{ fontWeight: 900, fontSize: '1.1rem' }}>{formatRp(o.item.price)}</p>
+                    <span 
+                      className={`badge-role ${isPayer ? 'payer' : (orderDebt ? 'guest' : 'companion')}`} 
+                      style={{ 
+                        fontSize: '0.6rem', 
+                        padding: '2px 8px', 
+                        marginTop: '4px',
+                        display: 'inline-block',
+                        background: isPayer ? 'rgba(230, 145, 56, 0.15)' : (orderDebt ? 'rgba(239, 68, 68, 0.15)' : 'rgba(16, 185, 129, 0.15)'),
+                        color: isPayer ? 'var(--accent-primary)' : (orderDebt ? 'var(--danger)' : 'var(--success)')
+                      }}
+                    >
+                      {isPayer ? 'PAYER' : (orderDebt ? 'HUTANG' : 'LUNAS')}
                     </span>
-                  ) : (
-                    <span style={{ fontSize: '0.65rem', fontWeight: 800, opacity: 0.5, color: '#4ade80' }}>
-                      PAYER
-                    </span>
-                  )}
+                  </div>
+                  <ChevronRight size={18} className="text-secondary" style={{ opacity: 0.3 }} />
                 </div>
               </div>
             </div>

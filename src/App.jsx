@@ -61,31 +61,31 @@ const BottomNav = () => {
   return (
     <nav className="bottom-nav">
       <div className={`nav-item ${path === '/' ? 'active' : ''}`} onClick={() => navigate('/')}>
-        <div className="nav-icon"><Home size={20} /></div>
+        <div className="nav-icon"><Home size={22} strokeWidth={path === '/' ? 2.5 : 2} /></div>
         <span>Home</span>
       </div>
       <div className={`nav-item ${path.startsWith('/history') ? 'active' : ''}`} onClick={() => navigate('/history')}>
-        <div className="nav-icon"><History size={20} /></div>
+        <div className="nav-icon"><History size={22} strokeWidth={path.startsWith('/history') ? 2.5 : 2} /></div>
         <span>History</span>
       </div>
       <div className={`nav-item ${path === '/notifications' ? 'active' : ''}`} onClick={() => { navigate('/notifications'); markNotifsRead(); }}>
-        <div className="nav-icon nav-badge-container">
-          <Bell size={20} />
+        <div className="nav-icon">
+          <Bell size={22} strokeWidth={path === '/notifications' ? 2.5 : 2} />
           {unread > 0 && <span className="nav-badge">{unread}</span>}
         </div>
         <span>Notif</span>
       </div>
       <div className={`nav-item ${path.startsWith('/orders') || path.startsWith('/order/') ? 'active' : ''}`} onClick={() => navigate('/orders')}>
-        <div className="nav-icon"><Clock size={20} /></div>
-        <span>My Order</span>
+        <div className="nav-icon"><Clock size={22} strokeWidth={path.startsWith('/orders') ? 2.5 : 2} /></div>
+        <span>Orders</span>
       </div>
       <div className={`nav-item ${path === '/profile' ? 'active' : ''}`} onClick={() => navigate('/profile')}>
-        <div className="nav-icon"><User size={20} /></div>
+        <div className="nav-icon"><User size={22} strokeWidth={path === '/profile' ? 2.5 : 2} /></div>
         <span>Profile</span>
       </div>
       {currentUser?.username?.toLowerCase() === 'admin' && (
         <div className={`nav-item ${path === '/admin' ? 'active' : ''}`} onClick={() => navigate('/admin')}>
-          <div className="nav-icon"><Shield size={20} /></div>
+          <div className="nav-icon"><Shield size={22} strokeWidth={path === '/admin' ? 2.5 : 2} /></div>
           <span>Admin</span>
         </div>
       )}
@@ -326,8 +326,6 @@ export default function App() {
       {previewProof && (
         <ProofPreviewModal url={previewProof.url} username={previewProof.username} onClose={() => setPreviewProof(null)} />
       )}
-      
-      <BottomNav />
     </div>
   );
 }

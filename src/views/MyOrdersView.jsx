@@ -1,5 +1,5 @@
 import { useAppStore } from "../context/useAppStore.js";
-import { Coffee, Clock } from 'lucide-react';
+import { Coffee, Clock, ChevronRight } from 'lucide-react';
 import { formatRp, formatDate } from '../utils/formatters.js';
 
 function MyOrdersView({ setView, setSelectedOrder }) {
@@ -41,45 +41,55 @@ function MyOrdersView({ setView, setSelectedOrder }) {
     }
   }
 
+  const sortedOrders = [...allPersonalOrders].reverse();
+
   return (
-    <div className="orders-view fade-in" style={{ padding: '1rem' }}>
-      <div className="view-header" style={{ marginBottom: '1.5rem' }}>
-        <h2 className="text-gradient">My Order</h2>
-        <p className="text-secondary" style={{ fontSize: '0.9rem' }}>Daftar kopi yang pernah kamu pesan.</p>
+    <div className="orders-view fade-in session-container">
+      <div className="section-header mb-6">
+        <h2 className="mb-1">Pesanan Saya</h2>
+        <p className="text-secondary" style={{ fontSize: '0.9rem', fontWeight: 600 }}>Riwayat kopi yang pernah kamu pesan.</p>
       </div>
 
       <div className="card-stack">
-        {allPersonalOrders.length === 0 ? (
-          <div className="glass-panel empty-state" style={{ padding: '3rem 1.5rem', textAlign: 'center' }}>
-            <Coffee size={48} className="text-secondary opacity-20 mb-4" />
-            <p className="text-secondary">Belum ada pesanan.</p>
+        {sortedOrders.length === 0 ? (
+          <div className="empty-state-card" style={{ padding: '4rem 2rem' }}>
+            <Coffee size={64} style={{ color: 'var(--text-tertiary)', marginBottom: '1.5rem', opacity: 0.5 }} />
+            <p className="text-secondary" style={{ fontWeight: 600 }}>Belum ada pesanan.</p>
           </div>
         ) : (
-          [...allPersonalOrders].reverse().map((o, idx) => (
+          sortedOrders.map((o, idx) => (
             <div 
               key={idx} 
-              className={`item-card glass-panel ${o.isLive ? 'live-order' : ''}`}
-              style={{ padding: '16px', borderRadius: '24px', cursor: 'pointer' }}
+              className={`history-card mb-3 ${o.isLive ? 'active-border' : ''}`}
               onClick={() => {
                 setSelectedOrder(o);
                 setView('order-detail');
               }}
             >
-              <div style={{ display: 'flex', alignItems: 'center', gap: '16px', flex: 1 }}>
-                <div style={{ fontSize: '2rem', background: 'var(--bg-primary)', width: '60px', height: '60px', borderRadius: '18px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <div className="history-card-header">
+                <div style={{ fontSize: '1.75rem', background: 'var(--bg-primary)', width: '56px', height: '56px', borderRadius: '16px', display: 'flex', alignItems: 'center', justifyContent: 'center', border: '1px solid var(--glass-border)' }}>
                   {o.item?.emoji || '☕'}
                 </div>
-                <div>
-                  <p style={{ fontSize: '0.95rem', fontWeight: 700 }}>{o.item?.name}</p>
-                  <p className="text-secondary" style={{ fontSize: '0.75rem' }}>{formatDate(o.sessionDate)}</p>
+                <div className="history-info">
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <p style={{ fontSize: '1rem', fontWeight: 800 }}>{o.item?.name}</p>
+                    {o.isLive && <span className="badge-role payer" style={{ fontSize: '0.5rem', padding: '2px 6px' }}>LIVE</span>}
+                  </div>
+                  <p className="text-secondary" style={{ fontSize: '0.75rem', fontWeight: 600, marginTop: '2px' }}>{formatDate(o.sessionDate)}</p>
                 </div>
-              </div>
-              <div style={{ textAlign: 'right' }}>
-                <p style={{ fontWeight: 800, fontSize: '1rem', marginBottom: '4px' }}>{formatRp(o.item?.price)}</p>
-                <span style={{ fontSize: '0.65rem', fontWeight: 800, color: o.isPaid ? '#4ade80' : '#ef4444' }}>
-                  {o.isPaid ? 'LUNAS' : 'HUTANG'}
-                </span>
-                {o.isLive && <div className="live-tag">Active</div>}
+                <div style={{ textAlign: 'right' }}>
+                  <p className="history-total" style={{ fontSize: '1.1rem' }}>{formatRp(o.item?.price)}</p>
+                  <p style={{ 
+                    fontSize: '0.65rem', 
+                    fontWeight: 900, 
+                    marginTop: '4px',
+                    color: o.isPaid ? 'var(--success)' : 'var(--danger)',
+                    textTransform: 'uppercase',
+                    letterSpacing: '0.05em'
+                  }}>
+                    {o.isPaid ? 'LUNAS' : 'HUTANG'}
+                  </p>
+                </div>
               </div>
             </div>
           ))
