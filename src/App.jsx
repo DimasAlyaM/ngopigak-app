@@ -95,7 +95,7 @@ const BottomNav = () => {
 
 // ─── MAIN APP ─────────────────────────────────────────────────────────────────
 export default function App() {
-  const { store, currentUser, selectedSession, selectedOrder, setSelectedSession, setSelectedOrder } = useAppStore();
+  const { store, currentUser, selectedSession, selectedOrder, setSelectedSession, setSelectedOrder, updateActivity } = useAppStore();
   const { login, logout, saveProfile } = useAuth();
   const actions = useSessionActions();
   const navigate = useNavigate();
@@ -163,6 +163,44 @@ export default function App() {
       confetti({ particleCount: 150, spread: 70, origin: { y: 0.6 } });
     }
   }, [store.session?.status, location.pathname]);
+
+  // AUTO-LOGOUT AFTER 30 MINS INACTIVITY
+  useEffect(() => {
+    if (!currentUser) return;
+
+    let inactivityTimer;
+    const INACTIVITY_LIMIT = 30 * 60 * 1000; // 30 minutes
+
+    const resetTimer = () => {
+      updateActivity();
+      if (inactivityTimer) clearTimeout(inactivityTimer);
+      inactivityTimer = setTimeout(() => {
+        logout();
+        alert('Sesi kamu berakhir karena tidak ada aktivitas selama 30 menit.');
+      }, INACTIVITY_LIMIT);
+    };
+
+    // Events to track activity
+    const activityEvents = [
+      'mousedown', 'mousemove', 'keydown', 
+      'scroll', 'touchstart', 'click'
+    ];
+
+    // Initialize timer
+    resetTimer();
+
+    // Add listeners
+    activityEvents.forEach(event => {
+      document.addEventListener(event, resetTimer);
+    });
+
+    return () => {
+      if (inactivityTimer) clearTimeout(inactivityTimer);
+      activityEvents.forEach(event => {
+        document.removeEventListener(event, resetTimer);
+      });
+    };
+  }, [currentUser, logout]);
 
   // AUTO-FINALIZE WATCHER
   useEffect(() => {

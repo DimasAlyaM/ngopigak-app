@@ -5,13 +5,18 @@ const loadInitialUser = () => {
   try {
     const saved = localStorage.getItem('ngopi_current_v2');
     if (!saved) return null;
-    const parsed = JSON.parse(saved);
-    // Check expiry (7 days)
-    if (parsed.expiresAt && Date.now() > parsed.expiresAt) {
+    const user = JSON.parse(saved);
+    
+    // Check 30-minute inactivity
+    const lastActivity = localStorage.getItem('ngopi_last_activity');
+    const INACTIVITY_LIMIT = 30 * 60 * 1000;
+    
+    if (lastActivity && Date.now() - parseInt(lastActivity) > INACTIVITY_LIMIT) {
       localStorage.removeItem('ngopi_current_v2');
+      localStorage.removeItem('ngopi_last_activity');
       return null;
     }
-    const { expiresAt: _, ...user } = parsed;
+    
     return user;
   } catch {
     localStorage.removeItem('ngopi_current_v2');
@@ -25,15 +30,17 @@ export const useAppStore = create((set) => ({
   setCurrentUser: (user) => {
     set({ currentUser: user });
     if (user) {
-      const SESSION_EXPIRY_MS = 7 * 24 * 60 * 60 * 1000;
-      localStorage.setItem('ngopi_current_v2', JSON.stringify({
-        ...user,
-        expiresAt: Date.now() + SESSION_EXPIRY_MS
-      }));
+      localStorage.setItem('ngopi_current_v2', JSON.stringify(user));
+      localStorage.setItem('ngopi_last_activity', Date.now().toString());
     } else {
       localStorage.removeItem('ngopi_current_v2');
+      localStorage.removeItem('ngopi_last_activity');
       localStorage.removeItem('ngopi_current_user'); // safety clear
     }
+  },
+
+  updateActivity: () => {
+    localStorage.setItem('ngopi_last_activity', Date.now().toString());
   },
 
   // UI State

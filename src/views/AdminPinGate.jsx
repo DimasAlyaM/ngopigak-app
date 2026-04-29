@@ -1,10 +1,12 @@
-import { useState } from 'react';
-import { Lock, Shield } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { Lock, Shield, ArrowLeft } from 'lucide-react';
 import { useAppStore } from "../context/useAppStore.js";
 import { api } from "../store.js";
+import PinKeypad from '../components/PinKeypad';
 
 /**
  * AdminPinGate Component
+ * Improved UI/UX with touch-friendly keypad and visual indicators
  */
 function AdminPinGate({ onSuccess, onClose }) {
   const { store } = useAppStore();
@@ -13,6 +15,7 @@ function AdminPinGate({ onSuccess, onClose }) {
 
   const [pin, setPin] = useState('');
   const [confirmPin, setConfirmPin] = useState('');
+  const [isConfirming, setIsConfirming] = useState(false);
   const [error, setError] = useState('');
   const [shake, setShake] = useState(false);
 
@@ -21,21 +24,47 @@ function AdminPinGate({ onSuccess, onClose }) {
     setTimeout(() => setShake(false), 500);
   };
 
-  const handleSubmit = (e) => {
-    e.preventDefault();
-    if (pin.length < 4) {
+  const handleKeyPress = (num) => {
+    if (error) setError('');
+    if (isConfirming) {
+      if (confirmPin.length < 8) setConfirmPin(prev => prev + num);
+    } else {
+      if (pin.length < 8) setPin(prev => prev + num);
+    }
+  };
+
+  const handleDelete = () => {
+    if (isConfirming) {
+      setConfirmPin(prev => prev.slice(0, -1));
+    } else {
+      setPin(prev => prev.slice(0, -1));
+    }
+  };
+
+  const handleSubmit = () => {
+    const currentPin = isConfirming ? confirmPin : pin;
+    
+    if (currentPin.length < 4) {
       setError('PIN minimal 4 digit.');
       triggerShake();
       return;
     }
+
     if (isFirstTime) {
+      if (!isConfirming) {
+        setIsConfirming(true);
+        return;
+      }
+      
       if (pin !== confirmPin) {
         setError('PIN tidak cocok, coba lagi.');
         triggerShake();
         setPin('');
         setConfirmPin('');
+        setIsConfirming(false);
         return;
       }
+      
       api.saveAdminPin(pin);
       onSuccess();
     } else {
@@ -49,6 +78,16 @@ function AdminPinGate({ onSuccess, onClose }) {
     }
   };
 
+  // Auto-submit for login if length matches
+  useEffect(() => {
+    if (!isFirstTime && serverPin && pin.length === serverPin.length) {
+      handleSubmit();
+    }
+  }, [pin]);
+
+  const displayLength = isConfirming ? confirmPin.length : pin.length;
+  const dotsCount = isFirstTime ? 4 : (serverPin?.length || 4);
+
   return (
     <div className="pin-view-container fade-in">
       <div className={`pin-view-card ${shake ? 'shake' : ''}`}>
@@ -56,71 +95,57 @@ function AdminPinGate({ onSuccess, onClose }) {
           {isFirstTime ? <Lock size={32} /> : <Shield size={32} />}
         </div>
 
-        <h2 style={{ marginBottom: '1rem', fontSize: '1.5rem', fontWeight: 800 }}>
-          {isFirstTime ? 'Buat PIN Admin' : 'Masukkan PIN Admin'}
+        <h2 style={{ marginBottom: '0.5rem', fontSize: '1.5rem', fontWeight: 800 }}>
+          {isFirstTime 
+            ? (isConfirming ? 'Konfirmasi PIN' : 'Buat PIN Admin') 
+            : 'Masukkan PIN Admin'}
         </h2>
 
-        <p className="text-secondary" style={{ marginBottom: '2rem', fontSize: '0.9rem', lineHeight: 1.5 }}>
+        <p className="text-secondary" style={{ marginBottom: '1.5rem', fontSize: '0.85rem', lineHeight: 1.5 }}>
           {isFirstTime
-            ? 'Buat PIN untuk melindungi manajemen menu & user. Simpan PIN ini baik-baik!'
-            : 'Manajemen ini hanya untuk admin. Masukkan PIN untuk melanjutkan.'}
+            ? (isConfirming ? 'Masukkan PIN sekali lagi untuk memastikan.' : 'Lindungi akses manajemen dengan PIN baru.')
+            : 'Gunakan PIN admin untuk membuka Control Center.'}
         </p>
 
-        <form onSubmit={handleSubmit} className="modern-form">
-          <div className="form-group" style={{ marginBottom: '1.5rem' }}>
-            <label style={{ fontSize: '0.7rem', color: 'var(--text-secondary)' }}>
-              {isFirstTime ? 'BUAT PIN KEAMANAN' : 'PIN KEAMANAN'}
-            </label>
-            <input
-              type="password"
-              inputMode="numeric"
-              value={pin}
-              autoFocus
-              onChange={e => {
-                const val = e.target.value.replace(/\D/g, '');
-                setPin(val);
-                if (error) setError('');
-              }}
-              placeholder="••••"
-              style={{ textAlign: 'center', fontSize: '1.5rem', letterSpacing: '0.5rem' }}
-              maxLength={8}
-              required
+        {/* PIN Indicators */}
+        <div className="pin-display">
+          {[...Array(Math.max(dotsCount, displayLength))].map((_, i) => (
+            <div 
+              key={i} 
+              className={`pin-dot ${i < displayLength ? 'active' : ''}`} 
             />
-          </div>
+          ))}
+        </div>
 
-          {isFirstTime && (
-            <div className="form-group" style={{ marginBottom: '1.5rem' }}>
-              <label style={{ fontSize: '0.7rem', color: 'var(--text-secondary)' }}>KONFIRMASI PIN</label>
-              <input
-                type="password"
-                inputMode="numeric"
-                value={confirmPin}
-                onChange={e => setConfirmPin(e.target.value.replace(/\D/g, ''))}
-                placeholder="••••"
-                style={{ textAlign: 'center', fontSize: '1.5rem', letterSpacing: '0.5rem' }}
-                maxLength={8}
-                required
-              />
-            </div>
-          )}
+        {error && <p className="text-red mb-4 font-bold" style={{ fontSize: '0.85rem', color: 'var(--danger)' }}>{error}</p>}
 
-          {error && <p className="text-red mb-4 font-bold animate-pulse" style={{ fontSize: '0.85rem' }}>{error}</p>}
+        <PinKeypad 
+          onKeyPress={handleKeyPress}
+          onDelete={handleDelete}
+          onSubmit={handleSubmit}
+          submitLabel={isFirstTime && !isConfirming ? 'LANJUT' : 'MASUK'}
+        />
 
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-            <button type="submit" className="btn-primary-pill" style={{ height: '56px' }}>
-              {isFirstTime ? 'Simpan PIN' : 'Masuk Control Center'}
-            </button>
-            <button type="button" className="btn-logout" style={{ background: 'transparent' }} onClick={onClose}>
-              Kembali ke Beranda
-            </button>
-          </div>
-        </form>
-
-        {!isFirstTime && (
-          <p className="text-secondary mt-8" style={{ fontSize: '0.75rem' }}>
-            Lupa PIN? Hubungi admin tim kamu.
-          </p>
-        )}
+        <div style={{ marginTop: '2rem' }}>
+          <button 
+            type="button" 
+            className="text-secondary font-bold" 
+            style={{ 
+              background: 'transparent', 
+              border: 'none', 
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '8px',
+              margin: '0 auto',
+              fontSize: '0.9rem'
+            }} 
+            onClick={isConfirming ? () => { setIsConfirming(false); setConfirmPin(''); } : onClose}
+          >
+            <ArrowLeft size={16} />
+            {isConfirming ? 'Ganti PIN' : 'Kembali ke Beranda'}
+          </button>
+        </div>
       </div>
     </div>
   );

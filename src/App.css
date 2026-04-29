@@ -439,3 +439,130 @@
   border-radius: 50%;
   box-shadow: var(--shadow-accent);
 }
+
+/* PIN Gate Premium Styles */
+.pin-view-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: calc(100vh - var(--header-height) - var(--nav-height));
+  padding: 1.5rem;
+}
+
+.pin-view-card {
+  width: 100%;
+  max-width: 400px;
+  background: var(--glass-bg);
+  backdrop-filter: var(--glass-blur);
+  -webkit-backdrop-filter: var(--glass-blur);
+  border: 1px solid var(--glass-border);
+  border-radius: var(--radius-xl);
+  padding: 2.5rem 2rem;
+  text-align: center;
+  box-shadow: var(--shadow-lg);
+}
+
+.pin-view-card.shake {
+  animation: shake 0.5s cubic-bezier(.36,.07,.19,.97) both;
+}
+
+@keyframes shake {
+  10%, 90% { transform: translate3d(-1px, 0, 0); }
+  20%, 80% { transform: translate3d(2px, 0, 0); }
+  30%, 50%, 70% { transform: translate3d(-4px, 0, 0); }
+  40%, 60% { transform: translate3d(4px, 0, 0); }
+}
+
+.pin-view-icon {
+  width: 72px;
+  height: 72px;
+  background: var(--surface);
+  border-radius: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto 1.5rem;
+  color: var(--accent-primary);
+  border: 1px solid var(--glass-border);
+}
+
+.pin-display {
+  display: flex;
+  justify-content: center;
+  gap: 16px;
+  margin: 2rem 0;
+}
+
+.pin-dot {
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  border: 2px solid var(--text-tertiary);
+  transition: all 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+.pin-dot.active {
+  background: var(--accent-primary);
+  border-color: var(--accent-primary);
+  transform: scale(1.2);
+  box-shadow: 0 0 15px var(--accent-glow);
+}
+
+.keypad-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 16px;
+  margin-top: 2rem;
+}
+
+.key-btn {
+  height: 64px;
+  background: var(--surface);
+  border: 1px solid var(--glass-border);
+  border-radius: 18px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.5rem;
+  font-weight: 800;
+  color: var(--text-primary);
+  cursor: pointer;
+  transition: all 0.2s ease;
+  user-select: none;
+}
+
+.key-btn:active {
+  background: var(--accent-primary);
+  color: white;
+  transform: scale(0.92);
+  border-color: var(--accent-primary);
+}
+
+.key-btn.special {
+  background: transparent;
+  border-color: transparent;
+  color: var(--text-secondary);
+}
+
+.key-btn.special:active {
+  background: rgba(255,255,255,0.05);
+  color: var(--text-primary);
+}
+
+.btn-primary-pill {
+  background: var(--accent-primary);
+  color: white;
+  border: none;
+  padding: 1rem 2rem;
+  border-radius: 100px;
+  font-family: var(--font-heading);
+  font-weight: 800;
+  font-size: 1rem;
+  cursor: pointer;
+  transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  box-shadow: var(--shadow-accent);
+}
+
+.btn-primary-pill:active {
+  transform: scale(0.95);
+}
