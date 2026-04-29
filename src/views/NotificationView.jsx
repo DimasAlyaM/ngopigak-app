@@ -1,5 +1,4 @@
 import { useAppStore } from "../context/useAppStore.js";
-import { api } from "../store.js";
 import { Bell, Info, CreditCard, Coffee, Clock, CheckCircle, AlertTriangle } from 'lucide-react';
 import { formatDate } from '../utils/formatters.js';
 

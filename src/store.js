@@ -69,12 +69,12 @@ async function fetchFullState() {
     const [
       { data: sessions, error: sessionsErr },
       { data: orders, error: ordersErr },
-      { data: notifications, error: notifErr },
-      { data: menu, error: menuErr },
-      { data: payers, error: payersErr },
-      { data: historic, error: historicErr },
-      { data: users, error: usersErr },
-      { data: settings, error: settingsErr }
+      { data: notifications },
+      { data: menu },
+      { data: payers },
+      { data: historic },
+      { data: users },
+      { data: settings }
     ] = await Promise.all([
       supabase.from('sessions').select('*'),
       supabase.from('orders').select('*'),
@@ -355,7 +355,7 @@ export const api = {
     }
   },
 
-  markOrderPaid: async (orderId, markedByPayer) => {
+  markOrderPaid: async (orderId) => {
     await supabase.from('orders').update({
       is_paid: true
     }).eq('id', orderId);
@@ -575,10 +575,6 @@ export const api = {
     return publicUrl;
   },
 
-  saveMenu: async (items) => {
-    await supabase.from('app_settings').upsert({ key: 'menu', value: items });
-    debouncedFetchFullState();
-  },
 
   saveAdminPin: async (newPin) => {
     await supabase.from('app_settings').upsert({ key: 'admin_pin', value: newPin });

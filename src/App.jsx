@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Routes, Route, useNavigate, useLocation, Navigate } from 'react-router-dom';
 import { Bell, Coffee, Clock, History, PlusCircle, Shield, User, Home, AlertTriangle, ArrowLeft } from 'lucide-react';
 import confetti from 'canvas-confetti';
@@ -8,7 +8,7 @@ import './App.css';
 import { useAppStore } from './context/useAppStore.js';
 import { useAuth } from './hooks/useAuth.js';
 import { useSessionActions } from './hooks/useSessionActions.js';
-import { loadStore, api, initSupabaseSync, refreshStore } from './store.js'; // Keep api and loadStore for inner component usage if needed
+import { api, initSupabaseSync, refreshStore } from './store.js'; // Keep api for inner component usage if needed
 
 // Components
 import ConfirmDialog from './components/ConfirmDialog';
@@ -107,7 +107,7 @@ export default function App() {
   const [timeLeft, setTimeLeft] = useState(600);
   const timerRef = useRef(null);
   const coffeeDropdownRef = useRef(null);
-  const [renderError, setRenderError] = useState(null);
+  const [renderError] = useState(null);
 
   // Dialogs & Form states
   const [dialog, setDialog] = useState(null); 

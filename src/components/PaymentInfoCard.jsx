@@ -4,7 +4,7 @@ import React from 'react';
  * PaymentInfoCard Component
  * Displays payment transfer details (Bank/E-wallet, account number).
  */
-function PaymentInfoCard({ info, payer, companion, formatRp }) {
+function PaymentInfoCard({ info, payer, companion }) {
   if (!info) return null;
 
   return (

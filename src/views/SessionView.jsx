@@ -1,6 +1,5 @@
 import { Loader2, Users, Coffee, Bell, Camera, Shield, Info, AlertTriangle, CheckCircle, ChevronDown, Clock, Search } from 'lucide-react';
 import { useAppStore } from "../context/useAppStore.js";
-import { api } from "../store.js";
 import { formatRp, formatTime } from '../utils/formatters.js';
 import UserAvatar from '../components/UserAvatar';
 import PaymentInfoCard from '../components/PaymentInfoCard';
@@ -9,8 +8,6 @@ import Stepper from '../components/Stepper';
 function SessionView({ 
   timeLeft,
   setView,
-  setSelectedSession,
-  setSelectedOrder,
   setDialog,
   setPreviewProof,
   paymentMethod,
@@ -24,7 +21,6 @@ function SessionView({
   showMenuResults,
   setShowMenuResults,
   coffeeDropdownRef,
-  selectedCoffeeId,
   setSelectedCoffeeId,
   onAddOrder,
   onStartSession,

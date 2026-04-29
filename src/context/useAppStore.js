@@ -19,7 +19,7 @@ const loadInitialUser = () => {
   }
 };
 
-export const useAppStore = create((set, get) => ({
+export const useAppStore = create((set) => ({
   // Active User State
   currentUser: loadInitialUser(),
   setCurrentUser: (user) => {

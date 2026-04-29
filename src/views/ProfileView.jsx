@@ -1,6 +1,5 @@
 import { useState } from 'react';
 import { useAppStore } from "../context/useAppStore.js";
-import { api } from "../store.js";
 import { Edit2, LogOut } from 'lucide-react';
 import UserAvatar from '../components/UserAvatar';
 import { formatRp, formatDate } from '../utils/formatters.js';
@@ -10,7 +9,7 @@ import { formatRp, formatDate } from '../utils/formatters.js';
  */
 function ProfileView({ onSave, onLogout }) {
   const { store, currentUser } = useAppStore();
-  const { history, payerHistory } = store;
+  const { history } = store;
   const [name, setName] = useState(currentUser?.username || '');
   const [isEditing, setIsEditing] = useState(false);
 

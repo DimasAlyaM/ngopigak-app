@@ -9,22 +9,14 @@ import StatusBadge from '../components/StatusBadge';
 /**
  * OrderDetailView Component
  */
-function OrderDetailView({ 
-  order, 
-  onBack, 
-  onPaymentConfirm, 
-  setDialog, 
-  setPreviewProof 
+function OrderDetailView({
+  order,
+  onBack,
+  onPaymentConfirm,
+  setDialog,
+  setPreviewProof
 }) {
-  const { store, currentUser } = useAppStore();
-  if (!order) return (
-    <div className="glass-panel" style={{ padding: '4rem 2rem', textAlign: 'center' }}>
-      <AlertTriangle size={48} className="text-secondary opacity-50 mb-4" />
-      <p className="text-secondary">Data pesanan tidak ditemukan.</p>
-      <button className="btn-primary mt-4" onClick={onBack}>Kembali</button>
-    </div>
-  );
-
+  const { currentUser } = useAppStore();
   const [isUploading, setIsUploading] = useState(false);
   const [localProof, setLocalProof] = useState(order?.paymentProof || '');
   const [localIsPaid, setLocalIsPaid] = useState(order?.isPaid || false);
@@ -41,6 +33,14 @@ function OrderDetailView({
     }
     setSessionInfo(sess);
   }, [order]);
+
+  if (!order) return (
+    <div className="glass-panel" style={{ padding: '4rem 2rem', textAlign: 'center' }}>
+      <AlertTriangle size={48} className="text-secondary opacity-50 mb-4" />
+      <p className="text-secondary">Data pesanan tidak ditemukan.</p>
+      <button className="btn-primary mt-4" onClick={onBack}>Kembali</button>
+    </div>
+  );
 
   const handleUpload = async (e) => {
     const file = e.target.files[0];
@@ -158,16 +158,16 @@ function OrderDetailView({
 
             <div style={{ marginTop: '1.5rem' }}>
               {localProof && (
-                <div 
+                <div
                   style={{ borderRadius: '20px', overflow: 'hidden', border: '1px solid var(--glass-border)', marginBottom: '1.5rem', cursor: 'pointer' }}
                   onClick={() => setPreviewProof({ url: localProof, username: currentUser.username, userId: currentUser.id })}
                 >
                   <img src={localProof} alt="Bukti" style={{ width: '100%', maxHeight: '250px', objectFit: 'cover' }} />
                 </div>
               )}
-              <button 
-                className="btn-primary" 
-                style={{ width: '100%', height: '56px', borderRadius: '20px' }} 
+              <button
+                className="btn-primary"
+                style={{ width: '100%', height: '56px', borderRadius: '20px' }}
                 onClick={() => {
                   if (!localProof) {
                     setDialog({
@@ -179,7 +179,7 @@ function OrderDetailView({
                   } else {
                     handleConfirmPay();
                   }
-                }} 
+                }}
                 disabled={isUploading}
               >
                 {isUploading ? 'Mengirim...' : 'Konfirmasi Bayar'}

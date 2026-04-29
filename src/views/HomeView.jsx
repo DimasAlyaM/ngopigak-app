@@ -1,10 +1,9 @@
 import { useAppStore } from "../context/useAppStore.js";
-import { api } from "../store.js";
-import { Coffee, Clock, Users, Shield, PlusCircle } from 'lucide-react';
+import { Coffee, Clock, Users, Shield } from 'lucide-react';
 import UserAvatar from '../components/UserAvatar';
-import { formatRp, formatTime } from '../utils/formatters.js';
+import { formatTime } from '../utils/formatters.js';
 
-function HomeView({ timeLeft, onStartSession, onJoinSession, onSelectSession, setView, setSelectedSession }) {
+function HomeView({ timeLeft, onStartSession, onJoinSession, onSelectSession, setSelectedSession }) {
   const { store, currentUser } = useAppStore();
   const { session, history } = store;
   
