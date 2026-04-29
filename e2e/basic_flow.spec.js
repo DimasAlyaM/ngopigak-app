@@ -58,7 +58,7 @@ test.describe('NgopiGak Basic Flow', () => {
        await page.goto('/'); 
     }
     
-    await page.locator('.nav-item:has-text("Profile")').click();
+    await page.locator('.nav-item:has-text("Profile")').last().click();
     await page.getByRole('button', { name: 'Keluar Akun' }).click();
 
     // 8. Verify back to login
