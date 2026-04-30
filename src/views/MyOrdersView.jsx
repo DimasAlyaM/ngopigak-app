@@ -19,6 +19,7 @@ function MyOrdersView({ setView, setSelectedOrder }) {
         sessionDate: s.startedAt,
         payer: s.payer,
         payerId: s.payerId,
+        paymentInfo: s.paymentInfo,
         isPaid: !(s.debtors || []).some(d => (d || '').toLowerCase() === (currentUser?.username || '').toLowerCase()) && !(s.debtorIds || []).includes(currentUser?.id),
         sessionId: s.id
       });
@@ -34,6 +35,7 @@ function MyOrdersView({ setView, setSelectedOrder }) {
         sessionDate: session.startedAt,
         payer: session.payer,
         payerId: session.payerId,
+        paymentInfo: session.paymentInfo,
         isPaid: myActiveOrder.isPaid || false,
         sessionId: session.id,
         isLive: true

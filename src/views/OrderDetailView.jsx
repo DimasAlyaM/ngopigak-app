@@ -16,23 +16,30 @@ function OrderDetailView({
   setDialog,
   setPreviewProof
 }) {
-  const { currentUser } = useAppStore();
+  const { currentUser, store } = useAppStore();
   const [isUploading, setIsUploading] = useState(false);
-  const [localProof, setLocalProof] = useState(order?.paymentProof || '');
-  const [localIsPaid, setLocalIsPaid] = useState(order?.isPaid || false);
-  const [sessionInfo, setSessionInfo] = useState(null);
-
-  useEffect(() => {
-    if (!order) return;
-    const s = loadStore();
-    let sess = null;
-    if (order.sessionId === 'active' || (s.session && order.sessionId === s.session.id)) {
-      sess = s.session;
-    } else {
-      sess = s.history.find(h => h.id === order.sessionId);
+  
+  // Find the latest version of the session for this order
+  const sessionInfo = (() => {
+    if (!order) return null;
+    if (store.session && (order.sessionId === 'active' || order.sessionId === store.session.id)) {
+      return store.session;
     }
-    setSessionInfo(sess);
-  }, [order]);
+    return store.history.find(h => h.id === order.sessionId);
+  })();
+
+  // Find the latest version of the order itself
+  const currentOrder = (() => {
+    if (!order || !sessionInfo) return order;
+    return sessionInfo.orders.find(o => 
+      o.id === order.id || 
+      (o.userId === order.userId) ||
+      (o.username === order.username && o.item?.id === order.item?.id)
+    ) || order;
+  })();
+
+  const isPaid = currentOrder?.isPaid || false;
+  const proofUrl = currentOrder?.paymentProof || '';
 
   if (!order) return (
     <div className="session-container fade-in" style={{ textAlign: 'center', paddingTop: '4rem' }}>
@@ -59,7 +66,6 @@ function OrderDetailView({
       } else {
         await api.updateHistoricalOrder(order.sessionId, currentUser.id, { paymentProof: url });
       }
-      setLocalProof(url);
     } catch (err) {
       alert("Gagal upload: " + err.message);
     } finally {
@@ -68,8 +74,6 @@ function OrderDetailView({
   };
 
   const handleConfirmPay = async () => {
-    const prevPaid = localIsPaid;
-    setLocalIsPaid(true); // Optimistic
     try {
       const s = loadStore();
       if (order.sessionId === 'active' || (s.session && order.sessionId === s.session.id)) {
@@ -83,7 +87,6 @@ function OrderDetailView({
         await api.updateHistoricalOrder(order.sessionId, currentUser.id, { isPaid: true });
       }
     } catch (err) {
-      setLocalIsPaid(prevPaid); // Rollback
       alert("Gagal konfirmasi: " + err.message);
     }
   };
@@ -120,7 +123,7 @@ function OrderDetailView({
           <div style={{ display: 'flex', justifyContent: 'space-between', padding: '14px 12px', fontSize: '0.9rem', alignItems: 'center' }}>
             <span className="text-secondary font-bold">Status</span>
             {order.userId !== order.payerId ? (
-              <StatusBadge isPaid={localIsPaid} />
+              <StatusBadge isPaid={isPaid} />
             ) : (
               <span className="badge-role guest" style={{ opacity: 0.6 }}>PAYER SESI INI</span>
             )}
@@ -129,23 +132,27 @@ function OrderDetailView({
       </div>
 
       {/* Payment section */}
-      {!localIsPaid && (currentUser?.id === order.userId) && (order.userId !== order.payerId) && (
+      {!isPaid && (currentUser?.id === order.userId) && (order.userId !== order.payerId) && (
         <div className="payment-management fade-in">
-          {sessionInfo?.paymentInfo ? (
+          {(sessionInfo?.paymentInfo || order.paymentInfo) ? (
             <div className="payment-card-highlight mb-6">
               <div className="mb-6" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                 <h4 className="m-0" style={{ fontWeight: 800 }}>Info Transfer</h4>
-                <span className="badge-role payer">{sessionInfo.paymentInfo.method}</span>
+                <span className="badge-role payer">{(sessionInfo?.paymentInfo?.method || order.paymentInfo?.method)}</span>
               </div>
               <div style={{ background: 'rgba(0,0,0,0.2)', padding: '1.25rem', borderRadius: '20px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                 <div>
-                  <p style={{ fontWeight: 900, fontSize: '1.25rem', margin: 0, color: 'white' }}>{sessionInfo.paymentInfo.accountNo}</p>
-                  <p className="text-secondary" style={{ fontSize: '0.85rem', margin: '4px 0 0', fontWeight: 600 }}>{sessionInfo.paymentInfo.bankName || 'Digital Wallet'}</p>
+                  <p style={{ fontWeight: 900, fontSize: '1.25rem', margin: 0, color: 'white' }}>{(sessionInfo?.paymentInfo?.accountNo || order.paymentInfo?.accountNo)}</p>
+                  <p className="text-secondary" style={{ fontSize: '0.85rem', margin: '4px 0 0', fontWeight: 600 }}>{(sessionInfo?.paymentInfo?.bankName || order.paymentInfo?.bankName) || 'Digital Wallet'}</p>
                 </div>
                 <button 
                   className="btn-secondary" 
                   style={{ width: '44px', height: '44px', borderRadius: '12px', padding: 0, background: 'rgba(255,255,255,0.1)', border: 'none' }} 
-                  onClick={() => { navigator.clipboard.writeText(sessionInfo.paymentInfo.accountNo); alert('Disalin!'); }}
+                  onClick={() => { 
+                    const acc = (sessionInfo?.paymentInfo?.accountNo || order.paymentInfo?.accountNo);
+                    navigator.clipboard.writeText(acc); 
+                    alert('Disalin!'); 
+                  }}
                 >
                   <Copy size={20} color="white" />
                 </button>
@@ -176,19 +183,19 @@ function OrderDetailView({
             }}>
               <input type="file" accept="image/*" style={{ display: 'none' }} onChange={handleUpload} disabled={isUploading} />
               <div className="mb-3" style={{ background: 'var(--surface)', width: '64px', height: '64px', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                {isUploading ? <Loader2 size={32} className="spin text-accent" /> : localProof ? <CheckCircle size={32} style={{ color: 'var(--success)' }} /> : <Camera size={32} className="text-secondary" />}
+                {isUploading ? <Loader2 size={32} className="spin text-accent" /> : proofUrl ? <CheckCircle size={32} style={{ color: 'var(--success)' }} /> : <Camera size={32} className="text-secondary" />}
               </div>
-              <p style={{ fontSize: '0.9rem', fontWeight: 800 }}>{localProof ? 'Ganti Foto Bukti' : 'Pilih Foto Bukti'}</p>
-              {!localProof && <p className="text-secondary mt-1" style={{ fontSize: '0.75rem', fontWeight: 600 }}>Tap untuk membuka galeri/kamera</p>}
+              <p style={{ fontSize: '0.9rem', fontWeight: 800 }}>{proofUrl ? 'Ganti Foto Bukti' : 'Pilih Foto Bukti'}</p>
+              {!proofUrl && <p className="text-secondary mt-1" style={{ fontSize: '0.75rem', fontWeight: 600 }}>Tap untuk membuka galeri/kamera</p>}
             </label>
 
-            {localProof && (
+            {proofUrl && (
               <div 
                 className="mt-6 mb-6"
                 style={{ borderRadius: '20px', overflow: 'hidden', border: '1px solid var(--glass-border)', cursor: 'pointer' }}
-                onClick={() => setPreviewProof({ url: localProof, username: currentUser.username, userId: currentUser.id })}
+                onClick={() => setPreviewProof({ url: proofUrl, username: currentUser.username, userId: currentUser.id })}
               >
-                <img src={localProof} alt="Bukti" style={{ width: '100%', maxHeight: '300px', objectFit: 'cover' }} />
+                <img src={proofUrl} alt="Bukti" style={{ width: '100%', maxHeight: '300px', objectFit: 'cover' }} />
               </div>
             )}
 
@@ -196,7 +203,7 @@ function OrderDetailView({
               className="btn-primary mt-6"
               style={{ width: '100%' }}
               onClick={() => {
-                if (!localProof) {
+                if (!proofUrl) {
                   setDialog({
                     title: 'Status Cash?',
                     message: 'Belum ada bukti foto, kirim status sebagai Cash?',
@@ -216,7 +223,7 @@ function OrderDetailView({
       )}
 
       {/* Payer viewing a debtor's unpaid order */}
-      {!localIsPaid && (currentUser?.id === order.payerId) && (order.userId !== order.payerId) && (
+      {!isPaid && (currentUser?.id === order.payerId) && (order.userId !== order.payerId) && (
         <div className="payment-card-highlight text-center" style={{ textAlign: 'center', padding: '3rem 1.5rem' }}>
           <div className="mb-6" style={{ background: 'rgba(255,255,255,0.05)', width: '72px', height: '72px', borderRadius: '36px', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto' }}>
             <AlertTriangle size={36} className="text-accent" />
@@ -226,21 +233,21 @@ function OrderDetailView({
         </div>
       )}
 
-      {localIsPaid && (
+      {isPaid && (
         <div className="glass-panel fade-in" style={{ padding: '3rem 1.5rem', background: 'rgba(74, 222, 128, 0.05)', border: '1px solid rgba(74, 222, 128, 0.2)', textAlign: 'center', borderRadius: '32px' }}>
           <div className="mb-6" style={{ background: 'var(--success)', width: '72px', height: '72px', borderRadius: '36px', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto', color: 'white' }}>
             <CheckCircle size={36} />
           </div>
           <h3 className="mb-2">Pesanan Sudah Lunas</h3>
           <p className="text-secondary mb-8" style={{ fontSize: '0.95rem', lineHeight: 1.6 }}>Terima kasih sudah bayar tepat waktu! Kamu keren. ✨</p>
-          {localProof && (
+          {proofUrl && (
             <div style={{ marginTop: '2rem' }}>
               <p className="text-secondary font-bold mb-3" style={{ fontSize: '0.75rem', textTransform: 'uppercase' }}>Bukti terupload:</p>
               <div 
                 style={{ width: '120px', height: '120px', margin: '0 auto', borderRadius: '16px', overflow: 'hidden', border: '1px solid var(--glass-border)', cursor: 'pointer' }}
-                onClick={() => setPreviewProof({ url: localProof, username: order.username, userId: order.userId })}
+                onClick={() => setPreviewProof({ url: proofUrl, username: order.username, userId: order.userId })}
               >
-                <img src={localProof} alt="Proof" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                <img src={proofUrl} alt="Proof" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
               </div>
             </div>
           )}

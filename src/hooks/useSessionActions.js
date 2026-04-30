@@ -181,6 +181,14 @@ export function useSessionActions() {
         await api.incrementRoleCount(store.session.companion, 'companion');
       }
 
+      // FETCH LATEST FROM DB to avoid stale data loss (e.g. payment info)
+      const latest = await api.getSessionById(store.session.id);
+      const paymentInfo = (latest?.payment_method) ? {
+        method: latest.payment_method,
+        bankName: latest.bank_name,
+        accountNo: latest.account_no
+      } : store.session.paymentInfo;
+
       const fullSessionData = {
         id: store.session.id,
         status: 'force-closed',
@@ -192,7 +200,7 @@ export function useSessionActions() {
         payerId: store.session.payerId,
         companion: store.session.companion,
         companionId: store.session.companionId,
-        paymentInfo: store.session.paymentInfo,
+        paymentInfo: paymentInfo,
         debtors,
         debtorIds,
         orders: store.session.orders.map(o => ({
@@ -226,6 +234,9 @@ export function useSessionActions() {
 
   const checkSessionComplete = useCallback(async () => {
     if (!store.session || store.session.status !== 'active') return;
+    
+    // ONLY the Payer should finalize the session to avoid race conditions/data loss
+    if (currentUser?.id !== store.session.payerId) return;
 
     const allPaid = store.session.orders.every(o => o.isPaid || o.userId === store.session.payerId);
     if (allPaid && store.session.coffeeBought) {
@@ -236,6 +247,13 @@ export function useSessionActions() {
       const debtorIds = store.session.orders
         .filter(o => !o.isPaid && o.userId !== store.session.payerId)
         .map(o => o.userId);
+
+      const latest = await api.getSessionById(store.session.id);
+      const paymentInfo = latest?.payment_method ? {
+        method: latest.payment_method,
+        bankName: latest.bank_name,
+        accountNo: latest.account_no
+      } : store.session.paymentInfo;
 
       const fullSessionData = {
         id: store.session.id,
@@ -248,7 +266,7 @@ export function useSessionActions() {
         payerId: store.session.payerId,
         companion: store.session.companion,
         companionId: store.session.companionId,
-        paymentInfo: store.session.paymentInfo,
+        paymentInfo,
         debtors,
         debtorIds,
         orders: store.session.orders.map(o => ({

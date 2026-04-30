@@ -89,109 +89,64 @@ async function fetchFullState() {
     if (sessionsErr) console.error("Supabase Error (Sessions):", sessionsErr);
     if (ordersErr) console.error("Supabase Error (Orders):", ordersErr);
 
-    // Rebuild Menu
-    const newMenu = (menu || []).map(m => ({
-      id: m.id,
-      name: m.name,
-      price: m.price,
-      emoji: m.emoji
-    }));
-
-    // Rebuild Users from dedicated table
-    const newUsers = (users || []).map(u => ({
-      id: u.id,
-      username: u.username,
-      pin: u.pin
-    }));
-
-    // Rebuild Admin Pin
+    const newMenu = (menu || []).map(m => ({ id: m.id, name: m.name, price: m.price, emoji: m.emoji }));
+    const newUsers = (users || []).map(u => ({ id: u.id, username: u.username, pin: u.pin }));
     const adminPinRow = (settings || []).find(s => s.key === 'admin_pin');
     const newAdminPin = adminPinRow ? adminPinRow.value : null;
-    
-    // Also track names for quick-selection (extract from history if needed)
-    const userSet = new Set();
-    (payers || []).forEach(p => userSet.add(p.username.toLowerCase()));
-    (orders || []).forEach(o => userSet.add(o.username.toLowerCase()));
-    (users || []).forEach(u => userSet.add(u.username.toLowerCase()));
 
-    // If session is 'open' and older than 2 hours, force-close it
-    const SESSION_TIMEOUT_MS = 2 * 60 * 60 * 1000;
-    // Only consider sessions that are NOT completed or force-closed
+    const SESSION_TIMEOUT_MS = 12 * 60 * 60 * 1000;
     const activeCandidates = (sessions || []).filter(s => ['open', 'active', 'payment-setup'].includes(s.status));
-    const rawActive = activeCandidates.sort((a, b) => new Date(b.started_at) - new Date(a.started_at))[0];
-    
-    if (rawActive && rawActive.started_at && !sessionsBeingProcessed.has(rawActive.id)) {
-      const elapsed = Date.now() - new Date(rawActive.started_at).getTime();
-      if (elapsed > SESSION_TIMEOUT_MS && ['open', 'active', 'payment-setup'].includes(rawActive.status)) {
-        sessionsBeingProcessed.add(rawActive.id);
-        // Calculate debtors before closing
-        const sessionOrders = (orders || []).filter(o => o.session_id === rawActive.id);
-        const payerUser = rawActive.payer ? newUsers.find(u => u.username.toLowerCase() === rawActive.payer.toLowerCase()) : null;
-        const payerId = rawActive.payer_id || payerUser?.id;
 
-        const debtors = sessionOrders
-          .filter(o => !o.is_paid && o.username !== rawActive.payer)
-          .map(o => o.username);
-        
-        const debtorIds = sessionOrders
-          .filter(o => !o.is_paid && o.username !== rawActive.payer)
-          .map(o => {
+    // Auto-expire background process
+    activeCandidates.filter(s => (Date.now() - new Date(s.started_at).getTime()) > SESSION_TIMEOUT_MS)
+      .forEach(async (rawActive) => {
+        if (sessionsBeingProcessed.has(rawActive.id)) return;
+        sessionsBeingProcessed.add(rawActive.id);
+        try {
+          const sessionOrders = (orders || []).filter(o => o.session_id === rawActive.id);
+          const debtors = sessionOrders.filter(o => !o.is_paid && o.username !== rawActive.payer).map(o => o.username);
+          const debtorIds = sessionOrders.filter(o => !o.is_paid && o.username !== rawActive.payer).map(o => {
             const u = newUsers.find(nu => nu.username.toLowerCase() === o.username.toLowerCase());
             return u ? u.id : o.user_id;
           });
 
-        supabase.from('sessions').update({
-          status: 'force-closed',
-          force_closed_by: 'System (Auto-Expire)',
-          closed_at: new Date().toISOString(),
-          debtors: debtors
-        }).eq('id', rawActive.id).then(async () => {
-          const starterUser = rawActive.started_by ? newUsers.find(u => u.username.toLowerCase() === rawActive.started_by.toLowerCase()) : null;
-          const companionUser = rawActive.companion ? newUsers.find(u => u.username.toLowerCase() === rawActive.companion.toLowerCase()) : null;
-
-          // Build and save history too
           const fullSession = {
-             id: rawActive.id,
-             status: 'force-closed',
-             startedBy: rawActive.started_by,
-             startedById: rawActive.started_by_id || starterUser?.id,
-             startedAt: rawActive.started_at,
-             closedAt: new Date().toISOString(),
-             payer: rawActive.payer,
-             payerId: payerId,
-             companion: rawActive.companion,
-             companionId: rawActive.companion_id || companionUser?.id,
-             paymentInfo: rawActive.payment_method ? {
-               method: rawActive.payment_method,
-               bankName: rawActive.bank_name,
-               accountNo: rawActive.account_no
-             } : null,
-             debtors: debtors,
-             debtorIds: debtorIds,
-             orders: sessionOrders.map(o => {
-               const u = newUsers.find(nu => nu.username.toLowerCase() === o.username.toLowerCase());
-               return {
-                 username: o.username,
-                 isPaid: o.is_paid,
-                 userId: u ? u.id : o.user_id,
-                 item: { id: o.coffee_id, name: o.coffee_name, price: o.coffee_price, emoji: o.coffee_emoji || '☕' }
-               };
-             })
+            id: rawActive.id,
+            status: 'force-closed',
+            startedBy: rawActive.started_by,
+            startedAt: rawActive.started_at,
+            closedAt: new Date().toISOString(),
+            payer: rawActive.payer,
+            paymentInfo: rawActive.payment_method ? {
+              method: rawActive.payment_method,
+              bankName: rawActive.bank_name,
+              accountNo: rawActive.account_no
+            } : null,
+            debtors,
+            debtorIds,
+            orders: sessionOrders.map(o => ({
+              username: o.username,
+              isPaid: o.is_paid,
+              item: { id: o.coffee_id, name: o.coffee_name, price: o.coffee_price, emoji: '☕' }
+            }))
           };
-          await supabase.from('historic_sessions').upsert({ id: rawActive.id, data: fullSession }, { onConflict: 'id' });
-          // After moving to history, remove from active sessions table
+
+          await supabase.from('sessions').update({ status: 'force-closed', closed_at: new Date().toISOString() }).eq('id', rawActive.id);
+          await supabase.from('historic_sessions').upsert({ id: rawActive.id, data: fullSession });
           await supabase.from('sessions').delete().eq('id', rawActive.id);
+        } catch (err) {
+          console.error("Auto-expire failed:", err);
+        } finally {
           sessionsBeingProcessed.delete(rawActive.id);
-          debouncedFetchFullState();
-        });
-        useAppStore.getState().setStoreParam({ session: null });
-        return; 
-      }
-    }
+        }
+      });
+
+    // Pick the TRUE active session (most recent non-expired)
+    const activeSessionRow = activeCandidates
+      .filter(s => (Date.now() - new Date(s.started_at).getTime()) <= SESSION_TIMEOUT_MS)
+      .sort((a, b) => new Date(b.started_at) - new Date(a.started_at))[0];
 
     let newSession = null;
-    const activeSessionRow = rawActive;
-    
     if (activeSessionRow) {
       const sessionOrders = (orders || []).filter(o => o.session_id === activeSessionRow.id);
       const sessionNotifs = (notifications || []).filter(n => n.session_id === activeSessionRow.id);
@@ -220,7 +175,7 @@ async function fetchFullState() {
         coffeeBoughtAt: activeSessionRow.coffee_bought_at,
         forceClosedBy: activeSessionRow.force_closed_by,
         debtors: activeSessionRow.debtors || [],
-        debtorIds: activeSessionRow.debtors_ids || [], // Assuming it exists or mapping it manually
+        debtorIds: activeSessionRow.debtor_ids || [], 
         orders: sessionOrders.map(o => {
           const u = newUsers.find(nu => nu.username.toLowerCase() === o.username.toLowerCase());
           return {
@@ -247,7 +202,6 @@ async function fetchFullState() {
       };
     }
 
-    // Push all updates to Zustand
     useAppStore.getState().setStoreParam({
       menu: newMenu,
       users: newUsers,
@@ -318,6 +272,12 @@ export const api = {
     }
   },
 
+  getSessionById: async (sessionId) => {
+    const { data, error } = await supabase.from('sessions').select('*').eq('id', sessionId).maybeSingle();
+    if (error) throw error;
+    return data;
+  },
+
   updateSession: async (sessionId, updates) => {
     const payload = {};
     if (updates.status !== undefined) payload.status = updates.status;
@@ -332,8 +292,10 @@ export const api = {
     if (updates.coffeeBought !== undefined) payload.coffee_bought = updates.coffeeBought;
     if (updates.forceClosedBy !== undefined) payload.force_closed_by = updates.forceClosedBy;
     if (updates.debtors !== undefined) payload.debtors = updates.debtors;
+    if (updates.debtorIds !== undefined) payload.debtor_ids = updates.debtorIds;
     
-    await supabase.from('sessions').update(payload).eq('id', sessionId);
+    const { error } = await supabase.from('sessions').update(payload).eq('id', sessionId);
+    if (error) throw error;
     await debouncedFetchFullState();
   },
 
