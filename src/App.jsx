@@ -8,7 +8,8 @@ import './App.css';
 import { useAppStore } from './context/useAppStore.js';
 import { useAuth } from './hooks/useAuth.js';
 import { useSessionActions } from './hooks/useSessionActions.js';
-import { api, initSupabaseSync, refreshStore } from './store.js'; // Keep api for inner component usage if needed
+import { api, initSupabaseSync, refreshStore } from './store.js';
+import { motion, useScroll, useSpring, AnimatePresence } from 'framer-motion';
 
 // Components
 import ConfirmDialog from './components/ConfirmDialog';
@@ -119,13 +120,12 @@ export default function App() {
   const [paymentMethod, setPaymentMethod] = useState('');
   const [bankName, setBankName] = useState('');
   const [accountNo, setAccountNo] = useState('');
-  const [isSubmitting, setIsSubmitting] = useState(false); // New Loading State
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const sessionDone = store.session?.status === 'completed' || store.session?.status === 'force-closed';
 
   // Timer management
   useEffect(() => {
-    // Start Supabase sync once
     initSupabaseSync();
   }, []);
 
@@ -164,13 +164,11 @@ export default function App() {
     }
   }, [store.session?.status, location.pathname]);
 
-  // AUTO-LOGOUT AFTER 30 MINS INACTIVITY
+  // Inactivity logout
   useEffect(() => {
     if (!currentUser) return;
-
     let inactivityTimer;
-    const INACTIVITY_LIMIT = 30 * 60 * 1000; // 30 minutes
-
+    const INACTIVITY_LIMIT = 30 * 60 * 1000;
     const resetTimer = () => {
       updateActivity();
       if (inactivityTimer) clearTimeout(inactivityTimer);
@@ -179,40 +177,21 @@ export default function App() {
         alert('Sesi kamu berakhir karena tidak ada aktivitas selama 30 menit.');
       }, INACTIVITY_LIMIT);
     };
-
-    // Events to track activity
-    const activityEvents = [
-      'mousedown', 'mousemove', 'keydown', 
-      'scroll', 'touchstart', 'click'
-    ];
-
-    // Initialize timer
+    const activityEvents = ['mousedown', 'mousemove', 'keydown', 'scroll', 'touchstart', 'click'];
     resetTimer();
-
-    // Add listeners
-    activityEvents.forEach(event => {
-      document.addEventListener(event, resetTimer);
-    });
-
+    activityEvents.forEach(event => document.addEventListener(event, resetTimer));
     return () => {
       if (inactivityTimer) clearTimeout(inactivityTimer);
-      activityEvents.forEach(event => {
-        document.removeEventListener(event, resetTimer);
-      });
+      activityEvents.forEach(event => document.removeEventListener(event, resetTimer));
     };
   }, [currentUser, logout]);
 
-  // AUTO-FINALIZE WATCHER
+  // Auto-finalize
   useEffect(() => {
     if (!store.session || store.session.status !== 'active' || !currentUser) return;
     if (currentUser.id !== store.session.payerId) return;
-
-    const others = store.session.orders.filter(o =>
-      o.userId !== store.session.payerId &&
-      o.userId !== store.session.companionId
-    );
+    const others = store.session.orders.filter(o => o.userId !== store.session.payerId && o.userId !== store.session.companionId);
     const allOthersPaid = others.every(o => o.isPaid);
-
     if (allOthersPaid && store.session.coffeeBought) {
       actions.checkSessionComplete();
     }
@@ -230,7 +209,6 @@ export default function App() {
     setIsSubmitting(false);
   };
 
-  // Click outside menu block
   useEffect(() => {
     const handleClickOutside = (event) => {
       if (coffeeDropdownRef.current && !coffeeDropdownRef.current.contains(event.target)) {
@@ -241,13 +219,17 @@ export default function App() {
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
+  // Scroll progress logic
+  const { scrollYProgress } = useScroll();
+  const scaleX = useSpring(scrollYProgress, { stiffness: 100, damping: 30, restDelta: 0.001 });
+
   if (renderError) {
     return (
       <div className="empty-state" style={{ padding: '4rem 2rem' }}>
         <div className="glass-panel" style={{ maxWidth: '500px', margin: '0 auto', padding: '2rem', border: '2px solid var(--red)' }}>
           <AlertTriangle size={48} className="text-red mb-4" />
           <h2 className="text-red">Waduh, Sistem Eror!</h2>
-          <p className="text-secondary mt-2 mb-6">Terjadi masalah saat memuat data. Tenang, data ngopi kamu aman kok.</p>
+          <p className="text-secondary mt-2 mb-6">Terjadi masalah saat memuat data.</p>
           <code style={{ display: 'block', background: '#f5f5f5', padding: '1rem', borderRadius: '4px', fontSize: '0.8rem', textAlign: 'left', overflow: 'auto' }}>{renderError}</code>
           <button className="btn-primary mt-6" style={{ width: '100%' }} onClick={() => window.location.reload()}>Refresh Halaman</button>
         </div>
@@ -255,7 +237,6 @@ export default function App() {
     );
   }
 
-  // ─── VIEW: LOGIN ────────────────────────────────────────────────────────────
   if (!currentUser) {
     return (
       <div className="app-container login-mode">
@@ -290,36 +271,24 @@ export default function App() {
   if (!store || !useAppStore.getState().isInitialized) {
     return (
       <div className="app-container" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-        <div style={{ textAlign: 'center', color: 'var(--secondary-text)' }}>
-          <Coffee size={40} className="spin" style={{ marginBottom: '1rem', color: 'var(--primary-color)' }} />
+        <div style={{ textAlign: 'center', color: 'var(--text-secondary)' }}>
+          <Coffee size={40} className="spin" style={{ marginBottom: '1rem', color: 'var(--accent-primary)' }} />
           <p>Memuat Data NgopiGak...</p>
         </div>
       </div>
     );
   }
 
-  // ─── MAIN RENDER ────────────────────────────────────────────────────────────
   return (
     <div className="app-container main-app">
+      <motion.div
+        className="scroll-progress-bar"
+        style={{ scaleX, position: 'fixed', top: 0, left: 0, right: 0, height: '3px', background: 'var(--accent-primary)', transformOrigin: '0%', zIndex: 2000 }}
+      />
+
       <header className="mobile-header">
         {location.pathname !== '/' && (
-          <button 
-            className="btn-back" 
-            onClick={() => navigate(-1)} 
-            style={{ 
-              background: 'rgba(255,255,255,0.05)', 
-              border: '1px solid var(--glass-border)', 
-              borderRadius: '12px',
-              width: '40px',
-              height: '40px',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              color: 'white',
-              cursor: 'pointer',
-              marginRight: '12px'
-            }}
-          >
+          <button className="btn-back" onClick={() => navigate(-1)} style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid var(--glass-border)', borderRadius: '12px', width: '40px', height: '40px', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white', cursor: 'pointer', marginRight: '12px' }}>
             <ArrowLeft size={20} />
           </button>
         )}
@@ -328,27 +297,36 @@ export default function App() {
       </header>
 
       <main className="main-content">
-        <Routes>
-          <Route path="/" element={<HomeView timeLeft={timeLeft} onStartSession={actions.startSession} onJoinSession={async () => { await refreshStore(); navigate('/live-session'); }} onSelectSession={(s) => { setSelectedSession(s); navigate(`/history/${s.id}`); }} />} />
-          <Route path="/orders" element={<MyOrdersView setView={(v) => navigate(v === 'order-detail' ? `/order/${selectedOrder?.sessionId}` : `/${v}`)} setSelectedOrder={setSelectedOrder} />} />
-          <Route path="/live-session" element={
-            <SessionView
-              timeLeft={timeLeft} setView={(v) => navigate(`/${v}`)} setSelectedSession={(s) => { setSelectedSession(s); navigate(`/history/${s.id}`); }} setSelectedOrder={(o) => { setSelectedOrder(o); navigate(`/order/${o.sessionId}`); }}
-              setDialog={setDialog} setPreviewProof={setPreviewProof} paymentMethod={paymentMethod} setPaymentMethod={setPaymentMethod} bankName={bankName} setBankName={setBankName} accountNo={accountNo} setAccountNo={setAccountNo} coffeeSearch={coffeeSearch} setCoffeeSearch={setCoffeeSearch} showMenuResults={showMenuResults} setShowMenuResults={setShowMenuResults} coffeeDropdownRef={coffeeDropdownRef} selectedCoffeeId={selectedCoffeeId} setSelectedCoffeeId={setSelectedCoffeeId}
-              onAddOrder={async (e) => { e.preventDefault(); if (!selectedCoffeeId) { alert('Silakan pilih menu kopi dari daftar terlebih dahulu.'); return; } await actions.addOrder(selectedCoffeeId); setSelectedCoffeeId(''); setCoffeeSearch(''); }} onStartSession={actions.startSession} onConfirmBought={actions.confirmBought} onRemindAll={actions.remindAll} onMarkPaidByPayer={actions.markPaidByPayer} onForceClose={() => actions.forceClose(() => setDialog(null))} onSubmitPaymentInfo={(e) => { e.preventDefault(); actions.submitPaymentInfo(paymentMethod, bankName, accountNo).then(() => { setPaymentMethod(''); setBankName(''); setAccountNo(''); }); }} onCloseSessionNow={actions.closeSessionAndSelectRoles}
-            />
-          } />
-          <Route path="/history" element={<HistoryView onSelectSession={(s) => { setSelectedSession(s); navigate(`/history/${s.id}`); }} />} />
-          <Route path="/history/:id" element={<HistoryDetailView session={selectedSession} onBack={() => navigate('/history')} setPreviewProof={setPreviewProof} setView={(v) => navigate(v === 'order-detail' ? `/order/${selectedOrder?.sessionId}` : `/${v}`)} setSelectedOrder={setSelectedOrder} />} />
-          <Route path="/order/:id" element={<OrderDetailView order={selectedOrder} onBack={() => window.history.length > 1 ? navigate(-1) : navigate('/orders')} onPaymentConfirm={actions.checkSessionComplete} setDialog={setDialog} setPreviewProof={setPreviewProof} />} />
-          <Route path="/profile" element={<ProfileView onSave={saveProfile} onLogout={logout} />} />
-          <Route path="/notifications" element={<NotificationView onAction={actions.handleNotifAction} />} />
-          <Route path="/admin" element={!isAdminUnlocked ? <AdminPinGate onSuccess={() => setIsAdminUnlocked(true)} onClose={() => navigate('/')} /> : <AdminView onForceClose={() => actions.forceClose(() => setDialog(null))} onDeleteActiveSession={api.deleteActiveSession} onDeleteHistory={api.deleteHistory} onUpdateHistoricalOrder={api.updateHistoricalOrder} onDeleteAllNotifs={api.deleteAllNotifications} setDialog={setDialog} />} />
-          <Route path="*" element={<Navigate to="/" replace />} />
-        </Routes>
+        <AnimatePresence mode="wait">
+          <motion.div
+            key={location.pathname}
+            initial={{ opacity: 0, x: 10 }}
+            animate={{ opacity: 1, x: 0 }}
+            exit={{ opacity: 0, x: -10 }}
+            transition={{ duration: 0.3, ease: "easeInOut" }}
+          >
+            <Routes location={location}>
+              <Route path="/" element={<HomeView timeLeft={timeLeft} onStartSession={actions.startSession} onJoinSession={async () => { await refreshStore(); navigate('/live-session'); }} onSelectSession={(s) => { setSelectedSession(s); navigate(`/history/${s.id}`); }} />} />
+              <Route path="/orders" element={<MyOrdersView setView={(v) => navigate(v === 'order-detail' ? `/order/${selectedOrder?.sessionId}` : `/${v}`)} setSelectedOrder={setSelectedOrder} />} />
+              <Route path="/live-session" element={
+                <SessionView
+                  timeLeft={timeLeft} setView={(v) => navigate(`/${v}`)} setSelectedSession={(s) => { setSelectedSession(s); navigate(`/history/${s.id}`); }} setSelectedOrder={(o) => { setSelectedOrder(o); navigate(`/order/${o.sessionId}`); }}
+                  setDialog={setDialog} setPreviewProof={setPreviewProof} paymentMethod={paymentMethod} setPaymentMethod={setPaymentMethod} bankName={bankName} setBankName={setBankName} accountNo={accountNo} setAccountNo={setAccountNo} coffeeSearch={coffeeSearch} setCoffeeSearch={setCoffeeSearch} showMenuResults={showMenuResults} setShowMenuResults={setShowMenuResults} coffeeDropdownRef={coffeeDropdownRef} selectedCoffeeId={selectedCoffeeId} setSelectedCoffeeId={setSelectedCoffeeId}
+                  onAddOrder={async (e) => { e.preventDefault(); if (!selectedCoffeeId) { alert('Pilih menu kopi dulu.'); return; } await actions.addOrder(selectedCoffeeId); setSelectedCoffeeId(''); setCoffeeSearch(''); }} onStartSession={actions.startSession} onConfirmBought={actions.confirmBought} onRemindAll={actions.remindAll} onMarkPaidByPayer={actions.markPaidByPayer} onForceClose={() => actions.forceClose(() => setDialog(null))} onSubmitPaymentInfo={(e) => { e.preventDefault(); actions.submitPaymentInfo(paymentMethod, bankName, accountNo).then(() => { setPaymentMethod(''); setBankName(''); setAccountNo(''); }); }} onCloseSessionNow={actions.closeSessionAndSelectRoles}
+                />
+              } />
+              <Route path="/history" element={<HistoryView onSelectSession={(s) => { setSelectedSession(s); navigate(`/history/${s.id}`); }} />} />
+              <Route path="/history/:id" element={<HistoryDetailView session={selectedSession} onBack={() => navigate('/history')} setPreviewProof={setPreviewProof} setView={(v) => navigate(v === 'order-detail' ? `/order/${selectedOrder?.sessionId}` : `/${v}`)} setSelectedOrder={setSelectedOrder} />} />
+              <Route path="/order/:id" element={<OrderDetailView order={selectedOrder} onBack={() => window.history.length > 1 ? navigate(-1) : navigate('/orders')} onPaymentConfirm={actions.checkSessionComplete} setDialog={setDialog} setPreviewProof={setPreviewProof} />} />
+              <Route path="/profile" element={<ProfileView onSave={saveProfile} onLogout={logout} />} />
+              <Route path="/notifications" element={<NotificationView onAction={actions.handleNotifAction} />} />
+              <Route path="/admin" element={!isAdminUnlocked ? <AdminPinGate onSuccess={() => setIsAdminUnlocked(true)} onClose={() => navigate('/')} /> : <AdminView onForceClose={() => actions.forceClose(() => setDialog(null))} onDeleteActiveSession={api.deleteActiveSession} onDeleteHistory={api.deleteHistory} onUpdateHistoricalOrder={api.updateHistoricalOrder} onDeleteAllNotifs={api.deleteAllNotifications} setDialog={setDialog} />} />
+              <Route path="*" element={<Navigate to="/" replace />} />
+            </Routes>
+          </motion.div>
+        </AnimatePresence>
       </main>
 
-      {/* FAB: Start/Join Session (Visible on Home) */}
       {location.pathname === '/' && (
         <button className="fab" onClick={(!store.session || sessionDone) ? actions.startSession : async () => { await refreshStore(); navigate('/live-session'); }}>
           <PlusCircle size={32} />
@@ -357,7 +335,6 @@ export default function App() {
 
       <BottomNav />
 
-      {/* Dialogs & Modals */}
       {dialog && (
         <ConfirmDialog title={dialog.title} message={dialog.message} onConfirm={dialog.onConfirm} onCancel={() => setDialog(null)} confirmText={dialog.confirmText} danger={dialog.danger} />
       )}
