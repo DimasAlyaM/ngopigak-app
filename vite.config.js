@@ -7,8 +7,7 @@ export default defineConfig({
   plugins: [
     react(),
     VitePWA({
-      registerType: 'autoUpdate',
-      injectRegister: 'inline',
+      registerType: 'prompt',
       includeAssets: ['favicon.svg', 'apple-touch-icon.png', 'maskable-icon.png', 'manifest.json', 'screenshot-desktop.png', 'screenshot-mobile.png'],
       // We are using a static manifest in public/manifest.webmanifest
       // to ensure Vercel serves it correctly.

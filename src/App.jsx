@@ -14,6 +14,7 @@ import { motion, useScroll, useSpring, AnimatePresence } from 'framer-motion';
 // Components
 import ConfirmDialog from './components/ConfirmDialog';
 import ProofPreviewModal from './components/ProofPreviewModal';
+import UpdatePrompt from './components/UpdatePrompt';
 
 // Views
 import NotificationView from './views/NotificationView';
@@ -341,6 +342,7 @@ export default function App() {
       {previewProof && (
         <ProofPreviewModal url={previewProof.url} username={previewProof.username} onClose={() => setPreviewProof(null)} />
       )}
+      <UpdatePrompt />
     </div>
   );
 }
