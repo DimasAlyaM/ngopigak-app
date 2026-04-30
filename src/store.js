@@ -315,7 +315,9 @@ export const api = {
     const payload = {};
     if (updates.status !== undefined) payload.status = updates.status;
     if (updates.payer !== undefined) payload.payer = updates.payer;
+    if (updates.payerId !== undefined) payload.payer_id = updates.payerId;
     if (updates.companion !== undefined) payload.companion = updates.companion;
+    if (updates.companionId !== undefined) payload.companion_id = updates.companionId;
     if (updates.closedAt !== undefined) payload.closed_at = updates.closedAt;
     if (updates.paymentMethod !== undefined) payload.payment_method = updates.paymentMethod;
     if (updates.bankName !== undefined) payload.bank_name = updates.bankName;

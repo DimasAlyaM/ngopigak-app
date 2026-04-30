@@ -52,6 +52,8 @@ function SessionView({
     if (!session || !currentUser) return null;
     if (session.payerId === currentUser.id) return 'payer';
     if (session.companionId === currentUser.id) return 'companion';
+    // Fallback: match companion by username (for sessions where companionId wasn't persisted)
+    if (session.companion && currentUser.username && session.companion.toLowerCase() === currentUser.username.toLowerCase()) return 'companion';
     if (session.orders.some(o => o.userId === currentUser.id)) return 'penitip';
     return null;
   })();
@@ -334,8 +336,8 @@ function SessionView({
         <div className="mb-6" style={{ background: 'var(--bg-primary)', width: '80px', height: '80px', borderRadius: '40px', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto' }}>
           <Coffee size={40} className="text-secondary" />
         </div>
-        <h2 className="mb-2">Kamu Sedang Menonton</h2>
-        <p className="text-secondary mb-10">Tunggu sesi berikutnya untuk memesan!</p>
+        <h2 className="mb-2">Kamu Belum Pesan</h2>
+        <p className="text-secondary mb-10">Sesi sedang berjalan. Kamu bisa ikut di sesi berikutnya!</p>
         
         <div className="stat-card mb-8" style={{ textAlign: 'left' }}>
           <div className="participants-showcase" style={{ gap: '16px' }}>
