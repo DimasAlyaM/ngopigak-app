@@ -38,8 +38,25 @@ function OrderDetailView({
     ) || order;
   })();
 
-  const isPaid = currentOrder?.isPaid || false;
+  const isPaid = (() => {
+    if (!sessionInfo || !currentOrder) return currentOrder?.isPaid || false;
+    // For live sessions, trust the order's isPaid
+    if (sessionInfo.id === store.session?.id && sessionInfo.status !== 'completed' && sessionInfo.status !== 'force-closed') {
+      return currentOrder.isPaid;
+    }
+    // For historical sessions, verify against debtor lists for accuracy
+    const inDebtors = (sessionInfo.debtors || []).some(d => (d || '').toLowerCase() === (currentUser?.username || '').toLowerCase());
+    const inDebtorIds = (sessionInfo.debtorIds || []).includes(currentUser?.id);
+    return !inDebtors && !inDebtorIds;
+  })();
+
   const proofUrl = currentOrder?.paymentProof || '';
+  const rawPInfo = sessionInfo?.paymentInfo || order.paymentInfo;
+  const pInfo = rawPInfo ? {
+    method: rawPInfo.method,
+    bankName: rawPInfo.bankName,
+    accountNo: rawPInfo.accountNo || rawPInfo.account_no
+  } : null;
 
   if (!order) return (
     <div className="session-container fade-in" style={{ textAlign: 'center', paddingTop: '4rem' }}>
@@ -134,23 +151,22 @@ function OrderDetailView({
       {/* Payment section */}
       {!isPaid && (currentUser?.id === order.userId) && (order.userId !== order.payerId) && (
         <div className="payment-management fade-in">
-          {(sessionInfo?.paymentInfo || order.paymentInfo) ? (
+          {pInfo ? (
             <div className="payment-card-highlight mb-6">
               <div className="mb-6" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                 <h4 className="m-0" style={{ fontWeight: 800 }}>Info Transfer</h4>
-                <span className="badge-role payer">{(sessionInfo?.paymentInfo?.method || order.paymentInfo?.method)}</span>
+                <span className="badge-role payer">{pInfo.method}</span>
               </div>
               <div style={{ background: 'rgba(0,0,0,0.2)', padding: '1.25rem', borderRadius: '20px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                 <div>
-                  <p style={{ fontWeight: 900, fontSize: '1.25rem', margin: 0, color: 'white' }}>{(sessionInfo?.paymentInfo?.accountNo || order.paymentInfo?.accountNo)}</p>
-                  <p className="text-secondary" style={{ fontSize: '0.85rem', margin: '4px 0 0', fontWeight: 600 }}>{(sessionInfo?.paymentInfo?.bankName || order.paymentInfo?.bankName) || 'Digital Wallet'}</p>
+                  <p style={{ fontWeight: 900, fontSize: '1.25rem', margin: 0, color: 'white' }}>{pInfo.accountNo}</p>
+                  <p className="text-secondary" style={{ fontSize: '0.85rem', margin: '4px 0 0', fontWeight: 600 }}>{pInfo.bankName || 'Digital Wallet'}</p>
                 </div>
                 <button 
                   className="btn-secondary" 
                   style={{ width: '44px', height: '44px', borderRadius: '12px', padding: 0, background: 'rgba(255,255,255,0.1)', border: 'none' }} 
                   onClick={() => { 
-                    const acc = (sessionInfo?.paymentInfo?.accountNo || order.paymentInfo?.accountNo);
-                    navigator.clipboard.writeText(acc); 
+                    navigator.clipboard.writeText(pInfo.accountNo); 
                     alert('Disalin!'); 
                   }}
                 >

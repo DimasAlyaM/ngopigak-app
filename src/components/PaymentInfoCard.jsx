@@ -51,14 +51,15 @@ function PaymentInfoCard({ info, payer, companion }) {
         <div style={{ background: 'rgba(0,0,0,0.3)', padding: '1.25rem', borderRadius: '20px', border: '1px solid rgba(255,255,255,0.05)' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
             <div>
-              <p style={{ fontWeight: 900, fontSize: '1.4rem', letterSpacing: '2px', margin: 0, color: 'white' }}>{info.accountNo}</p>
+              <p style={{ fontWeight: 900, fontSize: '1.4rem', letterSpacing: '2px', margin: 0, color: 'white' }}>{info.accountNo || info.account_no}</p>
               <p className="text-secondary" style={{ fontSize: '0.85rem', fontWeight: 600, marginTop: '4px' }}>{info.bankName || 'Digital Wallet'}</p>
             </div>
             <button 
               className="btn-primary-pill" 
               style={{ padding: '0 16px', height: '36px', width: 'auto', fontSize: '0.75rem', borderRadius: '14px' }}
               onClick={() => {
-                navigator.clipboard.writeText(info.accountNo);
+                const acNo = info.accountNo || info.account_no;
+                navigator.clipboard.writeText(acNo);
                 alert('Nomor disalin!');
               }}
             >

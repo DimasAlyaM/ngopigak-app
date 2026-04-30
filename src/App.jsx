@@ -1,4 +1,4 @@
-﻿import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Routes, Route, useNavigate, useLocation, Navigate } from 'react-router-dom';
 import { Bell, Coffee, Clock, History, PlusCircle, Shield, User, Home, AlertTriangle, ArrowLeft } from 'lucide-react';
 import confetti from 'canvas-confetti';
@@ -28,7 +28,7 @@ import HomeView from './views/HomeView';
 import MyOrdersView from './views/MyOrdersView';
 import SessionView from './views/SessionView';
 
-// â”€â”€â”€ BOTTOM NAVIGATION COMPONENT â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ─── BOTTOM NAVIGATION COMPONENT ───
 const BottomNav = () => {
   const navigate = useNavigate();
   const location = useLocation();
@@ -95,7 +95,7 @@ const BottomNav = () => {
   );
 };
 
-// â”€â”€â”€ MAIN APP â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ─── MAIN APP ───
 export default function App() {
   const { store, currentUser, selectedSession, selectedOrder, setSelectedSession, setSelectedOrder, updateActivity } = useAppStore();
   const { login, logout, saveProfile } = useAuth();
@@ -262,7 +262,7 @@ export default function App() {
                 {isSubmitting ? 'Loading...' : 'Masuk Sekarang'}
               </button>
             </form>
-            <div className="login-footer">Dimsam â€¢ 2026</div>
+            <div className="login-footer">Dimsam • 2026</div>
           </div>
         </div>
       </div>

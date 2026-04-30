@@ -183,11 +183,13 @@ export function useSessionActions() {
 
       // FETCH LATEST FROM DB to avoid stale data loss (e.g. payment info)
       const latest = await api.getSessionById(store.session.id);
+      
+      // Prioritize database info, then current store info, then fallback
       const paymentInfo = (latest?.payment_method) ? {
         method: latest.payment_method,
         bankName: latest.bank_name,
         accountNo: latest.account_no
-      } : store.session.paymentInfo;
+      } : (store.session.paymentInfo || null);
 
       const fullSessionData = {
         id: store.session.id,

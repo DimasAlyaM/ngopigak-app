@@ -95,7 +95,7 @@ async function fetchFullState() {
     const newAdminPin = adminPinRow ? adminPinRow.value : null;
 
     const SESSION_TIMEOUT_MS = 12 * 60 * 60 * 1000;
-    const activeCandidates = (sessions || []).filter(s => ['open', 'active', 'payment-setup'].includes(s.status));
+    const activeCandidates = (sessions || []).filter(s => ['open', 'active', 'payment-setup', 'bought', 'completed'].includes(s.status));
 
     // Auto-expire background process
     activeCandidates.filter(s => (Date.now() - new Date(s.started_at).getTime()) > SESSION_TIMEOUT_MS)
@@ -114,9 +114,13 @@ async function fetchFullState() {
             id: rawActive.id,
             status: 'force-closed',
             startedBy: rawActive.started_by,
+            startedById: rawActive.started_by_id,
             startedAt: rawActive.started_at,
             closedAt: new Date().toISOString(),
             payer: rawActive.payer,
+            payerId: rawActive.payer_id,
+            companion: rawActive.companion,
+            companionId: rawActive.companion_id,
             paymentInfo: rawActive.payment_method ? {
               method: rawActive.payment_method,
               bankName: rawActive.bank_name,
@@ -126,6 +130,7 @@ async function fetchFullState() {
             debtorIds,
             orders: sessionOrders.map(o => ({
               username: o.username,
+              userId: o.user_id,
               isPaid: o.is_paid,
               item: { id: o.coffee_id, name: o.coffee_name, price: o.coffee_price, emoji: '☕' }
             }))

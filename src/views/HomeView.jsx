@@ -1,4 +1,4 @@
-﻿import { useAppStore } from "../context/useAppStore.js";
+import { useAppStore } from "../context/useAppStore.js";
 import { Coffee, Clock, Users, Shield, Sparkles } from 'lucide-react';
 import UserAvatar from '../components/UserAvatar';
 import { formatTime } from '../utils/formatters.js';
@@ -39,7 +39,7 @@ function HomeView({ timeLeft, onStartSession, onJoinSession, onSelectSession, se
           className="welcome-section mb-6"
         >
           <p className="text-secondary" style={{ fontSize: '0.9rem', fontWeight: 600 }}>Selamat Pagi,</p>
-          <h2 style={{ fontSize: '2.5rem', lineHeight: 1.1 }}>{currentUser?.username}! ðŸ‘‹</h2>
+          <h2 style={{ fontSize: '2.5rem', lineHeight: 1.1 }}>{currentUser?.username}! 👋</h2>
         </Motion.div>
 
         {/* Dynamic Session Section */}
@@ -47,10 +47,10 @@ function HomeView({ timeLeft, onStartSession, onJoinSession, onSelectSession, se
           <AnimatedSection className="live-dashboard">
             <div className="live-indicator">
               <div className="pulsing-dot"></div>
-              <span>{sessionDone ? 'SESI BERAKHIR' : `LIVE SESI â€¢ ${session.status === 'open' ? formatTime(timeLeft) : 'Payment Ready'}`}</span>
+              <span>{sessionDone ? 'SESI BERAKHIR' : `LIVE SESI • ${session.status === 'open' ? formatTime(timeLeft) : 'Payment Ready'}`}</span>
             </div>
 
-            <h3 className="mb-4" style={{ fontSize: '1.25rem' }}>{sessionDone ? 'Ringkasan Sesi Hari Ini â˜•' : 'Ditunggu kopinya! â˜•'}</h3>
+            <h3 className="mb-4" style={{ fontSize: '1.25rem' }}>{sessionDone ? 'Ringkasan Sesi Hari Ini ☕' : 'Ditunggu kopinya! ☕'}</h3>
 
             <div className="participants-grid mb-4" style={{ display: 'grid', gridTemplateColumns: session.companion ? '1fr 1fr' : '1fr', gap: '16px' }}>
               <div className="participant-card" style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
