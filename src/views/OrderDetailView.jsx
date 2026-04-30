@@ -55,7 +55,7 @@ function OrderDetailView({
   const pInfo = (rawPInfo && (rawPInfo.method || rawPInfo.payment_method || rawPInfo.paymentMethod)) ? {
     method: rawPInfo.method || rawPInfo.payment_method || rawPInfo.paymentMethod,
     bankName: rawPInfo.bankName || rawPInfo.bank_name,
-    accountNo: rawPInfo.accountNo || rawPInfo.account_no || rawPInfo.accountNo
+    accountNo: rawPInfo.accountNo || rawPInfo.account_no || rawPInfo.accountNumber || rawPInfo.account_number
   } : null;
 
   if (!order) return (

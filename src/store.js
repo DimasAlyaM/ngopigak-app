@@ -123,6 +123,7 @@ async function fetchFullState() {
             companionId: rawActive.companion_id,
             paymentInfo: (rawActive.payment_method !== null && rawActive.payment_method !== undefined) ? {
               method: rawActive.payment_method,
+              paymentMethod: rawActive.payment_method,
               bankName: rawActive.bank_name,
               accountNo: rawActive.account_no
             } : null,
@@ -173,6 +174,7 @@ async function fetchFullState() {
         companionId: activeSessionRow.companion_id || companionUser?.id,
         paymentInfo: (activeSessionRow.payment_method !== null && activeSessionRow.payment_method !== undefined) ? {
           method: activeSessionRow.payment_method,
+          paymentMethod: activeSessionRow.payment_method,
           bankName: activeSessionRow.bank_name,
           accountNo: activeSessionRow.account_no
         } : null,

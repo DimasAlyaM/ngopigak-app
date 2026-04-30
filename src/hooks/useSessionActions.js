@@ -187,6 +187,7 @@ export function useSessionActions() {
       // Prioritize database info, then current store info, then fallback
       const paymentInfo = (latest?.payment_method !== null && latest?.payment_method !== undefined) ? {
         method: latest.payment_method,
+        paymentMethod: latest.payment_method,
         bankName: latest.bank_name,
         accountNo: latest.account_no
       } : (store.session.paymentInfo || null);
