@@ -185,7 +185,7 @@ export function useSessionActions() {
       const latest = await api.getSessionById(store.session.id);
       
       // Prioritize database info, then current store info, then fallback
-      const paymentInfo = (latest?.payment_method) ? {
+      const paymentInfo = (latest?.payment_method !== null && latest?.payment_method !== undefined) ? {
         method: latest.payment_method,
         bankName: latest.bank_name,
         accountNo: latest.account_no
@@ -251,7 +251,7 @@ export function useSessionActions() {
         .map(o => o.userId);
 
       const latest = await api.getSessionById(store.session.id);
-      const paymentInfo = latest?.payment_method ? {
+      const paymentInfo = (latest?.payment_method !== null && latest?.payment_method !== undefined) ? {
         method: latest.payment_method,
         bankName: latest.bank_name,
         accountNo: latest.account_no

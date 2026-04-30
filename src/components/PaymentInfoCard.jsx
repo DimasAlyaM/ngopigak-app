@@ -44,15 +44,15 @@ function PaymentInfoCard({ info, payer, companion }) {
             color: 'white',
             boxShadow: '0 4px 12px rgba(230, 145, 56, 0.3)'
           }}>
-            {info.method}
+            {info.method || info.payment_method || info.paymentMethod}
           </div>
         </div>
 
         <div style={{ background: 'rgba(0,0,0,0.3)', padding: '1.25rem', borderRadius: '20px', border: '1px solid rgba(255,255,255,0.05)' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
             <div>
-              <p style={{ fontWeight: 900, fontSize: '1.4rem', letterSpacing: '2px', margin: 0, color: 'white' }}>{info.accountNo || info.account_no}</p>
-              <p className="text-secondary" style={{ fontSize: '0.85rem', fontWeight: 600, marginTop: '4px' }}>{info.bankName || 'Digital Wallet'}</p>
+              <p style={{ fontWeight: 900, fontSize: '1.4rem', letterSpacing: '2px', margin: 0, color: 'white' }}>{info.accountNo || info.account_no || info.accountNumber}</p>
+              <p className="text-secondary" style={{ fontSize: '0.85rem', fontWeight: 600, marginTop: '4px' }}>{info.bankName || info.bank_name || 'Digital Wallet'}</p>
             </div>
             <button 
               className="btn-primary-pill" 

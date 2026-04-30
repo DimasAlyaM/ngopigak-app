@@ -52,10 +52,10 @@ function OrderDetailView({
 
   const proofUrl = currentOrder?.paymentProof || '';
   const rawPInfo = sessionInfo?.paymentInfo || order.paymentInfo;
-  const pInfo = rawPInfo ? {
-    method: rawPInfo.method,
-    bankName: rawPInfo.bankName,
-    accountNo: rawPInfo.accountNo || rawPInfo.account_no
+  const pInfo = (rawPInfo && (rawPInfo.method || rawPInfo.payment_method || rawPInfo.paymentMethod)) ? {
+    method: rawPInfo.method || rawPInfo.payment_method || rawPInfo.paymentMethod,
+    bankName: rawPInfo.bankName || rawPInfo.bank_name,
+    accountNo: rawPInfo.accountNo || rawPInfo.account_no || rawPInfo.accountNo
   } : null;
 
   if (!order) return (
@@ -176,7 +176,12 @@ function OrderDetailView({
             </div>
           ) : (
             <div className="glass-panel mb-6" style={{ textAlign: 'center', padding: '1.5rem' }}>
-              <p className="text-secondary font-bold" style={{ fontSize: '0.9rem' }}>Menunggu info pembayaran dari <strong>{order.payer}</strong>...</p>
+              <p className="text-secondary font-bold" style={{ fontSize: '0.9rem' }}>
+                {sessionInfo?.status === 'payment-setup' 
+                  ? `Menunggu info pembayaran dari ${order.payer}...` 
+                  : `Info pembayaran belum tersedia (Sesi: ${sessionInfo?.status || 'Unknown'})`
+                }
+              </p>
             </div>
           )}
 
