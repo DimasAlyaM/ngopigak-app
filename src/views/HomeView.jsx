@@ -1,8 +1,8 @@
-import { useAppStore } from "../context/useAppStore.js";
+﻿import { useAppStore } from "../context/useAppStore.js";
 import { Coffee, Clock, Users, Shield, Sparkles } from 'lucide-react';
 import UserAvatar from '../components/UserAvatar';
 import { formatTime } from '../utils/formatters.js';
-import { motion, useScroll, useTransform } from 'framer-motion';
+import { motion as Motion, useScroll, useTransform } from 'framer-motion';
 import { AnimatedSection } from '../components/AnimatedSection';
 
 function HomeView({ timeLeft, onStartSession, onJoinSession, onSelectSession, setSelectedSession }) {
@@ -20,37 +20,37 @@ function HomeView({ timeLeft, onStartSession, onJoinSession, onSelectSession, se
   return (
     <div className="home-view" style={{ position: 'relative', overflow: 'hidden' }}>
       {/* Parallax Background Elements */}
-      <motion.div 
+      <Motion.div 
         style={{ y: y1, rotate, position: 'absolute', top: '10%', right: '-20px', opacity: 0.1, zIndex: 0 }}
       >
         <Coffee size={120} />
-      </motion.div>
-      <motion.div 
+      </Motion.div>
+      <Motion.div 
         style={{ y: y2, position: 'absolute', top: '40%', left: '-30px', opacity: 0.05, zIndex: 0 }}
       >
         <Sparkles size={80} />
-      </motion.div>
+      </Motion.div>
 
       <div style={{ position: 'relative', zIndex: 1 }}>
-        <motion.div 
+        <Motion.div 
           initial={{ opacity: 0, x: -20 }}
           animate={{ opacity: 1, x: 0 }}
           transition={{ duration: 0.8, ease: "out" }}
           className="welcome-section mb-6"
         >
           <p className="text-secondary" style={{ fontSize: '0.9rem', fontWeight: 600 }}>Selamat Pagi,</p>
-          <h2 style={{ fontSize: '2.5rem', lineHeight: 1.1 }}>{currentUser?.username}! 👋</h2>
-        </motion.div>
+          <h2 style={{ fontSize: '2.5rem', lineHeight: 1.1 }}>{currentUser?.username}! ðŸ‘‹</h2>
+        </Motion.div>
 
         {/* Dynamic Session Section */}
         {session && (session.status === 'open' || session.status === 'active' || session.status === 'payment-setup') ? (
           <AnimatedSection className="live-dashboard">
             <div className="live-indicator">
               <div className="pulsing-dot"></div>
-              <span>{sessionDone ? 'SESI BERAKHIR' : `LIVE SESI • ${session.status === 'open' ? formatTime(timeLeft) : 'Payment Ready'}`}</span>
+              <span>{sessionDone ? 'SESI BERAKHIR' : `LIVE SESI â€¢ ${session.status === 'open' ? formatTime(timeLeft) : 'Payment Ready'}`}</span>
             </div>
 
-            <h3 className="mb-4" style={{ fontSize: '1.25rem' }}>{sessionDone ? 'Ringkasan Sesi Hari Ini ☕' : 'Ditunggu kopinya! ☕'}</h3>
+            <h3 className="mb-4" style={{ fontSize: '1.25rem' }}>{sessionDone ? 'Ringkasan Sesi Hari Ini â˜•' : 'Ditunggu kopinya! â˜•'}</h3>
 
             <div className="participants-grid mb-4" style={{ display: 'grid', gridTemplateColumns: session.companion ? '1fr 1fr' : '1fr', gap: '16px' }}>
               <div className="participant-card" style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
@@ -87,7 +87,7 @@ function HomeView({ timeLeft, onStartSession, onJoinSession, onSelectSession, se
                 <Users size={18} className="text-secondary" />
                 <span style={{ fontSize: '0.9rem', fontWeight: 700 }}>{session.orders?.length || 0} Peserta</span>
               </div>
-              <motion.button
+              <Motion.button
                 whileTap={{ scale: 0.95 }}
                 className="btn-primary"
                 style={{ width: 'auto', padding: '0.5rem 1.25rem', height: '42px', fontSize: '0.85rem' }}
@@ -101,19 +101,19 @@ function HomeView({ timeLeft, onStartSession, onJoinSession, onSelectSession, se
                 }}
               >
                 {sessionDone ? 'Lihat Detail' : (session.status === 'open' ? 'Join Sesi' : 'Lihat Sesi')}
-              </motion.button>
+              </Motion.button>
             </div>
           </AnimatedSection>
         ) : (
           <AnimatedSection className="home-banner">
-            <motion.div
+            <Motion.div
               initial={{ scale: 0.9, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
               transition={{ duration: 0.8, delay: 0.2 }}
             >
               <h3 style={{ fontSize: '1.6rem', marginBottom: '12px' }}>Siap untuk secangkir kopi?</h3>
               <p style={{ fontSize: '0.95rem', opacity: 0.9, marginBottom: '2rem', fontWeight: 500 }}>Mulai sesi bareng teman-teman sekarang dan bagikan momen seru.</p>
-              <motion.button
+              <Motion.button
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
                 className="btn-primary"
@@ -121,8 +121,8 @@ function HomeView({ timeLeft, onStartSession, onJoinSession, onSelectSession, se
                 onClick={onStartSession}
               >
                 Mulai Sesi Baru
-              </motion.button>
-            </motion.div>
+              </Motion.button>
+            </Motion.div>
           </AnimatedSection>
         )}
 

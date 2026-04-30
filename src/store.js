@@ -161,6 +161,11 @@ async function fetchFullState() {
              payerId: payerId,
              companion: rawActive.companion,
              companionId: rawActive.companion_id || companionUser?.id,
+             paymentInfo: rawActive.payment_method ? {
+               method: rawActive.payment_method,
+               bankName: rawActive.bank_name,
+               accountNo: rawActive.account_no
+             } : null,
              debtors: debtors,
              debtorIds: debtorIds,
              orders: sessionOrders.map(o => {
@@ -267,7 +272,9 @@ export const api = {
       const { error } = await supabase.from('sessions').insert({
         id,
         status: 'open',
-        started_by: userObj.username
+        started_by: userObj.username,
+        started_by_id: userObj.id,
+        started_at: new Date().toISOString()
       });
       if (error) throw error;
       debouncedFetchFullState();

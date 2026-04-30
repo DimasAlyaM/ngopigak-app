@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+﻿import { useState, useEffect, useRef } from 'react';
 import { Routes, Route, useNavigate, useLocation, Navigate } from 'react-router-dom';
 import { Bell, Coffee, Clock, History, PlusCircle, Shield, User, Home, AlertTriangle, ArrowLeft } from 'lucide-react';
 import confetti from 'canvas-confetti';
@@ -9,7 +9,7 @@ import { useAppStore } from './context/useAppStore.js';
 import { useAuth } from './hooks/useAuth.js';
 import { useSessionActions } from './hooks/useSessionActions.js';
 import { api, initSupabaseSync, refreshStore } from './store.js';
-import { motion, useScroll, useSpring, AnimatePresence } from 'framer-motion';
+import { motion as Motion, useScroll, useSpring, AnimatePresence } from 'framer-motion';
 
 // Components
 import ConfirmDialog from './components/ConfirmDialog';
@@ -28,7 +28,7 @@ import HomeView from './views/HomeView';
 import MyOrdersView from './views/MyOrdersView';
 import SessionView from './views/SessionView';
 
-// ─── BOTTOM NAVIGATION COMPONENT ───────────────────────────────────────────
+// â”€â”€â”€ BOTTOM NAVIGATION COMPONENT â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 const BottomNav = () => {
   const navigate = useNavigate();
   const location = useLocation();
@@ -95,7 +95,7 @@ const BottomNav = () => {
   );
 };
 
-// ─── MAIN APP ─────────────────────────────────────────────────────────────────
+// â”€â”€â”€ MAIN APP â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 export default function App() {
   const { store, currentUser, selectedSession, selectedOrder, setSelectedSession, setSelectedOrder, updateActivity } = useAppStore();
   const { login, logout, saveProfile } = useAuth();
@@ -156,7 +156,7 @@ export default function App() {
       clearInterval(timerRef.current);
     }
     return () => clearInterval(timerRef.current);
-  }, [store.session?.status, store.session?.id, actions]);
+  }, [store.session, actions]);
 
   // Confetti celebration
   useEffect(() => {
@@ -185,7 +185,7 @@ export default function App() {
       if (inactivityTimer) clearTimeout(inactivityTimer);
       activityEvents.forEach(event => document.removeEventListener(event, resetTimer));
     };
-  }, [currentUser, logout]);
+  }, [currentUser, logout, updateActivity]);
 
   // Auto-finalize
   useEffect(() => {
@@ -262,7 +262,7 @@ export default function App() {
                 {isSubmitting ? 'Loading...' : 'Masuk Sekarang'}
               </button>
             </form>
-            <div className="login-footer">Dimsam • 2026</div>
+            <div className="login-footer">Dimsam â€¢ 2026</div>
           </div>
         </div>
       </div>
@@ -282,7 +282,7 @@ export default function App() {
 
   return (
     <div className="app-container main-app">
-      <motion.div
+      <Motion.div
         className="scroll-progress-bar"
         style={{ scaleX, position: 'fixed', top: 0, left: 0, right: 0, height: '3px', background: 'var(--accent-primary)', transformOrigin: '0%', zIndex: 2000 }}
       />
@@ -299,7 +299,7 @@ export default function App() {
 
       <main className="main-content">
         <AnimatePresence mode="wait">
-          <motion.div
+          <Motion.div
             key={location.pathname}
             initial={{ opacity: 0, x: 10 }}
             animate={{ opacity: 1, x: 0 }}
@@ -324,7 +324,7 @@ export default function App() {
               <Route path="/admin" element={!isAdminUnlocked ? <AdminPinGate onSuccess={() => setIsAdminUnlocked(true)} onClose={() => navigate('/')} /> : <AdminView onForceClose={() => actions.forceClose(() => setDialog(null))} onDeleteActiveSession={api.deleteActiveSession} onDeleteHistory={api.deleteHistory} onUpdateHistoricalOrder={api.updateHistoricalOrder} onDeleteAllNotifs={api.deleteAllNotifications} setDialog={setDialog} />} />
               <Route path="*" element={<Navigate to="/" replace />} />
             </Routes>
-          </motion.div>
+          </Motion.div>
         </AnimatePresence>
       </main>
 

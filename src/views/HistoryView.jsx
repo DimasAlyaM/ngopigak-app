@@ -1,6 +1,6 @@
 import { useAppStore } from "../context/useAppStore.js";
 import { History as HistoryIcon, Calendar, Clock, ChevronRight } from 'lucide-react';
-import { formatRp, formatDate } from '../utils/formatters.js';
+import { formatRp } from '../utils/formatters.js';
 
 /**
  * HistoryView Component
@@ -64,7 +64,15 @@ function HistoryView({ onSelectSession }) {
                   <div style={{ textAlign: 'right', display: 'flex', alignItems: 'center', gap: '12px' }}>
                     <div>
                       <p className="history-total">{formatRp(total)}</p>
-                      <p style={{ fontSize: '0.65rem', fontWeight: 800, color: 'var(--success)', textTransform: 'uppercase', marginTop: '2px' }}>Selesai</p>
+                      <p style={{ 
+                        fontSize: '0.65rem', 
+                        fontWeight: 800, 
+                        color: h.status === 'force-closed' ? 'var(--danger)' : 'var(--success)', 
+                        textTransform: 'uppercase', 
+                        marginTop: '2px' 
+                      }}>
+                        {h.status === 'force-closed' ? 'Ditutup' : 'Selesai'}
+                      </p>
                     </div>
                     <ChevronRight size={18} className="text-secondary" style={{ opacity: 0.3 }} />
                   </div>

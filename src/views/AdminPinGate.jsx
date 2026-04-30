@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Lock, Shield, ArrowLeft } from 'lucide-react';
 import { useAppStore } from "../context/useAppStore.js";
 import { api } from "../store.js";
@@ -41,7 +41,7 @@ function AdminPinGate({ onSuccess, onClose }) {
     }
   };
 
-  const handleSubmit = () => {
+  const handleSubmit = useCallback(() => {
     const currentPin = isConfirming ? confirmPin : pin;
     
     if (currentPin.length < 4) {
@@ -76,14 +76,17 @@ function AdminPinGate({ onSuccess, onClose }) {
       }
       onSuccess();
     }
-  };
+  }, [confirmPin, isConfirming, isFirstTime, pin, serverPin, onSuccess]);
 
   // Auto-submit for login if length matches
   useEffect(() => {
     if (!isFirstTime && serverPin && pin.length === serverPin.length) {
-      handleSubmit();
+      const timer = setTimeout(() => {
+        handleSubmit();
+      }, 50);
+      return () => clearTimeout(timer);
     }
-  }, [pin]);
+  }, [pin, isFirstTime, serverPin, handleSubmit]);
 
   const displayLength = isConfirming ? confirmPin.length : pin.length;
   const dotsCount = isFirstTime ? 4 : (serverPin?.length || 4);
@@ -106,6 +109,21 @@ function AdminPinGate({ onSuccess, onClose }) {
             ? (isConfirming ? 'Masukkan PIN sekali lagi untuk memastikan.' : 'Lindungi akses manajemen dengan PIN baru.')
             : 'Gunakan PIN admin untuk membuka Control Center.'}
         </p>
+
+        {/* Hidden input for E2E and Accessibility */}
+        <input
+          type="password"
+          inputMode="numeric"
+          value={isConfirming ? confirmPin : pin}
+          onChange={(e) => {
+            const val = e.target.value.replace(/\D/g, '').slice(0, 8);
+            if (isConfirming) setConfirmPin(val);
+            else setPin(val);
+          }}
+          style={{ opacity: 0, height: 0, width: 0, position: 'absolute' }}
+          placeholder="PIN"
+          autoFocus
+        />
 
         {/* PIN Indicators */}
         <div className="pin-display">

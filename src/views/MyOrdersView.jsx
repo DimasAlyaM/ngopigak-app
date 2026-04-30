@@ -41,7 +41,7 @@ function MyOrdersView({ setView, setSelectedOrder }) {
     }
   }
 
-  const sortedOrders = [...allPersonalOrders].reverse();
+  const sortedOrders = [...allPersonalOrders].sort((a, b) => new Date(b.sessionDate) - new Date(a.sessionDate));
 
   return (
     <div className="orders-view fade-in session-container">

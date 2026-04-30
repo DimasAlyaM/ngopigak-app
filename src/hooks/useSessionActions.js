@@ -66,7 +66,7 @@ export function useSessionActions() {
       api.notify(store.session.id, p, 'info', `Sesi ditutup! Pembayar: ${payerObj?.username} | Pendamping: ${companionObj?.username || '-'}`);
     });
     api.notify(store.session.id, payerId, 'info', `Kamu terpilih sebagai Pembayar! Silakan lengkapi info pembayaran.`);
-  }, [store, api]);
+  }, [store]);
 
   const addOrder = async (selectedCoffeeId) => {
     if (!selectedCoffeeId || !currentUser) return;
@@ -105,9 +105,9 @@ export function useSessionActions() {
       bankName: paymentMethod === 'BANK' ? bankName : null,
       accountNo: accountNo
     });
-    await api.incrementRoleCount(payerId, 'pay');
+    await api.incrementRoleCount(store.session.payer, 'pay');
     if (store.session.companionId) {
-      await api.incrementRoleCount(store.session.companionId, 'companion');
+      await api.incrementRoleCount(store.session.companion, 'companion');
     }
 
     store.session.orders.forEach(o => {
@@ -176,9 +176,9 @@ export function useSessionActions() {
         .filter(o => !o.isPaid && o.userId !== store.session.payerId)
         .map(o => o.userId);
 
-      if (store.session.payerId) await api.incrementRoleCount(store.session.payerId, 'pay');
-      if (store.session.companionId) {
-        await api.incrementRoleCount(store.session.companionId, 'companion');
+      if (store.session.payer) await api.incrementRoleCount(store.session.payer, 'pay');
+      if (store.session.companion) {
+        await api.incrementRoleCount(store.session.companion, 'companion');
       }
 
       const fullSessionData = {
@@ -192,6 +192,7 @@ export function useSessionActions() {
         payerId: store.session.payerId,
         companion: store.session.companion,
         companionId: store.session.companionId,
+        paymentInfo: store.session.paymentInfo,
         debtors,
         debtorIds,
         orders: store.session.orders.map(o => ({
@@ -247,6 +248,7 @@ export function useSessionActions() {
         payerId: store.session.payerId,
         companion: store.session.companion,
         companionId: store.session.companionId,
+        paymentInfo: store.session.paymentInfo,
         debtors,
         debtorIds,
         orders: store.session.orders.map(o => ({
@@ -259,17 +261,18 @@ export function useSessionActions() {
       };
 
       await api.saveHistory(store.session.id, fullSessionData);
-      await api.updateSession(store.session.id, { 
-        status: 'completed', 
-        closedAt: new Date().toISOString(),
-        debtors,
-        debtorIds
+      
+      // Notify all
+      store.session.orders.forEach(o => {
+        api.notify(store.session.id, o.userId, 'info', `Sesi selesai! Semua tagihan lunas. ✨`);
       });
+
+      await api.deleteActiveSession(store.session.id);
       
       setActiveMenu(null);
       navigate('/');
     }
-  }, [store, api, navigate, setActiveMenu]);
+  }, [store, navigate, setActiveMenu]);
 
   const handleNotifAction = (n) => {
     const targetSessionId = n.sessionId || n.session_id;

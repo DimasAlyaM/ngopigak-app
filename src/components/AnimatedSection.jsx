@@ -1,8 +1,8 @@
-import { motion } from 'framer-motion';
+﻿import { motion as Motion } from 'framer-motion';
 
 export const AnimatedSection = ({ children, className, delay = 0 }) => {
   return (
-    <motion.div
+    <Motion.div
       initial={{ opacity: 0, y: 20 }}
       whileInView={{ opacity: 1, y: 0 }}
       viewport={{ once: true, margin: "-100px" }}
@@ -14,13 +14,13 @@ export const AnimatedSection = ({ children, className, delay = 0 }) => {
       className={className}
     >
       {children}
-    </motion.div>
+    </Motion.div>
   );
 };
 
 export const ParallaxElement = ({ children, speed = 0.5, className }) => {
   return (
-    <motion.div
+    <Motion.div
       style={{ y: 0 }}
       animate={{ y: [0, speed * 20, 0] }}
       transition={{ 
@@ -31,6 +31,6 @@ export const ParallaxElement = ({ children, speed = 0.5, className }) => {
       className={className}
     >
       {children}
-    </motion.div>
+    </Motion.div>
   );
 };
