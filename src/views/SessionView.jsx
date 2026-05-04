@@ -304,6 +304,9 @@ function SessionView({
               <p className="text-accent" style={{ fontSize: '1.75rem', fontWeight: 800 }}>{formatRp(myOrder?.item?.price || 0)}</p>
             </div>
           </div>
+        </div>
+
+        <div className="mb-6">
           <PaymentInfoCard info={session.paymentInfo} payer={session.payer} companion={session.companion} />
         </div>
 
