@@ -187,8 +187,11 @@ async function fetchFullState() {
         coffeeBought: activeSessionRow.coffee_bought,
         coffeeBoughtAt: activeSessionRow.coffee_bought_at,
         forceClosedBy: activeSessionRow.force_closed_by,
-        debtors: activeSessionRow.debtors || [],
-        debtorIds: activeSessionRow.debtor_ids || [], 
+        debtors: sessionOrders.filter(o => !o.is_paid && o.username !== activeSessionRow.payer).map(o => o.username),
+        debtorIds: sessionOrders.filter(o => !o.is_paid && o.username !== activeSessionRow.payer).map(o => {
+          const u = newUsers.find(nu => nu.username.toLowerCase() === o.username.toLowerCase());
+          return u ? u.id : o.user_id;
+        }), 
         orders: sessionOrders.map(o => {
           const u = newUsers.find(nu => nu.username.toLowerCase() === o.username.toLowerCase());
           return {
@@ -304,8 +307,6 @@ export const api = {
     if (updates.accountNo !== undefined) payload.account_no = updates.accountNo;
     if (updates.coffeeBought !== undefined) payload.coffee_bought = updates.coffeeBought;
     if (updates.forceClosedBy !== undefined) payload.force_closed_by = updates.forceClosedBy;
-    if (updates.debtors !== undefined) payload.debtors = updates.debtors;
-    if (updates.debtorIds !== undefined) payload.debtor_ids = updates.debtorIds;
     
     const { error } = await supabase.from('sessions').update(payload).eq('id', sessionId);
     if (error) throw error;

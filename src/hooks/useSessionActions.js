@@ -219,9 +219,7 @@ export function useSessionActions() {
       await api.updateSession(store.session.id, { 
         status: 'force-closed', 
         forceClosedBy: currentUser?.username,
-        closedAt: new Date().toISOString(),
-        debtors,
-        debtorIds
+        closedAt: new Date().toISOString()
       });
       await api.deleteActiveSession(store.session.id);
       
