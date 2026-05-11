@@ -124,8 +124,11 @@ async function fetchFullState() {
             paymentInfo: (rawActive.payment_method !== null && rawActive.payment_method !== undefined) ? {
               method: rawActive.payment_method,
               paymentMethod: rawActive.payment_method,
+              payment_method: rawActive.payment_method,
               bankName: rawActive.bank_name,
-              accountNo: rawActive.account_no
+              bank_name: rawActive.bank_name,
+              accountNo: rawActive.account_no,
+              account_no: rawActive.account_no
             } : null,
             debtors,
             debtorIds,
@@ -175,8 +178,11 @@ async function fetchFullState() {
         paymentInfo: (activeSessionRow.payment_method !== null && activeSessionRow.payment_method !== undefined) ? {
           method: activeSessionRow.payment_method,
           paymentMethod: activeSessionRow.payment_method,
+          payment_method: activeSessionRow.payment_method,
           bankName: activeSessionRow.bank_name,
-          accountNo: activeSessionRow.account_no
+          bank_name: activeSessionRow.bank_name,
+          accountNo: activeSessionRow.account_no,
+          account_no: activeSessionRow.account_no
         } : null,
         coffeeBought: activeSessionRow.coffee_bought,
         coffeeBoughtAt: activeSessionRow.coffee_bought_at,
@@ -342,11 +348,19 @@ export const api = {
 
   updateOrder: async (orderId, updates) => {
     const payload = {};
-    if (updates.isPaid !== undefined) payload.is_paid = updates.isPaid;
+    if (updates.isPaid !== undefined) {
+      payload.is_paid = updates.isPaid;
+      if (updates.isPaid) payload.paid_at = new Date().toISOString();
+    }
     if (updates.paymentProof !== undefined) payload.payment_proof = updates.paymentProof;
+    if (updates.markedByPayer !== undefined) payload.marked_by_payer = updates.markedByPayer;
     
-    await supabase.from('orders').update(payload).eq('id', orderId);
-    // Realtime covers refresh
+    const { error } = await supabase.from('orders').update(payload).eq('id', orderId);
+    if (error) {
+      console.error("Failed to update order:", error);
+      throw error;
+    }
+    await debouncedFetchFullState();
   },
 
   notify: async (sessionId, target, type, message) => {
@@ -525,31 +539,41 @@ export const api = {
   uploadProof: async (orderIdOrFile, proofUrlOrUndefined) => {
     // Legacy support for (orderId, url)
     if (typeof orderIdOrFile === 'string' && typeof proofUrlOrUndefined === 'string') {
-      await supabase.from('orders').update({
+      const { error } = await supabase.from('orders').update({
         payment_proof: proofUrlOrUndefined
       }).eq('id', orderIdOrFile);
+      if (error) throw error;
       return;
     }
 
     // New support for (file)
     const file = orderIdOrFile;
+    if (!file) throw new Error("No file provided for upload");
+    
     const fileExt = file.name.split('.').pop();
     const fileName = `${Date.now()}-${Math.random().toString(36).substring(2)}.${fileExt}`;
     const filePath = `${fileName}`;
 
-    const { error } = await supabase.storage
+    console.log("Uploading file to Supabase Storage:", filePath);
+    const { error: uploadError } = await supabase.storage
       .from('receipts')
       .upload(filePath, file);
 
-    if (error) {
-      console.error('Error uploading proof:', error);
-      throw error;
+    if (uploadError) {
+      console.error('Supabase Storage Upload Error:', uploadError);
+      throw uploadError;
     }
 
     const { data: { publicUrl } } = supabase.storage
       .from('receipts')
       .getPublicUrl(filePath);
 
+    if (!publicUrl) {
+      console.error('Failed to generate public URL for uploaded file');
+      throw new Error("Failed to get public URL");
+    }
+
+    console.log("Upload successful. Public URL:", publicUrl);
     return publicUrl;
   },
 

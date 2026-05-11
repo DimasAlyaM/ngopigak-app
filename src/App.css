@@ -330,6 +330,11 @@
 
 /* Form Search Results */
 .search-results-overlay {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  z-index: 100;
   background: var(--surface);
   border: 1px solid var(--glass-border);
   border-radius: 18px;

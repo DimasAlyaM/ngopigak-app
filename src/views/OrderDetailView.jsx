@@ -16,42 +16,62 @@ function OrderDetailView({
   setDialog,
   setPreviewProof
 }) {
-  const { currentUser, store } = useAppStore();
+  const { currentUser, store, setSelectedOrder } = useAppStore();
   const [isUploading, setIsUploading] = useState(false);
+  const [localProofUrl, setLocalProofUrl] = useState(null);
   
-  // Find the latest version of the session for this order
-  const sessionInfo = (() => {
-    if (!order) return null;
-    if (store.session && (order.sessionId === 'active' || order.sessionId === store.session.id)) {
-      return store.session;
-    }
-    return store.history.find(h => h.id === order.sessionId);
-  })();
+  // Keep liveOrder in sync with store
+  const [liveOrder, setLiveOrder] = useState(order);
 
-  // Find the latest version of the order itself
-  const currentOrder = (() => {
-    if (!order || !sessionInfo) return order;
-    return sessionInfo.orders.find(o => 
-      o.id === order.id || 
-      (o.userId === order.userId) ||
-      (o.username === order.username && o.item?.id === order.item?.id)
-    ) || order;
-  })();
+  useEffect(() => {
+    if (!order) return;
+    
+    // Find latest session
+    let session = null;
+    if (store.session && (order.sessionId === 'active' || order.sessionId === store.session.id)) {
+      session = store.session;
+    } else {
+      session = store.history.find(h => h.id === order.sessionId);
+    }
+
+    if (session) {
+      const found = session.orders.find(o => 
+        o.id === order.id || 
+        (o.userId && o.userId === order.userId) ||
+        (o.username === order.username && o.item?.name === order.item?.name)
+      );
+      if (found) {
+        setLiveOrder({ ...order, ...found, sessionId: session.id });
+      }
+    }
+  }, [store.session, store.history, order]);
 
   const isPaid = (() => {
-    if (!sessionInfo || !currentOrder) return currentOrder?.isPaid || false;
-    // For live sessions, trust the order's isPaid
-    if (sessionInfo.id === store.session?.id && sessionInfo.status !== 'completed' && sessionInfo.status !== 'force-closed') {
-      return currentOrder.isPaid;
+    if (!liveOrder) return false;
+    
+    // For live sessions
+    if (store.session && (liveOrder.sessionId === 'active' || liveOrder.sessionId === store.session.id)) {
+      return liveOrder.isPaid;
     }
-    // For historical sessions, verify against debtor lists for accuracy
-    const inDebtors = (sessionInfo.debtors || []).some(d => (d || '').toLowerCase() === (currentUser?.username || '').toLowerCase());
-    const inDebtorIds = (sessionInfo.debtorIds || []).includes(currentUser?.id);
-    return !inDebtors && !inDebtorIds;
+    
+    // For historical
+    const session = store.history.find(h => h.id === liveOrder.sessionId);
+    if (session) {
+      const inDebtors = (session.debtors || []).some(d => (d || '').toLowerCase() === (currentUser?.username || '').toLowerCase());
+      const inDebtorIds = (session.debtorIds || []).includes(currentUser?.id);
+      return !inDebtors && !inDebtorIds;
+    }
+    return liveOrder.isPaid;
   })();
 
-  const proofUrl = currentOrder?.paymentProof || '';
-  const rawPInfo = sessionInfo?.paymentInfo || order.paymentInfo;
+  const proofUrl = localProofUrl || liveOrder?.paymentProof || '';
+  
+  // Resolve payment info from session or order
+  const sessionForInfo = (store.session && (liveOrder?.sessionId === 'active' || liveOrder?.sessionId === store.session.id)) 
+    ? store.session 
+    : store.history.find(h => h.id === liveOrder?.sessionId);
+
+  const rawPInfo = sessionForInfo?.paymentInfo || liveOrder?.paymentInfo;
   const pInfo = (rawPInfo && (rawPInfo.method || rawPInfo.payment_method || rawPInfo.paymentMethod)) ? {
     method: rawPInfo.method || rawPInfo.payment_method || rawPInfo.paymentMethod,
     bankName: rawPInfo.bankName || rawPInfo.bank_name,
@@ -73,17 +93,25 @@ function OrderDetailView({
     if (!file) return;
     setIsUploading(true);
     try {
+      console.log("Starting upload process for order session:", liveOrder.sessionId);
       const url = await api.uploadProof(file);
+      setLocalProofUrl(url);
+      
       const s = loadStore();
-      if (order.sessionId === 'active' || (s.session && order.sessionId === s.session.id)) {
-        const activeOrder = s.session.orders.find(o => o.userId === currentUser.id);
+      const isLive = liveOrder.sessionId === 'active' || (s.session && liveOrder.sessionId === s.session.id);
+      
+      if (isLive) {
+        const activeOrder = s.session.orders.find(o => String(o.userId) === String(currentUser.id));
         if (activeOrder) {
           await api.updateOrder(activeOrder.id, { paymentProof: url });
+        } else {
+          console.error("Could not find active order in session to attach proof");
         }
       } else {
-        await api.updateHistoricalOrder(order.sessionId, currentUser.id, { paymentProof: url });
+        await api.updateHistoricalOrder(liveOrder.sessionId, currentUser.id, { paymentProof: url });
       }
     } catch (err) {
+      console.error("Upload handler error:", err);
       alert("Gagal upload: " + err.message);
     } finally {
       setIsUploading(false);
@@ -93,17 +121,20 @@ function OrderDetailView({
   const handleConfirmPay = async () => {
     try {
       const s = loadStore();
-      if (order.sessionId === 'active' || (s.session && order.sessionId === s.session.id)) {
-        const activeOrder = s.session?.orders?.find(o => o.userId === currentUser.id);
+      const isLive = liveOrder.sessionId === 'active' || (s.session && liveOrder.sessionId === s.session.id);
+      
+      if (isLive) {
+        const activeOrder = s.session?.orders?.find(o => String(o.userId) === String(currentUser.id));
         if (activeOrder) {
           await api.updateOrder(activeOrder.id, { isPaid: true, markedByPayer: false });
           api.notify(s.session.id, { id: s.session.payerId, username: s.session.payer }, 'payment', `${currentUser.username} telah membayar & upload bukti.`);
-          if (onPaymentConfirm) onPaymentConfirm(s, activeOrder.id);
+          if (onPaymentConfirm) onPaymentConfirm();
         }
       } else {
-        await api.updateHistoricalOrder(order.sessionId, currentUser.id, { isPaid: true });
+        await api.updateHistoricalOrder(liveOrder.sessionId, currentUser.id, { isPaid: true });
       }
     } catch (err) {
+      console.error("Confirm pay error:", err);
       alert("Gagal konfirmasi: " + err.message);
     }
   };
@@ -123,23 +154,23 @@ function OrderDetailView({
 
       <div className="glass-panel mb-6" style={{ textAlign: 'center', padding: '2.5rem 1.5rem' }}>
         <div className="mb-6" style={{ fontSize: '4rem', background: 'var(--bg-primary)', width: '112px', height: '112px', borderRadius: '32px', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto', border: '1px solid var(--glass-border)' }}>
-          {order.item?.emoji || '☕'}
+          {liveOrder.item?.emoji || '☕'}
         </div>
-        <h3 className="mb-2" style={{ fontSize: '1.5rem' }}>{order.item?.name || 'Item'}</h3>
-        <p className="text-accent mb-10" style={{ fontSize: '2rem', fontWeight: 800 }}>{formatRp(order.item?.price)}</p>
+        <h3 className="mb-2" style={{ fontSize: '1.5rem' }}>{liveOrder.item?.name || 'Item'}</h3>
+        <p className="text-accent mb-10" style={{ fontSize: '2rem', fontWeight: 800 }}>{formatRp(liveOrder.item?.price)}</p>
 
         <div style={{ background: 'var(--bg-primary)', borderRadius: '24px', padding: '8px' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', padding: '14px 12px', borderBottom: '1px solid var(--glass-border)', fontSize: '0.9rem' }}>
             <span className="text-secondary font-bold">Waktu Sesi</span>
-            <strong className="text-primary">{formatDate(order.sessionDate)}</strong>
+            <strong className="text-primary">{formatDate(liveOrder.sessionDate || sessionForInfo?.startedAt)}</strong>
           </div>
           <div style={{ display: 'flex', justifyContent: 'space-between', padding: '14px 12px', borderBottom: '1px solid var(--glass-border)', fontSize: '0.9rem' }}>
             <span className="text-secondary font-bold">Payer</span>
-            <strong className="text-primary">{order.payer}</strong>
+            <strong className="text-primary">{liveOrder.payer || sessionForInfo?.payer}</strong>
           </div>
           <div style={{ display: 'flex', justifyContent: 'space-between', padding: '14px 12px', fontSize: '0.9rem', alignItems: 'center' }}>
             <span className="text-secondary font-bold">Status</span>
-            {order.userId !== order.payerId ? (
+            {liveOrder.userId !== liveOrder.payerId ? (
               <StatusBadge isPaid={isPaid} />
             ) : (
               <span className="badge-role guest" style={{ opacity: 0.6 }}>PAYER SESI INI</span>
@@ -149,7 +180,7 @@ function OrderDetailView({
       </div>
 
       {/* Payment section */}
-      {!isPaid && (currentUser?.id === order.userId) && (order.userId !== order.payerId) && (
+      {!isPaid && (currentUser?.id === liveOrder.userId) && (liveOrder.userId !== liveOrder.payerId) && (
         <div className="payment-management fade-in">
           {pInfo ? (
             <div className="payment-card-highlight mb-6">
@@ -177,9 +208,9 @@ function OrderDetailView({
           ) : (
             <div className="glass-panel mb-6" style={{ textAlign: 'center', padding: '1.5rem' }}>
               <p className="text-secondary font-bold" style={{ fontSize: '0.9rem' }}>
-                {sessionInfo?.status === 'payment-setup' 
-                  ? `Menunggu info pembayaran dari ${order.payer}...` 
-                  : `Info pembayaran belum tersedia (Sesi: ${sessionInfo?.status || 'Unknown'})`
+                {sessionForInfo?.status === 'payment-setup' 
+                  ? `Menunggu info pembayaran dari ${liveOrder.payer || sessionForInfo?.payer}...` 
+                  : `Info pembayaran belum tersedia (Sesi: ${sessionForInfo?.status || 'Unknown'})`
                 }
               </p>
             </div>
@@ -244,13 +275,13 @@ function OrderDetailView({
       )}
 
       {/* Payer viewing a debtor's unpaid order */}
-      {!isPaid && (currentUser?.id === order.payerId) && (order.userId !== order.payerId) && (
+      {!isPaid && (currentUser?.id === liveOrder.payerId) && (liveOrder.userId !== liveOrder.payerId) && (
         <div className="payment-card-highlight text-center" style={{ textAlign: 'center', padding: '3rem 1.5rem' }}>
           <div className="mb-6" style={{ background: 'rgba(255,255,255,0.05)', width: '72px', height: '72px', borderRadius: '36px', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto' }}>
             <AlertTriangle size={36} className="text-accent" />
           </div>
           <h3 className="mb-2">Menunggu Pembayaran</h3>
-          <p className="text-secondary" style={{ fontSize: '0.95rem', lineHeight: 1.6 }}><strong>{order.username}</strong> belum membayar hutangnya kepada kamu.</p>
+          <p className="text-secondary" style={{ fontSize: '0.95rem', lineHeight: 1.6 }}><strong>{liveOrder.username}</strong> belum membayar hutangnya kepada kamu.</p>
         </div>
       )}
 
@@ -266,7 +297,7 @@ function OrderDetailView({
               <p className="text-secondary font-bold mb-3" style={{ fontSize: '0.75rem', textTransform: 'uppercase' }}>Bukti terupload:</p>
               <div 
                 style={{ width: '120px', height: '120px', margin: '0 auto', borderRadius: '16px', overflow: 'hidden', border: '1px solid var(--glass-border)', cursor: 'pointer' }}
-                onClick={() => setPreviewProof({ url: proofUrl, username: order.username, userId: order.userId })}
+                onClick={() => setPreviewProof({ url: proofUrl, username: liveOrder.username, userId: liveOrder.userId })}
               >
                 <img src={proofUrl} alt="Proof" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
               </div>

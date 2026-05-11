@@ -127,8 +127,21 @@ function SessionView({
                 placeholder="Cari kopi kesukaanmu..."
                 className="premium-input"
                 value={coffeeSearch}
-                onFocus={() => setShowMenuResults(true)}
-                onChange={(e) => setCoffeeSearch(e.target.value)}
+                onFocus={(e) => {
+                  setShowMenuResults(true);
+                  // Select text on focus for easier searching
+                  e.target.select();
+                }}
+                onChange={(e) => {
+                  setCoffeeSearch(e.target.value);
+                  // If user is typing something completely new, clear the old selection
+                  if (selectedCoffeeId) {
+                    const selected = store.menu.find(m => m.id === selectedCoffeeId);
+                    if (selected && !`${selected.emoji} ${selected.name}`.toLowerCase().includes(e.target.value.toLowerCase())) {
+                       setSelectedCoffeeId('');
+                    }
+                  }
+                }}
                 style={{ paddingLeft: '3rem' }}
               />
               <div style={{ position: 'absolute', left: '1.25rem', top: '50%', transform: 'translateY(-50%)', opacity: 0.5 }}>
@@ -138,12 +151,13 @@ function SessionView({
 
             {showMenuResults && (
               <div className="search-results-overlay">
-                {(store.menu || []).filter(m => m && m.name.toLowerCase().includes(coffeeSearch.toLowerCase())).map(m => (
+                {(store.menu || [])
+                  .filter(m => m && m.name.toLowerCase().includes(coffeeSearch.toLowerCase().replace(/^.*?\s/, ''))) // ignore emoji prefix
+                  .map(m => (
                   <div
                     key={m.id}
-                    className="search-result-item"
-                    onMouseDown={(e) => {
-                      e.preventDefault();
+                    className={`search-result-item ${selectedCoffeeId === m.id ? 'active-border' : ''}`}
+                    onClick={() => {
                       setSelectedCoffeeId(m.id);
                       setCoffeeSearch(`${m.emoji} ${m.name}`);
                       setShowMenuResults(false);
@@ -216,6 +230,8 @@ function SessionView({
             </button>
           </div>
         </div>
+
+        <PaymentInfoCard info={session.paymentInfo} payer={session.payer} companion={session.companion} isPayer={true} />
 
         <div className="order-management">
           <div className="section-header mb-4">
