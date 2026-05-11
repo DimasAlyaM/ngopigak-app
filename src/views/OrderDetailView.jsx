@@ -112,7 +112,10 @@ function OrderDetailView({
       }
     } catch (err) {
       console.error("Upload handler error:", err);
-      alert("Gagal upload: " + err.message);
+      const msg = err.code === 'PGRST204' 
+        ? "Gagal simpan: Kolom database belum lengkap. Hubungi Admin untuk jalankan SQL Migration."
+        : "Gagal upload: " + err.message;
+      alert(msg);
     } finally {
       setIsUploading(false);
     }
@@ -135,7 +138,10 @@ function OrderDetailView({
       }
     } catch (err) {
       console.error("Confirm pay error:", err);
-      alert("Gagal konfirmasi: " + err.message);
+      const msg = err.code === 'PGRST204' 
+        ? "Gagal konfirmasi: Database tidak mendukung fitur ini. Hubungi Admin (Missing 'paid_at')."
+        : "Gagal konfirmasi: " + err.message;
+      alert(msg);
     }
   };
 

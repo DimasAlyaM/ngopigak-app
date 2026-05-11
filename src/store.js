@@ -357,7 +357,11 @@ export const api = {
     
     const { error } = await supabase.from('orders').update(payload).eq('id', orderId);
     if (error) {
-      console.error("Failed to update order:", error);
+      if (error.code === 'PGRST204') {
+        console.error("Critical Schema Error: Missing columns in 'orders' table. Please run the SQL migration for 'payment_proof' and 'paid_at'.", error);
+      } else {
+        console.error("Failed to update order:", error);
+      }
       throw error;
     }
     await debouncedFetchFullState();
