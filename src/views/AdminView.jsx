@@ -248,14 +248,15 @@ function AdminView({
 
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
                     <button className="btn-primary" style={{ background: 'var(--success)', boxShadow: '0 4px 12px rgba(16, 185, 129, 0.2)' }} onClick={() => {
-                      setDialog({
-                        title: 'Tutup Paksa?',
-                        message: !activeSession.paymentInfo 
-                          ? 'PERINGATAN: Payer BELUM mengisi info pembayaran. Jika ditutup sekarang, info pembayaran di histori akan KOSONG. Lanjutkan?' 
-                          : 'Sesi akan ditutup dan hutang peserta akan dicatat di histori.',
-                        onConfirm: () => { onForceClose(); setDialog(null); },
-                        confirmText: !activeSession.paymentInfo ? 'Ya, Tutup Tanpa Info' : 'Ya, Tutup Sesi'
-                      });
+                        setDialog({
+                          title: 'Tutup Paksa?',
+                          message: !activeSession.paymentInfo 
+                            ? 'PERINGATAN: Payer BELUM mengisi info pembayaran. Jika ditutup sekarang, info pembayaran di histori akan KOSONG. Lanjutkan?' 
+                            : 'Sesi akan ditutup dan hutang peserta akan dicatat di histori.',
+                          onConfirm: () => { onForceClose(); setDialog(null); },
+                          danger: true,
+                          confirmText: !activeSession.paymentInfo ? 'Ya, Tutup Tanpa Info' : 'Ya, Tutup Sesi'
+                        });
                     }}>
                       Tutup Paksa & Simpan Histori
                     </button>

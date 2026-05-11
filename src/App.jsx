@@ -336,9 +336,18 @@ export default function App() {
 
       <BottomNav />
 
-      {dialog && (
-        <ConfirmDialog title={dialog.title} message={dialog.message} onConfirm={dialog.onConfirm} onCancel={() => setDialog(null)} confirmText={dialog.confirmText} danger={dialog.danger} />
-      )}
+      <AnimatePresence>
+        {dialog && (
+          <ConfirmDialog 
+            title={dialog.title} 
+            message={dialog.message} 
+            onConfirm={dialog.onConfirm} 
+            onCancel={() => setDialog(null)} 
+            confirmText={dialog.confirmText} 
+            danger={dialog.danger} 
+          />
+        )}
+      </AnimatePresence>
       {previewProof && (
         <ProofPreviewModal url={previewProof.url} username={previewProof.username} onClose={() => setPreviewProof(null)} />
       )}
