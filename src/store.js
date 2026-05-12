@@ -223,7 +223,10 @@ async function fetchFullState() {
       users: newUsers,
       adminPin: newAdminPin,
       payerHistory: payers || [],
-      history: (historic || []).filter(h => h && h.data).map(h => h.data),
+      history: (historic || [])
+        .filter(h => h && h.data)
+        .map(h => h.data)
+        .sort((a, b) => new Date(b.startedAt || 0) - new Date(a.startedAt || 0)),
       session: newSession
     });
   } catch (err) {
