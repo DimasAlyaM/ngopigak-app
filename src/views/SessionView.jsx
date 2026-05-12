@@ -21,6 +21,7 @@ function SessionView({
   showMenuResults,
   setShowMenuResults,
   coffeeDropdownRef,
+  selectedCoffeeId,
   setSelectedCoffeeId,
   onAddOrder,
   onStartSession,
