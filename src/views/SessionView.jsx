@@ -137,7 +137,7 @@ function SessionView({
                   // If user is typing something completely new, clear the old selection
                   if (selectedCoffeeId) {
                     const selected = store.menu.find(m => m.id === selectedCoffeeId);
-                    if (selected && !`${selected.emoji} ${selected.name}`.toLowerCase().includes(e.target.value.toLowerCase())) {
+                    if (selected && !`${selected.emoji || ''} ${selected.name || ''}`.toLowerCase().includes((e.target.value || '').toLowerCase())) {
                        setSelectedCoffeeId('');
                     }
                   }
@@ -152,14 +152,14 @@ function SessionView({
             {showMenuResults && (
               <div className="search-results-overlay">
                 {(store.menu || [])
-                  .filter(m => m && m.name.toLowerCase().includes(coffeeSearch.toLowerCase().replace(/^.*?\s/, ''))) // ignore emoji prefix
+                  .filter(m => m && m.name && m.name.toLowerCase().includes((coffeeSearch || '').toLowerCase().replace(/^.*?\s/, ''))) // ignore emoji prefix
                   .map(m => (
                   <div
                     key={m.id}
                     className={`search-result-item ${selectedCoffeeId === m.id ? 'active-border' : ''}`}
                     onClick={() => {
                       setSelectedCoffeeId(m.id);
-                      setCoffeeSearch(`${m.emoji} ${m.name}`);
+                      setCoffeeSearch(`${m.emoji || ''} ${m.name || ''}`.trim());
                       setShowMenuResults(false);
                     }}
                   >
